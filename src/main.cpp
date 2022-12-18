@@ -1,7 +1,10 @@
 #include "../include/glad/glad.h"
 #include "../include/glfw3.h"
+#include "../include/glm/ext.hpp"
 
 #include "pp_globals.h"
+#include "shaderer.h"
+#include "quad_renderer.h"
 
 #include <iostream>
 
@@ -19,9 +22,14 @@ PP* glob = (PP*) malloc(sizeof(PP));
 void glob_init();
 void glob_free();
 
+// TODO: Probably create a "game" source and header file for these functions
+void game_draw();
+
 int main() {
 
-    glob_init();
+    glob->window.title = "PaperPlane";
+    glob->window.w = 800;
+    glob->window.h = 600;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -56,9 +64,14 @@ int main() {
 
     glViewport(0, 0, glob->window.w, glob->window.h);
 
+
+    glob_init();
+
     while (!glfwWindowShouldClose(glob->window.glfw_win)) {
         glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        game_draw();
 
         glfwSwapBuffers(glob->window.glfw_win);
         glfwPollEvents();
@@ -70,14 +83,37 @@ int main() {
     return 0;
 }
 
-void glob_init() {
+void glob_init(void) {
     PP::WinInfo* win = &glob->window;
-    win->title = "PaperPlane";
-    win->w = 800;
-    win->h = 600;
+
+    glob->ortho_proj = glm::ortho(0.0f, (float)win->w,
+                                  (float)win->h, 0.0f,
+                                  -1.f, 1.f);
+
+    // NOTE: 1 is the number of shaders
+    glob->shaders = (Shader*) malloc(sizeof(Shader) * 1);
+    Shader* s1 = &glob->shaders[0];
+    shaderer_create_program(s1, "res/shaders/quad_default.vs", "res/shaders/quad_default.fs");
+    shaderer_set_mat4(*s1, "projection", glob->ortho_proj);
+
+    quad_render_init(&glob->quad_renderer);
+
+    PP::Plane* p = &glob->plane;
+    p->x = win->w / 2.f;
+    p->y = win->h / 2.f;
+    p->w = 180.f;
+    p->h = 10.f;
+    p->rotation = 10.f;
 }
 
-void glob_free() {
+void game_draw(void) {
+    PP::Plane* p = &glob->plane;
+    quad_render_add_queue(p->x, p->y, p->w, p->h, p->rotation, glm::vec3(1.0f, 1.0f, 1.0f), true);
+
+    quad_render_draw(glob->shaders[0]);
+}
+
+void glob_free(void) {
     free(glob);
 }
 
