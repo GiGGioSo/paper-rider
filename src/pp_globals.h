@@ -1,8 +1,8 @@
 #include "../include/glfw3.h"
 #include "../include/glm/mat4x4.hpp"
 
-#include "shaderer.h"
-#include "quad_renderer.h"
+#include "pp_shaderer.h"
+#include "pp_quad_renderer.h"
 
 struct PP {
 
@@ -14,18 +14,30 @@ struct PP {
     };
     WinInfo window;
 
-    glm::mat4 ortho_proj;
+    struct Rendering {
+        glm::mat4 ortho_proj;
+        Shader* shaders;
+        RendererQuad quad_renderer;
+    };
+    Rendering rend;
 
-    Shader* shaders;
-
-    RendererQuad quad_renderer;
+    // TODO: Maybe a "atmosphere" struct, with all the information needed for the simulation
+    struct Atmosphere {
+        float density;
+    };
+    Atmosphere air;
 
     struct Plane {
-        float x;
-        float y;
-        float w;
-        float h;
-        float rotation;
+        glm::vec2 pos;
+        glm::vec2 dim; // width and height
+
+        glm::vec2 vel;
+        glm::vec2 acc;
+
+        float mass;
+        float alar_surface;
+
+        float angle;
     };
     Plane plane;
 

@@ -1,8 +1,8 @@
-#include "quad_renderer.h"
+#include "pp_quad_renderer.h"
 #include "../include/glad/glad.h"
 
 #include "pp_globals.h"
-#include "shaderer.h"
+#include "pp_shaderer.h"
 
 #include <iostream>
 #include <math.h>
@@ -56,7 +56,7 @@ void quad_render_init(RendererQuad* quad_renderer) {
 
 void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec3 c, bool centered) {
 
-    RendererQuad* quad_renderer = &glob->quad_renderer;
+    RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
     if (centered) {
         x -= w/2;
@@ -102,7 +102,7 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
 
 void quad_render_draw(Shader s) {
 
-    RendererQuad* quad_renderer = &glob->quad_renderer;
+    RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
     glUseProgram(s);
 
@@ -118,7 +118,7 @@ void quad_render_draw(Shader s) {
 
 void quad_render_add_queue_tex(float x, float y, float w, float h, float r, float tx, float ty, float tw, float th) {
 
-    RendererQuad* quad_renderer = &glob->quad_renderer;
+    RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
     // NOTE: tx, ty are supposed to be the upper left corner in texture coordinates
     //       tw, th are the width and height, still in texture coordinates, that's why th is subtracted
@@ -161,7 +161,7 @@ void quad_render_add_queue_tex(float x, float y, float w, float h, float r, floa
 
 void quad_render_draw_tex(Shader s, Texture* t) {
 
-    RendererQuad* quad_renderer = &glob->quad_renderer;
+    RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
     glUseProgram(s);
 

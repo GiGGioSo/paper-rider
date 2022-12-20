@@ -3,10 +3,12 @@
 #include "../include/glm/ext.hpp"
 
 #include "pp_globals.h"
-#include "shaderer.h"
-#include "quad_renderer.h"
+#include "pp_shaderer.h"
+#include "pp_quad_renderer.h"
+#include "pp_game.h"
 
 #include <iostream>
+#include <math.h>
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window,
@@ -18,18 +20,20 @@ void callback_debug(GLenum source,
                     const void* user);
 
 // Initializing global structure
-PP* glob = (PP*) malloc(sizeof(PP));
+PP* glob;
 void glob_init();
 void glob_free();
 
-// TODO: Probably create a "game" source and header file for these functions
-void game_draw();
+float last_frame = 0;
+float this_frame = 0;
+float delta_time = 0;
 
 int main() {
 
+    glob = (PP*) malloc(sizeof(PP));
     glob->window.title = "PaperPlane";
-    glob->window.w = 800;
-    glob->window.h = 600;
+    glob->window.w = 1280;
+    glob->window.h = 720;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -68,8 +72,16 @@ int main() {
     glob_init();
 
     while (!glfwWindowShouldClose(glob->window.glfw_win)) {
+
+        this_frame = (float)glfwGetTime();
+        delta_time = this_frame - last_frame;
+        last_frame = this_frame;
+
+
         glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        game_update(delta_time);
 
         game_draw();
 
@@ -86,34 +98,41 @@ int main() {
 void glob_init(void) {
     PP::WinInfo* win = &glob->window;
 
-    glob->ortho_proj = glm::ortho(0.0f, (float)win->w,
+    // Rendering
+    glob->rend.ortho_proj = glm::ortho(0.0f, (float)win->w,
                                   (float)win->h, 0.0f,
                                   -1.f, 1.f);
 
     // NOTE: 1 is the number of shaders
-    glob->shaders = (Shader*) malloc(sizeof(Shader) * 1);
-    Shader* s1 = &glob->shaders[0];
+    glob->rend.shaders = (Shader*) malloc(sizeof(Shader) * 1);
+    Shader* s1 = &glob->rend.shaders[0];
     shaderer_create_program(s1, "res/shaders/quad_default.vs", "res/shaders/quad_default.fs");
-    shaderer_set_mat4(*s1, "projection", glob->ortho_proj);
+    shaderer_set_mat4(*s1, "projection", glob->rend.ortho_proj);
 
-    quad_render_init(&glob->quad_renderer);
+    quad_render_init(&glob->rend.quad_renderer);
 
+    // Gameplay
     PP::Plane* p = &glob->plane;
-    p->x = win->w / 2.f;
-    p->y = win->h / 2.f;
-    p->w = 180.f;
-    p->h = 10.f;
-    p->rotation = 10.f;
-}
+    p->pos.x = 320.0f;
+    p->pos.y = 350.0f;
+    p->dim.x = 180.f;
+    p->dim.y = 20.f;
+    p->angle = 25.f;
+    p->vel.x = 0.f;
+    p->vel.y = 0.f;
+    p->acc.x = 0.f;
+    p->acc.y = 0.f;
+    p->mass = 15.f; // grams
+    // TODO: The alar surface should be somewhat proportional
+    //       to the dimension of the actual rectangle
+    p->alar_surface = 15.f; // cm squared
 
-void game_draw(void) {
-    PP::Plane* p = &glob->plane;
-    quad_render_add_queue(p->x, p->y, p->w, p->h, p->rotation, glm::vec3(1.0f, 1.0f, 1.0f), true);
+    glob->air.density = 0.002f;
 
-    quad_render_draw(glob->shaders[0]);
 }
 
 void glob_free(void) {
+    free(glob->rend.shaders);
     free(glob);
 }
 

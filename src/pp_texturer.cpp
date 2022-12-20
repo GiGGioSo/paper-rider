@@ -1,8 +1,8 @@
-#include "texturer.h"
+#include "pp_texturer.h"
 
 #include "../include/stb_image.h"
-
 #include "../include/glad/glad.h"
+
 #include <iostream>
 
 void texturer_create_texture(Texture* t, const char* filepath) {
@@ -12,7 +12,6 @@ void texturer_create_texture(Texture* t, const char* filepath) {
     glGenTextures(1, &t->id);
     glBindTexture(GL_TEXTURE_2D, t->id);
     // texture options
-    // TODO: Have the possibility to set these parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

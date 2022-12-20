@@ -2,8 +2,8 @@
 #define QUAD_RENDERER_H
 
 #include "../include/glm/glm.hpp"
-#include "shaderer.h"
-#include "texturer.h"
+#include "pp_shaderer.h"
+#include "pp_texturer.h"
 
 struct RendererQuad {
     unsigned int vao;
