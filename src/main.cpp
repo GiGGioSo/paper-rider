@@ -115,24 +115,23 @@ void glob_init(void) {
     PP::Plane* p = &glob->plane;
     p->pos.x = 320.0f;
     p->pos.y = 350.0f;
-    p->dim.x = 180.f;
-    p->dim.y = 20.f;
-    p->angle = 25.f;
+    p->dim.x = 80.f;
+    p->dim.y = 15.f;
+    p->angle = 0.f;
     p->vel.x = 0.f;
     p->vel.y = 0.f;
     p->acc.x = 0.f;
     p->acc.y = 0.f;
-    p->mass = 15.f; // grams
+    p->mass = 0.015f; // kg
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
-    p->alar_surface = 15.f; // cm squared
+    p->alar_surface = 0.06f; // m squared
 
-    glob->air.density = 0.002f;
+    glob->air.density = 0.005f;
 
 }
 
 void glob_free(void) {
-    free(glob->rend.shaders);
     free(glob);
 }
 

@@ -3,6 +3,7 @@
 
 #include "pp_shaderer.h"
 #include "pp_quad_renderer.h"
+#include "pp_input.h"
 
 struct PP {
 
@@ -40,6 +41,8 @@ struct PP {
         float angle;
     };
     Plane plane;
+
+    InputController input;
 
 };
 
