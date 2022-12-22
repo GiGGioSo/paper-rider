@@ -1,5 +1,5 @@
-#ifndef TEXTURER_H
-#define TEXTURER_H
+#ifndef PP_TEXTURER_H
+#define PP_TEXTURER_H
 
 struct Texture {
     unsigned int id;

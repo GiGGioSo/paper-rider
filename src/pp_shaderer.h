@@ -1,5 +1,5 @@
-#ifndef SHADERER_H
-#define SHADERER_H
+#ifndef PP_SHADERER_H
+#define PP_SHADERER_H
 
 #include "../include/glm/glm.hpp"
 

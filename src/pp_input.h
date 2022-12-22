@@ -1,5 +1,5 @@
-#ifndef INPUT_H
-#define INPUT_H
+#ifndef PP_INPUT_H
+#define PP_INPUT_H
 
 #include "../include/glfw3.h"
 

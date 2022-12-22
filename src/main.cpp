@@ -125,7 +125,7 @@ void glob_init(void) {
     p->mass = 0.015f; // kg
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
-    p->alar_surface = 0.06f; // m squared
+    p->alar_surface = 0.15f; // m squared
 
     glob->air.density = 0.005f;
 

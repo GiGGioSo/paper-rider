@@ -1,3 +1,6 @@
+#ifndef PP_GLOBALS_H
+#define PP_GLOBALS_H
+
 #include "../include/glfw3.h"
 #include "../include/glm/mat4x4.hpp"
 
@@ -22,7 +25,6 @@ struct PP {
     };
     Rendering rend;
 
-    // TODO: Maybe a "atmosphere" struct, with all the information needed for the simulation
     struct Atmosphere {
         float density;
     };
@@ -47,3 +49,5 @@ struct PP {
 };
 
 extern PP* glob;
+
+#endif
