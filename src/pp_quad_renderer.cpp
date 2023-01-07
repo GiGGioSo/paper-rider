@@ -19,7 +19,7 @@ void quad_render_init(RendererQuad* quad_renderer) {
     // NOTE: 10 is the max number of unicolor quads displayable together on the screen
     //       6 is the number of vertices for a single quad
     //       5 is the number of floats per vertex (2: position, 3: color)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5 * 10, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5 * 500, NULL, GL_DYNAMIC_DRAW);
 
     // Vertex position
     glEnableVertexAttribArray(0);

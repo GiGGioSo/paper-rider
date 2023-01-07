@@ -122,12 +122,16 @@ void glob_init(void) {
     p->vel.y = 0.f;
     p->acc.x = 0.f;
     p->acc.y = 0.f;
-    p->mass = 0.015f; // kg
+    p->mass = 0.005f; // kg
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
 
-    glob->air.density = 0.005f;
+    glob->cam.pos.x = p->pos.x;
+    glob->cam.pos.y = p->pos.y;
+    glob->cam.speed_multiplier = 3.f;
+
+    glob->air.density = 0.010f;
 
 }
 

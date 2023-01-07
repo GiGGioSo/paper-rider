@@ -32,6 +32,7 @@ struct PP {
 
     struct Plane {
         glm::vec2 pos;
+
         glm::vec2 dim; // width and height
 
         glm::vec2 vel;
@@ -43,6 +44,13 @@ struct PP {
         float angle;
     };
     Plane plane;
+
+    struct Camera {
+        glm::vec2 pos;
+
+        float speed_multiplier;
+    };
+    Camera cam;
 
     InputController input;
 
