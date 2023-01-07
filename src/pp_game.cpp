@@ -16,7 +16,6 @@
 //  - Sound system
 
 
-
 // TODO: Will this always be some arbitrary number that kind of just works?
 #define GRAVITY 9.81f * 50.f
 
