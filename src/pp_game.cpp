@@ -20,7 +20,7 @@
 // TODO: Will this always be some arbitrary number that kind of just works?
 #define GRAVITY 9.81f * 50.f
 
-#define VELOCITY_LIMIT 800.f
+#define VELOCITY_LIMIT 1000.f
 
 void apply_air_resistances(PP::Plane* p);
 
@@ -196,7 +196,7 @@ void game_draw(void) {
     /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // "Obstacles"
-    for(int i = 0; i < 1; i++) {
+    for(int i = 0; i < 100; i++) {
 
         float obstacle_x = i * win->w * 0.8f - cam->pos.x + win->w/2.f;
         float obstacle_y = win->h * 0.5f - cam->pos.y + win->h/2.f;
@@ -208,14 +208,13 @@ void game_draw(void) {
         ob.pos.y = win->h * 0.5f;
         ob.dim.x = win->w * 0.1f;
         ob.dim.y = win->h * 0.3f;
-        ob.angle = 0.0f;
+        ob.angle = .0f;
 
-        std::cout
-                << "OB.x: " << ob.pos.x
-                << ", OB.y: " << ob.pos.y
-                << ";  PL.x: " << p->body.pos.x
-                << ", PL.y: " << p->body.pos.y
-                << std::endl;
+        /* std::cout << "OB.x: " << (int)ob.pos.x */
+        /*         << ", OB.y: " << (int)ob.pos.y */
+        /*         << ";  PL.x: " << (int)p->body.pos.x */
+        /*         << ", PL.y: " << (int)p->body.pos.y */
+        /*         << std::endl; */
 
         if (rect_are_colliding(&p->body, &ob)) {
             std::cout << "COLLIDING WITH: " << i << std::endl;

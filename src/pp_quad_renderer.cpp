@@ -7,11 +7,19 @@
 #include <iostream>
 #include <math.h>
 
+#define PP_MAX_UNICOLOR_QUADS 500
+
+#define PP_MAX_TEXTURED_QUADS 10
+
 // TODO: Render using a `Rect`, so is more convenient
 //          to draw the plane and the obstacles
 
 // TODO: Make it pass a camera or something,
 //          so you don't have to calculate the offset everytime
+
+// TODO: Add alpha support for unicolor quads
+
+// TODO: Add alpha support for textured quads
 
 void quad_render_init(RendererQuad* quad_renderer) {
 
@@ -22,10 +30,10 @@ void quad_render_init(RendererQuad* quad_renderer) {
     glBindVertexArray(quad_renderer->vao);
     glBindBuffer(GL_ARRAY_BUFFER, quad_renderer->vbo);
 
-    // NOTE: 10 is the max number of unicolor quads displayable together on the screen
+    // NOTE: `PP_MAX_UNICOLOR_QUADS` is the max number of unicolor quads displayable together on the screen
     //       6 is the number of vertices for a single quad
-    //       5 is the number of floats per vertex (2: position, 3: color)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5 * 500, NULL, GL_DYNAMIC_DRAW);
+    //       5 is the number of floats per vertex (2: position, 3: color, will be 4 with alpha)
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5 * PP_MAX_UNICOLOR_QUADS, NULL, GL_DYNAMIC_DRAW);
 
     // Vertex position
     glEnableVertexAttribArray(0);
@@ -42,7 +50,7 @@ void quad_render_init(RendererQuad* quad_renderer) {
     glBindVertexArray(quad_renderer->tex_vao);
     glBindBuffer(GL_ARRAY_BUFFER, quad_renderer->tex_vbo);
 
-    // NOTE: 10 is the max number of unicolor quads displayable together on the screen
+    // NOTE: 10 is the max number of textured quads displayable together on the screen
     //       6 is the number of vertices for a single quad
     //       4 is the number of floats per vertex (2: position, 3: color)
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4 * 10, NULL, GL_DYNAMIC_DRAW);

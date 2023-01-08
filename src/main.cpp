@@ -133,6 +133,7 @@ void glob_init(void) {
     glob->cam.pos.y = win->h * 0.5f;
     glob->cam.speed_multiplier = 3.f;
 
+    // NOTE: The more this is, the less velocity is lost by turning
     glob->air.density = 0.010f;
 
 }
