@@ -7,6 +7,7 @@
 #include "pp_shaderer.h"
 #include "pp_quad_renderer.h"
 #include "pp_input.h"
+#include "pp_rect.h"
 
 struct PP {
 
@@ -31,17 +32,13 @@ struct PP {
     Atmosphere air;
 
     struct Plane {
-        glm::vec2 pos;
-
-        glm::vec2 dim; // width and height
+        Rect body;
 
         glm::vec2 vel;
         glm::vec2 acc;
 
         float mass;
         float alar_surface;
-
-        float angle;
     };
     Plane plane;
 

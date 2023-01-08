@@ -6,8 +6,6 @@
 
 void game_update(float dt);
 
-void apply_air_resistances(PP::Plane* p);
-
 void game_draw(void);
 
 #define POW2(x) x * x
@@ -28,7 +26,7 @@ inline glm::vec2 lerp_v2(glm::vec2 x1, glm::vec2 x2, float t) {
 // NOTE: Vertical lift and horizontal drag are identical,
 //       because falling is just like moving right.
 
-// TODO: Modify these coefficient so that feels nice
+// TODO: Maybe modify there coefficients to make them feel better?
 
 inline float vertical_lift_coefficient(float angle) {
     float result = 1.f - (float) cos(glm::radians(180.f - 2.f * angle));

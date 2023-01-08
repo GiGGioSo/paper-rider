@@ -113,11 +113,11 @@ void glob_init(void) {
 
     // Gameplay
     PP::Plane* p = &glob->plane;
-    p->pos.x = 320.0f;
-    p->pos.y = 350.0f;
-    p->dim.x = 80.f;
-    p->dim.y = 15.f;
-    p->angle = 0.f;
+    p->body.pos.x = 0.0f;
+    p->body.pos.y = 350.0f;
+    p->body.dim.x = 80.f;
+    p->body.dim.y = 15.f;
+    p->body.angle = 0.f;
     p->vel.x = 0.f;
     p->vel.y = 0.f;
     p->acc.x = 0.f;
@@ -127,8 +127,10 @@ void glob_init(void) {
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
 
-    glob->cam.pos.x = p->pos.x;
-    glob->cam.pos.y = p->pos.y;
+    /* glob->cam.pos.x = p->body.pos.x; */
+    /* glob->cam.pos.y = p->body.pos.y; */
+    glob->cam.pos.x = p->body.pos.x;
+    glob->cam.pos.y = win->h * 0.5f;
     glob->cam.speed_multiplier = 3.f;
 
     glob->air.density = 0.010f;

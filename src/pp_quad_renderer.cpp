@@ -7,6 +7,12 @@
 #include <iostream>
 #include <math.h>
 
+// TODO: Render using a `Rect`, so is more convenient
+//          to draw the plane and the obstacles
+
+// TODO: Make it pass a camera or something,
+//          so you don't have to calculate the offset everytime
+
 void quad_render_init(RendererQuad* quad_renderer) {
 
     // Initialization of unicolor VAO and VBO
