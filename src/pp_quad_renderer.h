@@ -29,7 +29,9 @@ void quad_render_draw_tex(Shader s, Texture* t);
 // NOTE: To increase the ease of use with Rect types
 inline
 void quad_render_add_queue(Rect rec, glm::vec4 c, bool centered) {
-    quad_render_add_queue(rec.pos.x, rec.pos.y, rec.dim.x, rec.dim.y, rec.angle, c, centered);
+    quad_render_add_queue(rec.pos.x, rec.pos.y,
+                          rec.dim.x, rec.dim.y, rec.angle,
+                          c, centered);
 }
 
 #endif

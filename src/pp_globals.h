@@ -53,7 +53,7 @@ struct PP {
         float mass;
 
         bool attached;
-        float jump_time;
+        float jump_time_elapsed;
     };
     Rider rider;
 

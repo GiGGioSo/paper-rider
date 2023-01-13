@@ -138,7 +138,7 @@ void glob_init(void) {
     rid->body.angle = p->body.angle;
     rid->attached = true;
     rid->mass = 0.010f;
-    rid->jump_time = 0.f;
+    rid->jump_time_elapsed = 0.f;
 
     glob->cam.pos.x = p->body.pos.x;
     glob->cam.pos.y = win->h * 0.5f;

@@ -21,6 +21,10 @@
 //  - Control the rider when jumped out from the plane
 //  - Make the plane change angle alone when the rider jumps off
 
+// TODO: RESEARCH
+// - flags you probably want to google: -MF -MMD (clang & gcc)
+// - https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
+
 int fps_to_display;
 int fps_counter;
 float time_from_last_fps_update;
@@ -54,11 +58,7 @@ void game_update(float dt) {
     PP::Rider *rid = &glob->rider;
     InputController *input = &glob->input;
 
-    /* std::cout << p->body.angle << std::endl; */
-    debug_buffer[debug_index++] = p->body.angle;
-    debug_index &= 31;
-    // TODO: Sometimes this assert gets triggered at the start of the program
-    /* assert(-360.f <= p->body.angle && p->body.angle <= 360.f); */
+    assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     // NOTE: Update input
     input_controller_update(win->glfw_win, &glob->input);
@@ -108,12 +108,14 @@ void game_update(float dt) {
         rid->acc.y += GRAVITY;
         rid->vel += rid->acc * dt;
         rid->body.pos += rid->vel * dt + rid->acc * POW2(dt) * 0.5f;
+
+        rid->jump_time_elapsed += dt;
     }
 
     // NOTE: If rider not attached, check if recollided
     if (!rid->attached &&
         rect_are_colliding(&p->body, &rid->body) &&
-        ((float)glfwGetTime() - rid->jump_time) > 0.5f) {
+        rid->jump_time_elapsed > 0.5f) {
 
         rid->attached = true;
         rid->vel *= 0.f;
@@ -123,7 +125,6 @@ void game_update(float dt) {
     // NOTE: Changing angle based on the input
     if (input->vertical) {
         p->body.angle += 150.f * input->vertical * dt;
-        assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
     }
 
     // NOTE: If the rider is attached, make it jump
@@ -132,7 +133,7 @@ void game_update(float dt) {
         rid->attached = false;
         rid->vel.x = p->vel.x;
         rid->vel.y = -400.f;
-        rid->jump_time = (float)glfwGetTime();
+        rid->jump_time_elapsed = 0.f;
     }
 
 
@@ -158,21 +159,11 @@ void game_update(float dt) {
     }
 
     // NOTE: Limit velocities
-    if (POW2(p->vel.x) + POW2(p->vel.y) > POW2(VELOCITY_LIMIT)) {
-        /* std::cout << "Limited!!\n"; */
-        float vel_angle = atan(p->vel.y / p->vel.x);
-        p->vel.x = glm::abs(VELOCITY_LIMIT * cos(vel_angle)) *
-                    glm::sign(p->vel.x);
-        p->vel.y = glm::abs(VELOCITY_LIMIT * sin(vel_angle)) *
-                    glm::sign(p->vel.y);
+    if (glm::length(p->vel) > VELOCITY_LIMIT) {
+        p->vel *= VELOCITY_LIMIT / glm::length(p->vel);
     }
-    if (!rid->attached && POW2(rid->vel.x) + POW2(rid->vel.y) > POW2(VELOCITY_LIMIT)) {
-        /* std::cout << "Limited!!\n"; */
-        float vel_angle = glm::atan(rid->vel.y / rid->vel.x);
-        rid->vel.x = glm::abs(VELOCITY_LIMIT * cos(vel_angle)) *
-                    glm::sign(rid->vel.x);
-        rid->vel.y = glm::abs(VELOCITY_LIMIT * sin(vel_angle)) *
-                    glm::sign(rid->vel.y);
+    if (!rid->attached && glm::length(rid->vel) > VELOCITY_LIMIT) {
+        rid->vel *= VELOCITY_LIMIT / glm::length(rid->vel);
     }
 
     // NOTE: Loop over window edged pacman style,

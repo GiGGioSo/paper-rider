@@ -18,19 +18,19 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     // Fetching controller input
     // ANALOGICO
     /* float lj_h; // left-joysticj horizontal  -1=left   1=right */
-    float lj_v; // left-joystick vertical    -1=up     1=down
+    float lj_v = 0.f; // left-joystick vertical    -1=up     1=down
     /* float rj_h; // right-joysticj horizontal  -1=left   1=right */
     /* float rj_v; // right-joystick vertical    -1=up     1=down */
     /* float lt_an; // analogical left-trigger   -1=released     1=pressed */
     /* float rt_an; // analogical right-trigger   -1=released     1=pressed */
 
     //DIGITALE
-    bool dpad_up; // DPAD controls
+    bool dpad_up = false; // DPAD controls
     /* bool dpad_right; */
     /* bool dpad_left; */
-    bool dpad_down;
+    bool dpad_down = false;
 
-    bool b_up; // Button controls (I put the direction instead of the name)
+    bool b_up = false; // Button controls (I put the direction instead of the name)
     /* bool b_right; */
     /* bool b_down; */
     /* bool b_left; */
