@@ -28,24 +28,41 @@ inline glm::vec2 lerp_v2(glm::vec2 x1, glm::vec2 x2, float t) {
 
 // TODO: Maybe modify there coefficients to make them feel better?
 
-inline float vertical_lift_coefficient(float angle) {
+inline
+float vertical_lift_coefficient(float angle) {
     float result = 1.f - (float) cos(glm::radians(180.f - 2.f * angle));
     return result;
 }
 
-inline float vertical_drag_coefficient(float angle) {
+inline
+float vertical_drag_coefficient(float angle) {
     float result = (float) sin(glm::radians(180.f - 2.f * angle));
     return result;
 }
 
-inline float horizontal_lift_coefficient(float angle) {
+inline
+float horizontal_lift_coefficient(float angle) {
     float result = (float) sin(glm::radians(2.f * angle));
     return result;
 }
 
-inline float horizontal_drag_coefficient(float angle) {
+inline
+float horizontal_drag_coefficient(float angle) {
     float result = 1.f - (float) cos(glm::radians(2.f * angle));
     return result;
 }
+
+inline
+Rect rect_in_camera_space(Rect r, PP::Camera* cam) {
+
+    Rect res;
+
+    res.pos = r.pos - cam->pos + glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+    res.dim = r.dim;
+    res.angle = r.angle;
+
+    return res;
+}
+
 
 #endif

@@ -105,7 +105,7 @@ void glob_init(void) {
 
     // NOTE: 1 is the number of shaders
     glob->rend.shaders = (Shader*) malloc(sizeof(Shader) * 1);
-    Shader* s1 = &glob->rend.shaders[0];
+    Shader *s1 = &glob->rend.shaders[0];
     shaderer_create_program(s1, "res/shaders/quad_default.vs", "res/shaders/quad_default.fs");
     shaderer_set_mat4(*s1, "projection", glob->rend.ortho_proj);
 
@@ -127,14 +127,40 @@ void glob_init(void) {
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
 
-    /* glob->cam.pos.x = p->body.pos.x; */
-    /* glob->cam.pos.y = p->body.pos.y; */
+    PP::Rider *rid = &glob->rider;
+    rid->body.pos = p->body.pos;
+    rid->body.dim.x = 30.f;
+    rid->body.dim.y = 50.f;
+    rid->vel.x = 0.0f;
+    rid->vel.y = 0.0f;
+    rid->acc.x = 0.0f;
+    rid->acc.y = 0.0f;
+    rid->body.angle = p->body.angle;
+    rid->attached = true;
+    rid->mass = 0.010f;
+    rid->jump_time = 0.f;
+
     glob->cam.pos.x = p->body.pos.x;
     glob->cam.pos.y = win->h * 0.5f;
-    glob->cam.speed_multiplier = 3.f;
+    glob->cam.speed_multiplier = 2.f;
 
     // NOTE: The more this is, the less velocity is lost by turning
     glob->air.density = 0.010f;
+
+    // NOTE: Initializing the obstacles
+    for(int i = 0; i < ARRAY_LENGTH(glob->obstacles); i++) {
+        /* std::cout << "Initializing: " << i << std::endl; */
+
+        Rect *obs = &glob->obstacles[i];
+
+        obs->pos.x = win->w * 0.8f * i;
+        obs->pos.y = win->h * 0.4f;
+
+        obs->dim.x = win->w * 0.1f;
+        obs->dim.y = win->h * 0.3f;
+
+        obs->angle = 0.0f;
+    }
 
 }
 
@@ -154,6 +180,6 @@ void callback_debug(GLenum source,
                     GLsizei length, const GLchar* message,
                     const void* user) {
 
-        std::cout << message << std::endl;
+    std::cout << message << std::endl;
 
 }

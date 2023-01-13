@@ -32,15 +32,15 @@ void quad_render_init(RendererQuad* quad_renderer) {
 
     // NOTE: `PP_MAX_UNICOLOR_QUADS` is the max number of unicolor quads displayable together on the screen
     //       6 is the number of vertices for a single quad
-    //       5 is the number of floats per vertex (2: position, 3: color, will be 4 with alpha)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5 * PP_MAX_UNICOLOR_QUADS, NULL, GL_DYNAMIC_DRAW);
+    //       6 is the number of floats per vertex (2: position, 4: color)
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 6 * PP_MAX_UNICOLOR_QUADS, NULL, GL_DYNAMIC_DRAW);
 
     // Vertex position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
     // Vertex color
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (2 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) (2 * sizeof(float)));
 
  
     // Initialization of textured VAO and VBO
@@ -52,8 +52,8 @@ void quad_render_init(RendererQuad* quad_renderer) {
 
     // NOTE: 10 is the max number of textured quads displayable together on the screen
     //       6 is the number of vertices for a single quad
-    //       4 is the number of floats per vertex (2: position, 3: color)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4 * 10, NULL, GL_DYNAMIC_DRAW);
+    //       4 is the number of floats per vertex (2: position, 3: tex_coords)
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4 * PP_MAX_TEXTURED_QUADS, NULL, GL_DYNAMIC_DRAW);
 
     // Everything can be done in a single attribute pointer
     glEnableVertexAttribArray(0);
@@ -68,7 +68,7 @@ void quad_render_init(RendererQuad* quad_renderer) {
 
 }
 
-void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec3 c, bool centered) {
+void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool centered) {
 
     RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
@@ -78,12 +78,12 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
     }
 
     float vertices[] = {
-        x  , y+h, c.x, c.y, c.z,
-        x  , y  , c.x, c.y, c.z,
-        x+w, y  , c.x, c.y, c.z,
-        x  , y+h, c.x, c.y, c.z,
-        x+w, y  , c.x, c.y, c.z,
-        x+w, y+h, c.x, c.y, c.z,
+        x  , y+h, c.r, c.g, c.b, c.a,
+        x  , y  , c.r, c.g, c.b, c.a,
+        x+w, y  , c.r, c.g, c.b, c.a,
+        x  , y+h, c.r, c.g, c.b, c.a,
+        x+w, y  , c.r, c.g, c.b, c.a,
+        x+w, y+h, c.r, c.g, c.b, c.a
     };
 
     r = glm::radians(-r);
@@ -91,14 +91,14 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
     float center_y = y + h/2;
 
     for(int i = 0; i < 6; i++) {
-        float vx = vertices[i*5 + 0];
-        float vy = vertices[i*5 + 1];
+        float vx = vertices[i*6 + 0];
+        float vy = vertices[i*6 + 1];
 
         float newX = center_x + (vx - center_x) * cos(r) + (vy - center_y) * sin(r);
         float newY = center_y + (vx - center_x) * sin(r) - (vy - center_y) * cos(r);
 
-        vertices[i*5 + 0] = newX;
-        vertices[i*5 + 1] = newY;
+        vertices[i*6 + 0] = newX;
+        vertices[i*6 + 1] = newY;
     }
 
     glBindVertexArray(quad_renderer->vao);

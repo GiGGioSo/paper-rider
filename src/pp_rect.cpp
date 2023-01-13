@@ -192,7 +192,7 @@ bool lines_are_colliding(float x0, float y0,
                            float x1, float y1,
                            float s0, float t0,
                            float s1, float t1,
-                           float* x, float* y) {
+                           float *x, float *y) {
 
     float s1_x, s1_y, s2_x, s2_y;
 

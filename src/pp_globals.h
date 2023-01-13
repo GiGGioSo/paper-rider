@@ -9,6 +9,8 @@
 #include "pp_input.h"
 #include "pp_rect.h"
 
+#define ARRAY_LENGTH(arr) (int)(sizeof(arr) / sizeof(arr[0]))
+
 struct PP {
 
     struct WinInfo {
@@ -41,6 +43,21 @@ struct PP {
         float alar_surface;
     };
     Plane plane;
+
+    struct Rider {
+        Rect body;
+
+        glm::vec2 vel;
+        glm::vec2 acc;
+
+        float mass;
+
+        bool attached;
+        float jump_time;
+    };
+    Rider rider;
+
+    Rect obstacles[64];
 
     struct Camera {
         glm::vec2 pos;

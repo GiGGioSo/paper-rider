@@ -12,9 +12,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     input->reset = false;
     input->boost = false;
     input->toggle_debug = false;
-    input->move_up = false;
-    input->move_down = false;
     input->vertical = 0.f;
+    input->jump = false;
 
     // Fetching controller input
     // ANALOGICO
@@ -87,20 +86,15 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         }
     }
 
-    // Analog input
-    if (c1_present) {
-        input->vertical = lj_v;
-    }
-
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
             (c1_present && (lj_v <= -0.2f || dpad_up))) {
 
-        input->move_up = true;
+        input->vertical = (lj_v <= -0.2f) ? lj_v : 1.0f;
 
     } else if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ||
             (c1_present && (lj_v >= 0.2f || dpad_down))) {
 
-        input->move_down = true;
+        input->vertical = (lj_v >= 0.2f) ? lj_v : -1.0f;
 
     }
 
@@ -108,7 +102,10 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         input->toggle_debug = true;
     }
 
-    // Reset game
+    if (glfwGetKey(window, GLFW_KEY_H)) {
+        input->jump = true;
+    }
+
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS ||
         (c1_present && b_up)) {
         input->boost = true;

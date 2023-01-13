@@ -1,6 +1,6 @@
 
 CC = g++
-CFLAGS = -g -lglfw -ldl -lpthread -lm -Wall
+CFLAGS = -g -lglfw -ldl -lpthread -lm -Wall -fsanitize=address
 
 SRC = src
 OBJ = obj

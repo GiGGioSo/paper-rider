@@ -5,11 +5,11 @@
 
 struct InputController {
     // Gameplay
-    bool move_up;
-    bool move_down;
     float vertical;
     bool boost;
     bool reset;
+
+    bool jump;
 
     // Debug
     bool toggle_debug;
