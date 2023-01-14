@@ -14,11 +14,6 @@
 // TODO: Render using a `Rect`, so is more convenient
 //          to draw the plane and the obstacles
 
-// TODO: Make it pass a camera or something,
-//          so you don't have to calculate the offset everytime
-
-// TODO: Add alpha support for unicolor quads
-
 // TODO: Add alpha support for textured quads
 
 void quad_render_init(RendererQuad* quad_renderer) {
@@ -146,7 +141,7 @@ void quad_render_add_queue_tex(float x, float y, float w, float h, float r, floa
         x+w, y+h, tx+tw, ty+th,
     };
 
-    r = glm::radians(r);
+    r = glm::radians(-r);
     float center_x = x + w/2;
     float center_y = y + h/2;
 

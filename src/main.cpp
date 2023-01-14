@@ -6,6 +6,7 @@
 #include "pp_shaderer.h"
 #include "pp_quad_renderer.h"
 #include "pp_game.h"
+#include "pp_texturer.h"
 
 #include <iostream>
 #include <math.h>
@@ -104,10 +105,17 @@ void glob_init(void) {
                                   -1.f, 1.f);
 
     // NOTE: 1 is the number of shaders
-    glob->rend.shaders = (Shader*) malloc(sizeof(Shader) * 1);
+    glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2);
     Shader *s1 = &glob->rend.shaders[0];
     shaderer_create_program(s1, "res/shaders/quad_default.vs", "res/shaders/quad_default.fs");
     shaderer_set_mat4(*s1, "projection", glob->rend.ortho_proj);
+
+    Shader *s2 = &glob->rend.shaders[1];
+    shaderer_create_program(s2, "res/shaders/tex_default.vs", "res/shaders/tex_default.fs");
+    shaderer_set_mat4(*s2, "projection", glob->rend.ortho_proj);
+
+    // NOTE: Initializing the global_sprite
+    texturer_create_texture(&glob->rend.global_sprite, "res/paper-rider_sprite.png");
 
     quad_render_init(&glob->rend.quad_renderer);
 
@@ -116,7 +124,7 @@ void glob_init(void) {
     p->body.pos.x = 0.0f;
     p->body.pos.y = 350.0f;
     p->body.dim.x = 80.f;
-    p->body.dim.y = 15.f;
+    p->body.dim.y = 24.f;
     p->body.angle = 0.f;
     p->vel.x = 0.f;
     p->vel.y = 0.f;

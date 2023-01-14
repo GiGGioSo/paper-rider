@@ -34,4 +34,12 @@ void quad_render_add_queue(Rect rec, glm::vec4 c, bool centered) {
                           c, centered);
 }
 
+inline
+void quad_render_add_queue_tex(Rect rec, TexCoords t) {
+    quad_render_add_queue_tex(rec.pos.x, rec.pos.y,
+                              rec.dim.x, rec.dim.y, rec.angle,
+                              t.tx, t.ty,
+                              t.tw, t.th);
+}
+
 #endif

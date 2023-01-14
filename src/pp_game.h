@@ -64,5 +64,20 @@ Rect rect_in_camera_space(Rect r, PP::Camera* cam) {
     return res;
 }
 
+inline
+TexCoords texcoords_in_texture_space(float x, float y,
+                                     float w, float h,
+                                     Texture *tex) {
+    TexCoords res;
+
+    res.tx = x / tex->width;
+    res.th = y / tex->height;
+    res.tw = w / tex->width;
+    res.th = h / tex->height;
+
+    return res;
+
+}
+
 
 #endif

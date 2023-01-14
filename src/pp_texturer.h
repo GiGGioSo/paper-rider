@@ -8,6 +8,13 @@ struct Texture {
     int nr_channels;
 };
 
+struct TexCoords {
+    float tx;
+    float ty;
+    float tw;
+    float th;
+};
+
 void texturer_create_texture(Texture* t, const char* filename);
 
 #endif

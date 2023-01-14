@@ -20,6 +20,7 @@
 //  - Make changing angle more or less difficult
 //  - Control the rider when jumped out from the plane
 //  - Make the plane change angle alone when the rider jumps off
+//  - Differentiate hitbox from display rectangle
 
 // TODO: RESEARCH
 // - flags you probably want to google: -MF -MMD (clang & gcc)
@@ -280,14 +281,15 @@ void game_draw(void) {
     }
 
     // NOTE: Rendering the plane
-    quad_render_add_queue(rect_in_camera_space(p->body, cam), glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false);
+    /* quad_render_add_queue(rect_in_camera_space(p->body, cam), glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false); */
 
+    // TODO: Implement the boost as an actual thing
     glm::vec2 p_cam_pos = p->body.pos - cam->pos + glm::vec2(win->w*0.5f, win->h*0.5f);
     if (glob->input.boost) {
         float bx = p_cam_pos.x + p->body.dim.x*0.5f -
-                    (p->body.dim.x-p->body.dim.y)*0.5f * cos(glm::radians(p->body.angle));
+                    (p->body.dim.x+p->body.dim.y*1.0f)*0.5f * cos(glm::radians(p->body.angle));
         float by = p_cam_pos.y + p->body.dim.y*0.5f +
-                    (p->body.dim.x-p->body.dim.y)*0.5f * sin(glm::radians(p->body.angle));
+                    (p->body.dim.x+p->body.dim.y*1.0f)*0.5f * sin(glm::radians(p->body.angle));
 
         // NOTE: Rendering the boost of the plane
         quad_render_add_queue(bx, by,
@@ -300,4 +302,13 @@ void game_draw(void) {
     quad_render_add_queue(rect_in_camera_space(rid->body, cam), glm::vec4(0.0f, 0.0f, 1.0f, .5f), false);
 
     quad_render_draw(glob->rend.shaders[0]);
+
+    // NOTE: Rendering plane texture
+    quad_render_add_queue_tex(rect_in_camera_space(p->body, cam),
+                              texcoords_in_texture_space(0.f, 0.f,
+                                                         32.f, 8.f,
+                                                         &glob->rend.global_sprite));
+
+    quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
+
 }

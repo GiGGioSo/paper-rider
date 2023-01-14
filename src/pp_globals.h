@@ -5,6 +5,7 @@
 #include "../include/glm/mat4x4.hpp"
 
 #include "pp_shaderer.h"
+#include "pp_texturer.h"
 #include "pp_quad_renderer.h"
 #include "pp_input.h"
 #include "pp_rect.h"
@@ -23,8 +24,11 @@ struct PP {
 
     struct Rendering {
         glm::mat4 ortho_proj;
-        Shader* shaders;
         RendererQuad quad_renderer;
+
+        Shader *shaders;
+
+        Texture global_sprite;
     };
     Rendering rend;
 
