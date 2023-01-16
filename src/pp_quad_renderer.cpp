@@ -129,9 +129,10 @@ void quad_render_add_queue_tex(float x, float y, float w, float h, float r, floa
 
     RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
-    // NOTE: tx, ty are supposed to be the upper left corner in texture coordinates
-    //       tw, th are the width and height, still in texture coordinates, that's why th is subtracted
+    // NOTE: tx, ty are supposed to be the lower left corner in texture coordinates
+    //       tw, th are the width and height, still in texture coordinates
     //       This means that everything has to be 0 <= x <= 1
+
     float vertices[] = {
         x  , y+h, tx   , ty+th,
         x  , y  , tx   , ty   ,

@@ -123,8 +123,8 @@ void glob_init(void) {
     PP::Plane* p = &glob->plane;
     p->body.pos.x = 0.0f;
     p->body.pos.y = 350.0f;
-    p->body.dim.x = 80.f;
-    p->body.dim.y = 24.f;
+    p->body.dim.x = 2*80.f;
+    p->body.dim.y = 2*24.f;
     p->body.angle = 0.f;
     p->vel.x = 0.f;
     p->vel.y = 0.f;

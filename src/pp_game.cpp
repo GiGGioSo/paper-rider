@@ -25,20 +25,20 @@
 // TODO: RESEARCH
 // - flags you probably want to google: -MF -MMD (clang & gcc)
 // - https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
-
-int fps_to_display;
-int fps_counter;
-float time_from_last_fps_update;
-
-float debug_buffer[32];
-int debug_index;
-
 // TODO: Will this always be some arbitrary numbers that kind of just works?
+
 #define GRAVITY 9.81f * 50.f
 
 #define VELOCITY_LIMIT 1000.f
 
 void apply_air_resistances(PP::Plane* p);
+
+int fps_to_display;
+int fps_counter;
+float time_from_last_fps_update;
+
+float animation_frame = 0.f;
+float animation_countdown = 0.f;
 
 void game_update(float dt) {
 
@@ -51,7 +51,6 @@ void game_update(float dt) {
 
         std::cout << "FPS: " << fps_to_display << std::endl;
     }
-
 
     PP::WinInfo *win = &glob->window;
     PP::Plane *p = &glob->plane;
@@ -155,7 +154,9 @@ void game_update(float dt) {
             p->body.pos.x > obs->pos.x + obs->dim.x) continue;
 
         if (rect_are_colliding(&p->body, obs)) {
-            std::cout << "Colliding with " << obs_index << std::endl;
+            // NOTE: Colliding with an obstacle
+
+            /* std::cout << "Colliding with " << obs_index << std::endl; */
         }
     }
 
@@ -184,6 +185,26 @@ void game_update(float dt) {
             rid->body.pos.y += win->h;
         }
     }
+
+    if (animation_countdown < 0) {
+        if (glm::abs(p->acc.y) < 20.f) {
+            animation_frame = 0.f;
+            animation_countdown = 0.2f;
+        } else {
+            if (animation_frame == 1.f)
+                animation_frame = (p->acc.y > 0) ? 0.f : 1.f;
+            else if (animation_frame == 0.f)
+                animation_frame = (p->acc.y > 0) ? 2.f : 1.f;
+            else if (animation_frame == 2.f)
+                animation_frame = (p->acc.y > 0) ? 2.f : 0.f;
+
+            animation_countdown = 0.2f;
+        }
+    } else {
+        animation_countdown -= dt;
+    }
+
+    /* std::cout << "Animation frame: " << animation_frame << std::endl; */
 }
 
 void apply_air_resistances(PP::Plane* p) {
@@ -305,7 +326,7 @@ void game_draw(void) {
 
     // NOTE: Rendering plane texture
     quad_render_add_queue_tex(rect_in_camera_space(p->body, cam),
-                              texcoords_in_texture_space(0.f, 0.f,
+                              texcoords_in_texture_space(animation_frame * 32.f, 0.f,
                                                          32.f, 8.f,
                                                          &glob->rend.global_sprite));
 

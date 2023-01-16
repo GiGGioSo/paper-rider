@@ -71,7 +71,7 @@ TexCoords texcoords_in_texture_space(float x, float y,
     TexCoords res;
 
     res.tx = x / tex->width;
-    res.th = y / tex->height;
+    res.ty = 1.f - (y + h) / tex->height;
     res.tw = w / tex->width;
     res.th = h / tex->height;
 
