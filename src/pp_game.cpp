@@ -20,18 +20,28 @@
 //  - Make changing angle more or less difficult
 //  - Control the rider when jumped out from the plane
 //  - Make the plane change angle alone when the rider jumps off
-//  - Differentiate hitbox from display rectangle
+//  - Tidy up the rider movement variables and stuff
+//  |
+// #Tweaks
+//  - Rider movement that feels good
 
 // TODO: RESEARCH
 // - flags you probably want to google: -MF -MMD (clang & gcc)
 // - https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
-// TODO: Will this always be some arbitrary numbers that kind of just works?
 
+// TODO: Will this always be some arbitrary numbers that kind of just works?
 #define GRAVITY 9.81f * 50.f
 
-#define VELOCITY_LIMIT 1000.f
+#define VELOCITY_LIMIT 800.f
 
-void apply_air_resistances(PP::Plane* p);
+void apply_air_resistances(PR::Plane* p);
+
+// Rider things
+float rider_x_vel_limit = 500.f;
+float rider_x_min_limit = 500.f;
+float rider_y_vel_limit = 500.f;
+float rider_x_movement_acc = 8000.f;
+float air_friction = 1.5f;
 
 int fps_to_display;
 int fps_counter;
@@ -52,10 +62,10 @@ void game_update(float dt) {
         std::cout << "FPS: " << fps_to_display << std::endl;
     }
 
-    PP::WinInfo *win = &glob->window;
-    PP::Plane *p = &glob->plane;
-    PP::Camera *cam = &glob->cam;
-    PP::Rider *rid = &glob->rider;
+    PR::WinInfo *win = &glob->window;
+    PR::Plane *p = &glob->plane;
+    PR::Camera *cam = &glob->cam;
+    PR::Rider *rid = &glob->rider;
     InputController *input = &glob->input;
 
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
@@ -85,8 +95,7 @@ void game_update(float dt) {
         /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
     }
 
-    // NOTE: Remember to divide all the forces applied by the mass,
-    //          the mass depends on wether the rider is on the plane
+    // NOTE: The mass is greater if the rider is attached
     if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
     else p->acc *= 1.f/p->mass;
 
@@ -98,43 +107,70 @@ void game_update(float dt) {
     p->vel += p->acc * dt;
     p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
 
-    cam->pos.x = lerp(cam->pos.x, p->body.pos.x, dt * cam->speed_multiplier);
 
     if (rid->attached) {
-        rid->body.pos = p->body.pos + p->body.dim * 0.5f - rid->body.dim *0.5f;
-        rid->body.angle = p->body.angle;
+
+        cam->pos.x = lerp(cam->pos.x, p->render_zone.pos.x+p->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
+
+        // NOTE: Changing plane angle based on the input
+        if (input->left_right) {
+            p->body.angle += 150.f * -input->left_right * dt;
+        }
+
+        rid->body.angle = p->render_zone.angle;
+        rid->body.pos.x = p->render_zone.pos.x + (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+                    (p->render_zone.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
+                    (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+        rid->body.pos.y = p->render_zone.pos.y + (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+                    (p->render_zone.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
+                    (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+
+
+        // NOTE: If the rider is attached, make it jump
+        if (input->jump) {
+            rid->attached = false;
+            rid->vel.x = p->vel.x * 0.9f;
+            rider_x_vel_limit = rid->vel.x;
+            rid->vel.y = -400.f;
+            rid->jump_time_elapsed = 0.f;
+        }
     } else {
-        // NOTE: Motion of the rider, if not attached
+        cam->pos.x = lerp(cam->pos.x, rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
+
         rid->acc.y += GRAVITY;
+
+        if (input->left_right) {
+            rid->acc.x += rider_x_movement_acc * input->left_right;
+        } else {
+            // NOTE: Make the player stop
+            rid->acc.x += -rid->vel.x * air_friction;
+        }
+
+        if (rider_x_vel_limit < rider_x_min_limit) rider_x_vel_limit = rider_x_min_limit;
+
         rid->vel += rid->acc * dt;
+        if (glm::abs(rid->vel.x) > rider_x_vel_limit)
+            rid->vel.x = rider_x_vel_limit * glm::sign(rid->vel.x);
+
+        if (glm::abs(rid->vel.y) > rider_y_vel_limit)
+            rid->vel.y = rider_y_vel_limit * glm::sign(rid->vel.y);
+
+        rider_x_vel_limit = rid->vel.x;
+
         rid->body.pos += rid->vel * dt + rid->acc * POW2(dt) * 0.5f;
 
         rid->jump_time_elapsed += dt;
+
+        // NOTE: If rider not attached, check if recollided
+        if (rect_are_colliding(&p->body, &rid->body) &&
+            rid->jump_time_elapsed > 0.5f) {
+            rid->attached = true;
+            p->vel += (rid->vel - p->vel) * 0.5f;
+            rid->vel *= 0.f;
+        }
+
     }
 
-    // NOTE: If rider not attached, check if recollided
-    if (!rid->attached &&
-        rect_are_colliding(&p->body, &rid->body) &&
-        rid->jump_time_elapsed > 0.5f) {
-
-        rid->attached = true;
-        rid->vel *= 0.f;
-    }
-
-
-    // NOTE: Changing angle based on the input
-    if (input->vertical) {
-        p->body.angle += 150.f * input->vertical * dt;
-    }
-
-    // NOTE: If the rider is attached, make it jump
-    if (rid->attached &&
-        input->jump) {
-        rid->attached = false;
-        rid->vel.x = p->vel.x;
-        rid->vel.y = -400.f;
-        rid->jump_time_elapsed = 0.f;
-    }
 
 
     // NOTE: Limiting the angle
@@ -150,22 +186,21 @@ void game_update(float dt) {
 
         Rect *obs = &glob->obstacles[obs_index];
 
-        if (p->body.pos.x + p->body.dim.x < obs->pos.x ||
-            p->body.pos.x > obs->pos.x + obs->dim.x) continue;
-
         if (rect_are_colliding(&p->body, obs)) {
-            // NOTE: Colliding with an obstacle
+            // NOTE: Plane colliding with an obstacle
 
-            /* std::cout << "Colliding with " << obs_index << std::endl; */
+            std::cout << "Plane collided with " << obs_index << std::endl;
+        }
+        if (rect_are_colliding(&rid->body, obs)) {
+            // NOTE: Rider colliding with an obstacle
+
+            std::cout << "Rider collided with " << obs_index << std::endl;
         }
     }
 
     // NOTE: Limit velocities
     if (glm::length(p->vel) > VELOCITY_LIMIT) {
         p->vel *= VELOCITY_LIMIT / glm::length(p->vel);
-    }
-    if (!rid->attached && glm::length(rid->vel) > VELOCITY_LIMIT) {
-        rid->vel *= VELOCITY_LIMIT / glm::length(rid->vel);
     }
 
     // NOTE: Loop over window edged pacman style,
@@ -186,10 +221,18 @@ void game_update(float dt) {
         }
     }
 
+    // NOTE: Update the `render_zone`s based on the `body`s
+    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
+    p->render_zone.angle = p->body.angle;
+
+    rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->render_zone.angle = rid->body.angle;
+
+    // NOTE: Animation based on the accelleration
     if (animation_countdown < 0) {
         if (glm::abs(p->acc.y) < 20.f) {
             animation_frame = 0.f;
-            animation_countdown = 0.2f;
+            animation_countdown = 0.25f;
         } else {
             if (animation_frame == 1.f)
                 animation_frame = (p->acc.y > 0) ? 0.f : 1.f;
@@ -198,16 +241,14 @@ void game_update(float dt) {
             else if (animation_frame == 2.f)
                 animation_frame = (p->acc.y > 0) ? 2.f : 0.f;
 
-            animation_countdown = 0.2f;
+            animation_countdown = 0.25f;
         }
     } else {
         animation_countdown -= dt;
     }
-
-    /* std::cout << "Animation frame: " << animation_frame << std::endl; */
 }
 
-void apply_air_resistances(PP::Plane* p) {
+void apply_air_resistances(PR::Plane* p) {
 
     float vertical_alar_surface = p->alar_surface * cos(glm::radians(p->body.angle));
 
@@ -278,10 +319,10 @@ void apply_air_resistances(PP::Plane* p) {
 }
 
 void game_draw(void) {
-    PP::Plane *p = &glob->plane;
-    PP::WinInfo *win = &glob->window;
-    PP::Camera *cam = &glob->cam;
-    PP::Rider *rid = &glob->rider;
+    PR::Plane *p = &glob->plane;
+    PR::WinInfo *win = &glob->window;
+    PR::Camera *cam = &glob->cam;
+    PR::Rider *rid = &glob->rider;
 
 
     // High wind zone
@@ -302,30 +343,30 @@ void game_draw(void) {
     }
 
     // NOTE: Rendering the plane
-    /* quad_render_add_queue(rect_in_camera_space(p->body, cam), glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false); */
+    quad_render_add_queue(rect_in_camera_space(p->body, cam), glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false);
 
     // TODO: Implement the boost as an actual thing
-    glm::vec2 p_cam_pos = p->body.pos - cam->pos + glm::vec2(win->w*0.5f, win->h*0.5f);
+    glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
     if (glob->input.boost) {
-        float bx = p_cam_pos.x + p->body.dim.x*0.5f -
-                    (p->body.dim.x+p->body.dim.y*1.0f)*0.5f * cos(glm::radians(p->body.angle));
-        float by = p_cam_pos.y + p->body.dim.y*0.5f +
-                    (p->body.dim.x+p->body.dim.y*1.0f)*0.5f * sin(glm::radians(p->body.angle));
+        float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
+                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f * cos(glm::radians(p->render_zone.angle));
+        float by = p_cam_pos.y + p->render_zone.dim.y*0.5f +
+                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f * sin(glm::radians(p->render_zone.angle));
 
         // NOTE: Rendering the boost of the plane
         quad_render_add_queue(bx, by,
-                              p->body.dim.y, p->body.dim.y,
-                              p->body.angle,
+                              p->render_zone.dim.y, p->render_zone.dim.y,
+                              p->render_zone.angle,
                               glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
                               true);
     }
 
-    quad_render_add_queue(rect_in_camera_space(rid->body, cam), glm::vec4(0.0f, 0.0f, 1.0f, .5f), false);
+    quad_render_add_queue(rect_in_camera_space(rid->render_zone, cam), glm::vec4(0.0f, 0.0f, 1.0f, 1.f), false);
 
     quad_render_draw(glob->rend.shaders[0]);
 
     // NOTE: Rendering plane texture
-    quad_render_add_queue_tex(rect_in_camera_space(p->body, cam),
+    quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
                               texcoords_in_texture_space(animation_frame * 32.f, 0.f,
                                                          32.f, 8.f,
                                                          &glob->rend.global_sprite));

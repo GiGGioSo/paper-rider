@@ -5,7 +5,14 @@
 
 struct InputController {
     // Gameplay
-    float vertical;
+    // TODO: This is mapped to the vertical movement
+    //       of the left joystick of the controller,
+    //       maybe is better to do everything with the
+    //       horizontal movement?
+    //       Another solution could be:
+    //        - Vertical joystick movement for the plane
+    //        - Horizontal joystick movement for the rider
+    float left_right;
     bool boost;
     bool reset;
 

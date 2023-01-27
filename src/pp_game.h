@@ -17,8 +17,8 @@ inline float lerp(float x1, float x2, float t) {
 
 inline glm::vec2 lerp_v2(glm::vec2 x1, glm::vec2 x2, float t) {
     glm::vec2 result;
-    result.x = x1.x + t * (x2.x - x1.x);
-    result.y = x1.y + t * (x2.y - x1.y);
+    result.x = lerp(x1.x, x2.x, t);
+    result.y = lerp(x1.y, x2.y, t);
 
     return result;
 }
@@ -53,7 +53,7 @@ float horizontal_drag_coefficient(float angle) {
 }
 
 inline
-Rect rect_in_camera_space(Rect r, PP::Camera* cam) {
+Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
 
     Rect res;
 

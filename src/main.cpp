@@ -21,7 +21,7 @@ void callback_debug(GLenum source,
                     const void* user);
 
 // Initializing global structure
-PP* glob;
+PR* glob;
 void glob_init();
 void glob_free();
 
@@ -31,7 +31,7 @@ float delta_time = 0;
 
 int main() {
 
-    glob = (PP*) malloc(sizeof(PP));
+    glob = (PR*) malloc(sizeof(PR) * 2.f);
     glob->window.title = "PaperPlane";
     glob->window.w = 1280;
     glob->window.h = 720;
@@ -97,7 +97,7 @@ int main() {
 }
 
 void glob_init(void) {
-    PP::WinInfo* win = &glob->window;
+    PR::WinInfo* win = &glob->window;
 
     // Rendering
     glob->rend.ortho_proj = glm::ortho(0.0f, (float)win->w,
@@ -105,7 +105,7 @@ void glob_init(void) {
                                   -1.f, 1.f);
 
     // NOTE: 1 is the number of shaders
-    glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2);
+    /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
     Shader *s1 = &glob->rend.shaders[0];
     shaderer_create_program(s1, "res/shaders/quad_default.vs", "res/shaders/quad_default.fs");
     shaderer_set_mat4(*s1, "projection", glob->rend.ortho_proj);
@@ -120,12 +120,16 @@ void glob_init(void) {
     quad_render_init(&glob->rend.quad_renderer);
 
     // Gameplay
-    PP::Plane* p = &glob->plane;
-    p->body.pos.x = 0.0f;
+    PR::Plane* p = &glob->plane;
+    p->body.pos.x = 200.0f;
     p->body.pos.y = 350.0f;
-    p->body.dim.x = 2*80.f;
-    p->body.dim.y = 2*24.f;
+    p->body.dim.y = 20.f;
+    p->body.dim.x = p->body.dim.y * 3.f;
     p->body.angle = 0.f;
+    p->render_zone.dim.y = 30.f;
+    p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
+    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
+    p->render_zone.angle = p->body.angle;
     p->vel.x = 0.f;
     p->vel.y = 0.f;
     p->acc.x = 0.f;
@@ -135,10 +139,18 @@ void glob_init(void) {
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
 
-    PP::Rider *rid = &glob->rider;
-    rid->body.pos = p->body.pos;
+    PR::Rider *rid = &glob->rider;
     rid->body.dim.x = 30.f;
     rid->body.dim.y = 50.f;
+    rid->body.angle = p->render_zone.angle;
+    rid->body.pos.x = p->render_zone.pos.x + (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+                (p->render_zone.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
+                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+    rid->body.pos.y = p->render_zone.pos.y + (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+                (p->render_zone.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
+                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+    rid->render_zone.dim = rid->body.dim;
+    rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
     rid->vel.x = 0.0f;
     rid->vel.y = 0.0f;
     rid->acc.x = 0.0f;
@@ -150,10 +162,10 @@ void glob_init(void) {
 
     glob->cam.pos.x = p->body.pos.x;
     glob->cam.pos.y = win->h * 0.5f;
-    glob->cam.speed_multiplier = 2.f;
+    glob->cam.speed_multiplier = 3.f;
 
     // NOTE: The more this is, the less velocity is lost by turning
-    glob->air.density = 0.010f;
+    glob->air.density = 0.015f;
 
     // NOTE: Initializing the obstacles
     for(int i = 0; i < ARRAY_LENGTH(glob->obstacles); i++) {

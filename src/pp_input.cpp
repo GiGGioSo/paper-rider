@@ -12,7 +12,7 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     input->reset = false;
     input->boost = false;
     input->toggle_debug = false;
-    input->vertical = 0.f;
+    input->left_right = 0.f;
     input->jump = false;
 
     // Fetching controller input
@@ -89,12 +89,12 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
             (c1_present && (lj_v <= -0.2f || dpad_up))) {
 
-        input->vertical = (lj_v <= -0.2f) ? lj_v : 1.0f;
+        input->left_right = (lj_v <= -0.2f) ? lj_v : -1.0f;
 
     } else if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ||
             (c1_present && (lj_v >= 0.2f || dpad_down))) {
 
-        input->vertical = (lj_v >= 0.2f) ? lj_v : -1.0f;
+        input->left_right = (lj_v >= 0.2f) ? lj_v : 1.0f;
 
     }
 
@@ -110,4 +110,5 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         (c1_present && b_up)) {
         input->boost = true;
     }
+
 }
