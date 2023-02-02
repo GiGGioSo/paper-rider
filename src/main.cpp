@@ -153,12 +153,14 @@ void glob_init(void) {
     rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
     rid->vel.x = 0.0f;
     rid->vel.y = 0.0f;
-    rid->acc.x = 0.0f;
-    rid->acc.y = 0.0f;
     rid->body.angle = p->body.angle;
     rid->attached = true;
     rid->mass = 0.010f;
     rid->jump_time_elapsed = 0.f;
+    rid->air_friction_acc = 100.f;
+    rid->base_velocity = 0.f;
+    rid->input_velocity = 0.f;
+    rid->input_max_accelleration = 4000.f;
 
     glob->cam.pos.x = p->body.pos.x;
     glob->cam.pos.y = win->h * 0.5f;

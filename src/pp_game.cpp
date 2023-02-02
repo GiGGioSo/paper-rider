@@ -21,27 +21,19 @@
 //  - Control the rider when jumped out from the plane
 //  - Make the plane change angle alone when the rider jumps off
 //  - Tidy up the rider movement variables and stuff
-//  |
-// #Tweaks
-//  - Rider movement that feels good
 
 // TODO: RESEARCH
 // - flags you probably want to google: -MF -MMD (clang & gcc)
 // - https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
 
 // TODO: Will this always be some arbitrary numbers that kind of just works?
-#define GRAVITY 9.81f * 50.f
+#define GRAVITY (9.81f * 50.f)
 
-#define VELOCITY_LIMIT 800.f
+#define PLANE_VELOCITY_LIMIT (800.f)
+#define RIDER_VELOCITY_Y_LIMIT (500.f)
+#define RIDER_INPUT_VELOCITY_LIMIT (400.f)
 
 void apply_air_resistances(PR::Plane* p);
-
-// Rider things
-float rider_x_vel_limit = 500.f;
-float rider_x_min_limit = 500.f;
-float rider_y_vel_limit = 500.f;
-float rider_x_movement_acc = 8000.f;
-float air_friction = 1.5f;
 
 int fps_to_display;
 int fps_counter;
@@ -75,7 +67,6 @@ void game_update(float dt) {
 
     // NOTE: Reset the accelleration for it to be recalculated
     p->acc *= 0;
-    rid->acc *= 0;
 
     apply_air_resistances(p);
 
@@ -129,35 +120,34 @@ void game_update(float dt) {
         // NOTE: If the rider is attached, make it jump
         if (input->jump) {
             rid->attached = false;
-            rid->vel.x = p->vel.x * 0.9f;
-            rider_x_vel_limit = rid->vel.x;
+            rid->base_velocity = p->vel.x;
             rid->vel.y = -400.f;
             rid->jump_time_elapsed = 0.f;
         }
     } else {
         cam->pos.x = lerp(cam->pos.x, rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
 
-        rid->acc.y += GRAVITY;
-
         if (input->left_right) {
-            rid->acc.x += rider_x_movement_acc * input->left_right;
+            rid->input_velocity += rid->input_max_accelleration * input->left_right * dt;
         } else {
-            // NOTE: Make the player stop
-            rid->acc.x += -rid->vel.x * air_friction;
+            rid->input_velocity += rid->input_max_accelleration * -glm::sign(rid->input_velocity) * dt;
         }
+        // NOTE: Base speed is the speed of the plane at the moment of the jump,
+        //          which decreases slowly but constantly overtime
+        //       Input speed is the speed that results from the player input.
+        //
+        //       This way, by touching nothing you get to keep the plane velocity,
+        //       but you are still able to move left and right in a satisfying way
+        if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) rid->input_velocity = glm::sign(rid->input_velocity) * RIDER_INPUT_VELOCITY_LIMIT;
+        rid->base_velocity -= glm::sign(rid->base_velocity) * rid->air_friction_acc * dt;
 
-        if (rider_x_vel_limit < rider_x_min_limit) rider_x_vel_limit = rider_x_min_limit;
+        rid->vel.x = rid->base_velocity + rid->input_velocity;
+        rid->vel.y += GRAVITY * dt;
 
-        rid->vel += rid->acc * dt;
-        if (glm::abs(rid->vel.x) > rider_x_vel_limit)
-            rid->vel.x = rider_x_vel_limit * glm::sign(rid->vel.x);
+        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT)
+            rid->vel.y = RIDER_VELOCITY_Y_LIMIT * glm::sign(rid->vel.y);
 
-        if (glm::abs(rid->vel.y) > rider_y_vel_limit)
-            rid->vel.y = rider_y_vel_limit * glm::sign(rid->vel.y);
-
-        rider_x_vel_limit = rid->vel.x;
-
-        rid->body.pos += rid->vel * dt + rid->acc * POW2(dt) * 0.5f;
+        rid->body.pos += rid->vel * dt;
 
         rid->jump_time_elapsed += dt;
 
@@ -199,8 +189,8 @@ void game_update(float dt) {
     }
 
     // NOTE: Limit velocities
-    if (glm::length(p->vel) > VELOCITY_LIMIT) {
-        p->vel *= VELOCITY_LIMIT / glm::length(p->vel);
+    if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
+        p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
     }
 
     // NOTE: Loop over window edged pacman style,

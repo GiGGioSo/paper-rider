@@ -55,7 +55,12 @@ struct PR {
         Rect render_zone;
 
         glm::vec2 vel;
-        glm::vec2 acc;
+
+        float base_velocity;
+        float input_velocity;
+
+        float input_max_accelleration;
+        float air_friction_acc;
 
         float mass;
 
