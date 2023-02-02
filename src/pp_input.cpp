@@ -49,11 +49,12 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     /* bool b_logo; // logo button */
 
     int c1_present = glfwJoystickPresent(GLFW_JOYSTICK_1);
-    if (!c1_present); //std::cout << "[ERROR] Controller 1 not present" << std::endl;
+    if (!c1_present);
     else {
         int axes_count;
         const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axes_count);
-        if (axes_count != 6) std::cout << "[WARNING] Controller with " << axes_count << " axes!!" << std::endl;
+        // TODO: Decent Warning handling
+        if (axes_count != 6); // std::cout << "[WARNING] Controller with " << axes_count << " axes!!" << std::endl;
         else {
             /* lj_h = axes[0]; */
             lj_v = axes[1];
@@ -64,7 +65,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         }
         int buttons_count;
         const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttons_count);
-        if (buttons_count != 17) std::cout << "[WARNING] Controller with " << buttons_count << " buttons!!" << std::endl;
+        // TODO: Decent Warning handling
+        if (buttons_count != 17); //std::cout << "[WARNING] Controller with " << buttons_count << " buttons!!" << std::endl;
         else {
             /* b_down = buttons[0] == GLFW_PRESS; */
             /* b_right = buttons[1] == GLFW_PRESS; */
