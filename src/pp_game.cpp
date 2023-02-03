@@ -11,16 +11,13 @@
 // TODO:
 //  - Proper wind
 //  - Find textures
-//  - Animation system
 //  - Particle system
 //  - Sound system
 //  - Level creation system
 //  |
 // #Mechanics
 //  - Make changing angle more or less difficult
-//  - Control the rider when jumped out from the plane
 //  - Make the plane change angle alone when the rider jumps off
-//  - Tidy up the rider movement variables and stuff
 
 // TODO: RESEARCH
 // - flags you probably want to google: -MF -MMD (clang & gcc)
@@ -39,11 +36,15 @@ int fps_to_display;
 int fps_counter;
 float time_from_last_fps_update;
 
-float animation_frame = 0.f;
+enum animation_state {
+    IDLE_ACC = 0,
+    UPWARDS_ACC = 1,
+    DOWNWARDS_ACC = 2
+};
+animation_state current_animation = IDLE_ACC;
 float animation_countdown = 0.f;
 
 void game_update(float dt) {
-
     fps_counter++;
     time_from_last_fps_update += dt;
     if (time_from_last_fps_update > 1.f) {
@@ -68,13 +69,75 @@ void game_update(float dt) {
     // NOTE: Reset the accelleration for it to be recalculated
     p->acc *= 0;
 
-    apply_air_resistances(p);
+    // {{ AIR_RESISTANCE
+    float vertical_alar_surface = p->alar_surface * cos(glm::radians(p->body.angle));
 
-    // Wind effect (more like a propulsion)
-    /* if (p->pos.y > win->h * 0.6f) { */
-    /*     float wind = 10.f; */
-    /*     p->acc.x += wind; */
-    /* } */
+    // TODO: the same values are calculated multiple times,
+    //       OPTIMIZE! (when you settled the mechanics)
+    float vertical_lift = vertical_alar_surface *
+                            POW2(p->vel.y) * glob->air.density *
+                            vertical_lift_coefficient(p->body.angle) * 0.5f;
+    // NOTE: Correcting the sign of `vertical_lift`
+    vertical_lift = glm::abs(vertical_lift) *
+                    glm::sign(-p->vel.y);
+
+    // TODO: the same values are calculated multiple times,
+    //       OPTIMIZE! (when you settled the mechanics)
+    float vertical_drag = vertical_alar_surface *
+                            POW2(p->vel.y) * glob->air.density *
+                            vertical_drag_coefficient(p->body.angle) * 0.5f;
+    // NOTE: Correcting the sign of `vertical_drag`
+    if ((0 < p->body.angle && p->body.angle <= 90) || // 1o quadrante
+        (180 < p->body.angle && p->body.angle <= 270) || // 3o quadrante
+        (-360 < p->body.angle && p->body.angle <= -270) || // 1o quadrante
+        (-180 < p->body.angle && p->body.angle <= -90))  { // 3o quadrante
+        vertical_drag = -glm::abs(vertical_drag) *
+                            glm::sign(p->vel.y);
+    } else {
+        vertical_drag = glm::abs(vertical_drag) *
+                            glm::sign(p->vel.y);
+    }
+
+    p->acc.y += vertical_lift;
+    p->acc.x += vertical_drag;
+
+    float horizontal_alar_surface = p->alar_surface * sin(glm::radians(p->body.angle));
+
+    // TODO: the same values are calculated multiple times,
+    //       OPTIMIZE! (when you settled the mechanics)
+    float horizontal_lift = horizontal_alar_surface *
+                            POW2(p->vel.x) * glob->air.density *
+                            horizontal_lift_coefficient(p->body.angle) * 0.5f;
+    // NOTE: Correcting the sign of `horizontal_lift`
+    if ((0 < p->body.angle && p->body.angle <= 90) ||
+        (180 < p->body.angle && p->body.angle <= 270) ||
+        (-360 < p->body.angle && p->body.angle <= -270) ||
+        (-180 < p->body.angle && p->body.angle <= -90))  {
+        horizontal_lift = glm::abs(horizontal_lift) *
+                            -glm::sign(p->vel.x);
+    } else {
+        horizontal_lift = glm::abs(horizontal_lift) *
+                            glm::sign(p->vel.x);
+    }
+
+    // TODO: the same values are calculated multiple times,
+    //       OPTIMIZE! (when you settled the mechanics)
+    float horizontal_drag = horizontal_alar_surface *
+                            POW2(p->vel.x) * glob->air.density *
+                            horizontal_drag_coefficient(p->body.angle) * 0.5f;
+    // NOTE: Correcting the sign of `horizontal_drag`
+    horizontal_drag = glm::abs(horizontal_drag) *
+                        glm::sign(-p->vel.x);
+
+    p->acc.y += horizontal_lift;
+    p->acc.x += horizontal_drag;
+
+    std::cout << "VL: " << vertical_lift <<
+    /*             ",  VD: " << vertical_drag << */
+                 ",  HL: " << horizontal_lift <<
+    /*             ",  HD: " << horizontal_drag << */
+                 std::endl;
+    // END OF AIR_RESISTANCE }}
 
     // Propulsion
     // TODO: Could this be a "powerup" or something?
@@ -97,7 +160,6 @@ void game_update(float dt) {
     // NOTE: Motion of the plane
     p->vel += p->acc * dt;
     p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
-
 
     if (rid->attached) {
 
@@ -221,15 +283,15 @@ void game_update(float dt) {
     // NOTE: Animation based on the accelleration
     if (animation_countdown < 0) {
         if (glm::abs(p->acc.y) < 20.f) {
-            animation_frame = 0.f;
+            current_animation = IDLE_ACC;
             animation_countdown = 0.25f;
         } else {
-            if (animation_frame == 1.f)
-                animation_frame = (p->acc.y > 0) ? 0.f : 1.f;
-            else if (animation_frame == 0.f)
-                animation_frame = (p->acc.y > 0) ? 2.f : 1.f;
-            else if (animation_frame == 2.f)
-                animation_frame = (p->acc.y > 0) ? 2.f : 0.f;
+            if (current_animation == UPWARDS_ACC)
+                current_animation = (p->acc.y > 0) ? IDLE_ACC : UPWARDS_ACC;
+            else if (current_animation == IDLE_ACC)
+                current_animation = (p->acc.y > 0) ? DOWNWARDS_ACC : UPWARDS_ACC;
+            else if (current_animation == 2.f)
+                current_animation = (p->acc.y > 0) ? DOWNWARDS_ACC : IDLE_ACC;
 
             animation_countdown = 0.25f;
         }
@@ -239,7 +301,6 @@ void game_update(float dt) {
 }
 
 void apply_air_resistances(PR::Plane* p) {
-
     float vertical_alar_surface = p->alar_surface * cos(glm::radians(p->body.angle));
 
     // TODO: the same values are calculated multiple times,
@@ -357,10 +418,9 @@ void game_draw(void) {
 
     // NOTE: Rendering plane texture
     quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                              texcoords_in_texture_space(animation_frame * 32.f, 0.f,
+                              texcoords_in_texture_space(current_animation * 32.f, 0.f,
                                                          32.f, 8.f,
                                                          &glob->rend.global_sprite));
 
     quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
-
 }

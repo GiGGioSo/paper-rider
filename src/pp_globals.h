@@ -69,7 +69,7 @@ struct PR {
     };
     Rider rider;
 
-    Rect obstacles[64];
+    Rect obstacles[300];
 
     InputController input;
 
