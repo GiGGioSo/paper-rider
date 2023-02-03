@@ -31,7 +31,7 @@ struct PR {
         glm::mat4 ortho_proj;
         RendererQuad quad_renderer;
 
-        Shader shaders[6];
+        Shader shaders[2];
 
         Texture global_sprite;
     };

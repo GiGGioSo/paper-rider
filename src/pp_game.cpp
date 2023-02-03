@@ -121,7 +121,7 @@ void game_update(float dt) {
         if (input->jump) {
             rid->attached = false;
             rid->base_velocity = p->vel.x;
-            rid->vel.y = -400.f;
+            rid->vel.y = p->vel.y - 400.f;
             rid->jump_time_elapsed = 0.f;
         }
     } else {
