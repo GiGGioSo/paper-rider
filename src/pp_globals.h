@@ -22,6 +22,13 @@ struct PR {
         glm::vec2 vel;
         glm::vec2 acc;
 
+        enum animation_state {
+            IDLE_ACC = 0,
+            UPWARDS_ACC = 1,
+            DOWNWARDS_ACC = 2
+        } current_animation;
+        float animation_countdown;
+
         float mass;
         float alar_surface;
     };
@@ -72,6 +79,12 @@ struct PR {
     Rect obstacles[300];
 
     InputController input;
+
+    enum game_state {
+        MENU = 0,
+        LEVEL1 = 1
+    };
+    game_state current_state;
 
     struct WinInfo {
         unsigned int w;

@@ -12,13 +12,19 @@ struct InputController {
     //       Another solution could be:
     //        - Vertical joystick movement for the plane
     //        - Horizontal joystick movement for the rider
+
+    // NOTE: Global
+    bool exit;
+
+    // NOTE: Gameplay
     float left_right;
     bool boost;
-    bool reset;
-
     bool jump;
 
-    // Debug
+    // NOTE: Menu
+    bool play;
+
+    // NOTE: Debug
     bool toggle_debug;
 };
 

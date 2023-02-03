@@ -4,16 +4,26 @@
 #include <iostream>
 
 void input_controller_update(GLFWwindow *window, InputController* input) {
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
 
-    // reset all to false
-    input->reset = false;
+    // NOTE: Multiple values might be set based off the same keys.
+    //       This could happen because a menu action has the
+    //          same keybinding as a gameplay one.
+
+    // reset all to default
+    // Global
+    input->exit = false;
+    // Gameplay
     input->boost = false;
-    input->toggle_debug = false;
     input->left_right = 0.f;
     input->jump = false;
+    // Menu
+    input->play = false;
+    // Debug
+    input->toggle_debug = false;
+
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        input->exit = true;
+    }
 
     // Fetching controller input
     // ANALOGICO
@@ -86,6 +96,10 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
             /* dpad_left = buttons[16] == GLFW_PRESS; */
             dpad_down = buttons[15] == GLFW_PRESS;
         }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        input->play = true;
     }
 
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||

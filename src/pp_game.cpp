@@ -36,24 +36,29 @@ int fps_to_display;
 int fps_counter;
 float time_from_last_fps_update;
 
-enum animation_state {
-    IDLE_ACC = 0,
-    UPWARDS_ACC = 1,
-    DOWNWARDS_ACC = 2
-};
-animation_state current_animation = IDLE_ACC;
-float animation_countdown = 0.f;
+void menu_update(float dt) {
+    InputController *input = &glob->input;
 
-void game_update(float dt) {
-    fps_counter++;
-    time_from_last_fps_update += dt;
-    if (time_from_last_fps_update > 1.f) {
-        fps_to_display = fps_counter;
-        fps_counter = 0;
-        time_from_last_fps_update -= 1.f;
-
-        std::cout << "FPS: " << fps_to_display << std::endl;
+    if (input->play) {
+        glob->current_state = PR::LEVEL1;
     }
+    return; 
+}
+
+void menu_draw(void) {
+    PR::WinInfo *win = &glob->window;
+
+    quad_render_add_queue(win->w * 0.5f, win->h * 0.5f,
+                          win->w * 0.5f, win->h * 0.3f,
+                          0.f,
+                          glm::vec4(1.f, 0.f, 0.f, 1.f),
+                          true);
+
+    quad_render_draw(glob->rend.shaders[0]);
+    return;
+}
+
+void level1_update(float dt) {
 
     PR::WinInfo *win = &glob->window;
     PR::Plane *p = &glob->plane;
@@ -63,81 +68,21 @@ void game_update(float dt) {
 
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
-    // NOTE: Update input
-    input_controller_update(win->glfw_win, &glob->input);
+    fps_counter++;
+    time_from_last_fps_update += dt;
+    if (time_from_last_fps_update > 1.f) {
+        fps_to_display = fps_counter;
+        fps_counter = 0;
+        time_from_last_fps_update -= 1.f;
+
+        if (input->toggle_debug)
+            std::cout << "FPS: " << fps_to_display << std::endl;
+    }
 
     // NOTE: Reset the accelleration for it to be recalculated
     p->acc *= 0;
 
-    // {{ AIR_RESISTANCE
-    float vertical_alar_surface = p->alar_surface * cos(glm::radians(p->body.angle));
-
-    // TODO: the same values are calculated multiple times,
-    //       OPTIMIZE! (when you settled the mechanics)
-    float vertical_lift = vertical_alar_surface *
-                            POW2(p->vel.y) * glob->air.density *
-                            vertical_lift_coefficient(p->body.angle) * 0.5f;
-    // NOTE: Correcting the sign of `vertical_lift`
-    vertical_lift = glm::abs(vertical_lift) *
-                    glm::sign(-p->vel.y);
-
-    // TODO: the same values are calculated multiple times,
-    //       OPTIMIZE! (when you settled the mechanics)
-    float vertical_drag = vertical_alar_surface *
-                            POW2(p->vel.y) * glob->air.density *
-                            vertical_drag_coefficient(p->body.angle) * 0.5f;
-    // NOTE: Correcting the sign of `vertical_drag`
-    if ((0 < p->body.angle && p->body.angle <= 90) || // 1o quadrante
-        (180 < p->body.angle && p->body.angle <= 270) || // 3o quadrante
-        (-360 < p->body.angle && p->body.angle <= -270) || // 1o quadrante
-        (-180 < p->body.angle && p->body.angle <= -90))  { // 3o quadrante
-        vertical_drag = -glm::abs(vertical_drag) *
-                            glm::sign(p->vel.y);
-    } else {
-        vertical_drag = glm::abs(vertical_drag) *
-                            glm::sign(p->vel.y);
-    }
-
-    p->acc.y += vertical_lift;
-    p->acc.x += vertical_drag;
-
-    float horizontal_alar_surface = p->alar_surface * sin(glm::radians(p->body.angle));
-
-    // TODO: the same values are calculated multiple times,
-    //       OPTIMIZE! (when you settled the mechanics)
-    float horizontal_lift = horizontal_alar_surface *
-                            POW2(p->vel.x) * glob->air.density *
-                            horizontal_lift_coefficient(p->body.angle) * 0.5f;
-    // NOTE: Correcting the sign of `horizontal_lift`
-    if ((0 < p->body.angle && p->body.angle <= 90) ||
-        (180 < p->body.angle && p->body.angle <= 270) ||
-        (-360 < p->body.angle && p->body.angle <= -270) ||
-        (-180 < p->body.angle && p->body.angle <= -90))  {
-        horizontal_lift = glm::abs(horizontal_lift) *
-                            -glm::sign(p->vel.x);
-    } else {
-        horizontal_lift = glm::abs(horizontal_lift) *
-                            glm::sign(p->vel.x);
-    }
-
-    // TODO: the same values are calculated multiple times,
-    //       OPTIMIZE! (when you settled the mechanics)
-    float horizontal_drag = horizontal_alar_surface *
-                            POW2(p->vel.x) * glob->air.density *
-                            horizontal_drag_coefficient(p->body.angle) * 0.5f;
-    // NOTE: Correcting the sign of `horizontal_drag`
-    horizontal_drag = glm::abs(horizontal_drag) *
-                        glm::sign(-p->vel.x);
-
-    p->acc.y += horizontal_lift;
-    p->acc.x += horizontal_drag;
-
-    std::cout << "VL: " << vertical_lift <<
-    /*             ",  VD: " << vertical_drag << */
-                 ",  HL: " << horizontal_lift <<
-    /*             ",  HD: " << horizontal_drag << */
-                 std::endl;
-    // END OF AIR_RESISTANCE }}
+    apply_air_resistances(p);
 
     // Propulsion
     // TODO: Could this be a "powerup" or something?
@@ -241,12 +186,18 @@ void game_update(float dt) {
         if (rect_are_colliding(&p->body, obs)) {
             // NOTE: Plane colliding with an obstacle
 
-            std::cout << "Plane collided with " << obs_index << std::endl;
+            glob->current_state = PR::MENU;
+
+            if (input->toggle_debug)
+                std::cout << "Plane collided with " << obs_index << std::endl;
         }
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
 
-            std::cout << "Rider collided with " << obs_index << std::endl;
+            glob->current_state = PR::MENU;
+
+            if (input->toggle_debug)
+                std::cout << "Rider collided with " << obs_index << std::endl;
         }
     }
 
@@ -281,23 +232,89 @@ void game_update(float dt) {
     rid->render_zone.angle = rid->body.angle;
 
     // NOTE: Animation based on the accelleration
-    if (animation_countdown < 0) {
+    if (p->animation_countdown < 0) {
         if (glm::abs(p->acc.y) < 20.f) {
-            current_animation = IDLE_ACC;
-            animation_countdown = 0.25f;
+            p->current_animation = PR::Plane::IDLE_ACC;
+            p->animation_countdown = 0.25f;
         } else {
-            if (current_animation == UPWARDS_ACC)
-                current_animation = (p->acc.y > 0) ? IDLE_ACC : UPWARDS_ACC;
-            else if (current_animation == IDLE_ACC)
-                current_animation = (p->acc.y > 0) ? DOWNWARDS_ACC : UPWARDS_ACC;
-            else if (current_animation == 2.f)
-                current_animation = (p->acc.y > 0) ? DOWNWARDS_ACC : IDLE_ACC;
+            if (p->current_animation == PR::Plane::UPWARDS_ACC)
+                p->current_animation = (p->acc.y > 0) ? PR::Plane::IDLE_ACC : PR::Plane::UPWARDS_ACC;
+            else if (p->current_animation == PR::Plane::IDLE_ACC)
+                p->current_animation = (p->acc.y > 0) ? PR::Plane::DOWNWARDS_ACC : PR::Plane::UPWARDS_ACC;
+            else if (p->current_animation == PR::Plane::DOWNWARDS_ACC)
+                p->current_animation = (p->acc.y > 0) ? PR::Plane::DOWNWARDS_ACC : PR::Plane::IDLE_ACC;
 
-            animation_countdown = 0.25f;
+            p->animation_countdown = 0.25f;
         }
     } else {
-        animation_countdown -= dt;
+        p->animation_countdown -= dt;
     }
+}
+
+void level1_draw(void) {
+    PR::Plane *p = &glob->plane;
+    PR::WinInfo *win = &glob->window;
+    PR::Camera *cam = &glob->cam;
+    PR::Rider *rid = &glob->rider;
+
+
+    // High wind zone
+    /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
+
+    // NOTE: Rendering the obstacles
+    for(int obs_index = 0;
+        obs_index < ARRAY_LENGTH(glob->obstacles);
+        obs_index++) {
+
+        Rect *obs = &glob->obstacles[obs_index];
+
+        Rect obs_in_cam_pos = rect_in_camera_space(*obs, cam);
+
+        if (obs_in_cam_pos.pos.x < -((float)win->w) ||
+            obs_in_cam_pos.pos.x > win->w * 2.f) continue;
+
+        quad_render_add_queue(obs_in_cam_pos,
+                              glm::vec4(1.f, 0.2f, 0.2f, 1.f),
+                              false);
+
+    }
+
+    // NOTE: Rendering the plane
+    quad_render_add_queue(rect_in_camera_space(p->body, cam),
+                          glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
+                          false);
+
+    // TODO: Implement the boost as an actual thing
+    glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
+    if (glob->input.boost) {
+        float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
+                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
+                    cos(glm::radians(p->render_zone.angle));
+        float by = p_cam_pos.y + p->render_zone.dim.y*0.5f +
+                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
+                    sin(glm::radians(p->render_zone.angle));
+
+        // NOTE: Rendering the boost of the plane
+        quad_render_add_queue(bx, by,
+                              p->render_zone.dim.y, p->render_zone.dim.y,
+                              p->render_zone.angle,
+                              glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
+                              true);
+    }
+
+    quad_render_add_queue(rect_in_camera_space(rid->render_zone, cam),
+                          glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
+                          false);
+
+    quad_render_draw(glob->rend.shaders[0]);
+
+    // NOTE: Rendering plane texture
+    quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
+                              texcoords_in_texture_space(p->current_animation * 32.f, 0.f,
+                                                         32.f, 8.f,
+                                                         &glob->rend.global_sprite));
+
+    quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
 }
 
 void apply_air_resistances(PR::Plane* p) {
@@ -369,58 +386,3 @@ void apply_air_resistances(PR::Plane* p) {
     /*             ",  HD: " << horizontal_drag << std::endl; */
 }
 
-void game_draw(void) {
-    PR::Plane *p = &glob->plane;
-    PR::WinInfo *win = &glob->window;
-    PR::Camera *cam = &glob->cam;
-    PR::Rider *rid = &glob->rider;
-
-
-    // High wind zone
-    /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
-
-    // NOTE: Rendering the obstacles
-    for(int obs_index = 0; obs_index < ARRAY_LENGTH(glob->obstacles); obs_index++) {
-
-        Rect *obs = &glob->obstacles[obs_index];
-
-        Rect obs_in_cam_pos = rect_in_camera_space(*obs, cam);
-
-        if (obs_in_cam_pos.pos.x < -((float)win->w) ||
-            obs_in_cam_pos.pos.x > win->w * 2.f) continue;
-
-        quad_render_add_queue(obs_in_cam_pos, glm::vec4(1.f, 0.2f, 0.2f, 1.f), false);
-
-    }
-
-    // NOTE: Rendering the plane
-    quad_render_add_queue(rect_in_camera_space(p->body, cam), glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false);
-
-    // TODO: Implement the boost as an actual thing
-    glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
-    if (glob->input.boost) {
-        float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
-                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f * cos(glm::radians(p->render_zone.angle));
-        float by = p_cam_pos.y + p->render_zone.dim.y*0.5f +
-                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f * sin(glm::radians(p->render_zone.angle));
-
-        // NOTE: Rendering the boost of the plane
-        quad_render_add_queue(bx, by,
-                              p->render_zone.dim.y, p->render_zone.dim.y,
-                              p->render_zone.angle,
-                              glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
-                              true);
-    }
-
-    quad_render_add_queue(rect_in_camera_space(rid->render_zone, cam), glm::vec4(0.0f, 0.0f, 1.0f, 1.f), false);
-
-    quad_render_draw(glob->rend.shaders[0]);
-
-    // NOTE: Rendering plane texture
-    quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                              texcoords_in_texture_space(current_animation * 32.f, 0.f,
-                                                         32.f, 8.f,
-                                                         &glob->rend.global_sprite));
-
-    quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
-}

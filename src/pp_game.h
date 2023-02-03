@@ -4,11 +4,13 @@
 #include "../include/glm/trigonometric.hpp"
 #include "pp_globals.h"
 
-void game_update(float dt);
+void menu_update(float dt);
+void menu_draw(void);
 
-void game_draw(void);
+void level1_update(float dt);
+void level1_draw(void);
 
-#define POW2(x) x * x
+#define POW2(x) (x * x)
 
 inline float lerp(float x1, float x2, float t) {
     float result = (1.f - t) * x1 + t * x2;

@@ -31,7 +31,7 @@ float delta_time = 0;
 
 int main() {
 
-    glob = (PR*) malloc(sizeof(PR) * 2.f);
+    glob = (PR*) malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
     glob->window.w = 1280;
     glob->window.h = 720;
@@ -82,9 +82,25 @@ int main() {
         glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        game_update(delta_time);
+        // NOTE: Update input
+        input_controller_update(glob->window.glfw_win, &glob->input);
+        if (glob->input.exit)
+            glfwSetWindowShouldClose(glob->window.glfw_win, true);
 
-        game_draw();
+        switch (glob->current_state) {
+            case PR::MENU:
+            {
+                menu_update(delta_time);
+                menu_draw();
+                break;
+            }
+            case PR::LEVEL1:
+            {
+                level1_update(delta_time);
+                level1_draw();
+                break;
+            }
+        }
 
         glfwSwapBuffers(glob->window.glfw_win);
         glfwPollEvents();
@@ -97,6 +113,9 @@ int main() {
 }
 
 void glob_init(void) {
+
+    glob->current_state = PR::MENU;
+
     PR::WinInfo* win = &glob->window;
 
     // Rendering
@@ -138,6 +157,8 @@ void glob_init(void) {
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
+    p->current_animation = PR::Plane::IDLE_ACC;
+    p->animation_countdown = 0.f;
 
     PR::Rider *rid = &glob->rider;
     rid->body.dim.x = 30.f;
