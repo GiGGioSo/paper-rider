@@ -100,6 +100,12 @@ int main() {
                 level1_draw();
                 break;
             }
+            case PR::LEVEL2:
+            {
+                level2_update(delta_time);
+                level2_draw();
+                break;
+            }
         }
 
         glfwSwapBuffers(glob->window.glfw_win);
@@ -138,72 +144,7 @@ void glob_init(void) {
 
     quad_render_init(&glob->rend.quad_renderer);
 
-    // Gameplay
-    PR::Plane* p = &glob->plane;
-    p->body.pos.x = 200.0f;
-    p->body.pos.y = 350.0f;
-    p->body.dim.y = 20.f;
-    p->body.dim.x = p->body.dim.y * 3.f;
-    p->body.angle = 0.f;
-    p->render_zone.dim.y = 30.f;
-    p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
-    p->render_zone.angle = p->body.angle;
-    p->vel.x = 0.f;
-    p->vel.y = 0.f;
-    p->acc.x = 0.f;
-    p->acc.y = 0.f;
-    p->mass = 0.005f; // kg
-    // TODO: The alar surface should be somewhat proportional
-    //       to the dimension of the actual rectangle
-    p->alar_surface = 0.15f; // m squared
-    p->current_animation = PR::Plane::IDLE_ACC;
-    p->animation_countdown = 0.f;
-
-    PR::Rider *rid = &glob->rider;
-    rid->body.dim.x = 30.f;
-    rid->body.dim.y = 50.f;
-    rid->body.angle = p->render_zone.angle;
-    rid->body.pos.x = p->render_zone.pos.x + (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
-                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-    rid->body.pos.y = p->render_zone.pos.y + (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
-                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
-    rid->render_zone.dim = rid->body.dim;
-    rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
-    rid->vel.x = 0.0f;
-    rid->vel.y = 0.0f;
-    rid->body.angle = p->body.angle;
-    rid->attached = true;
-    rid->mass = 0.010f;
-    rid->jump_time_elapsed = 0.f;
-    rid->air_friction_acc = 100.f;
-    rid->base_velocity = 0.f;
-    rid->input_velocity = 0.f;
-    rid->input_max_accelleration = 4000.f;
-
-    glob->cam.pos.x = p->body.pos.x;
-    glob->cam.pos.y = win->h * 0.5f;
-    glob->cam.speed_multiplier = 3.f;
-
-    // NOTE: The more this is, the less velocity is lost by turning
-    glob->air.density = 0.015f;
-
-    // NOTE: Initializing the obstacles
-    for(int i = 0; i < ARRAY_LENGTH(glob->obstacles); i++) {
-        /* std::cout << "Initializing: " << i << std::endl; */
-
-        Rect *obs = &glob->obstacles[i];
-
-        obs->pos.x = win->w * 0.8f * i;
-        obs->pos.y = win->h * 0.4f;
-
-        obs->dim.x = win->w * 0.1f;
-        obs->dim.y = win->h * 0.3f;
-
-        obs->angle = 0.0f;
-    }
+     // glob->current_level = (PR::Level *) malloc(sizeof(PR::Level));
 
 }
 

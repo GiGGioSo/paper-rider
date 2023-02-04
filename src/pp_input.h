@@ -20,9 +20,11 @@ struct InputController {
     float left_right;
     bool boost;
     bool jump;
+    bool menu;
 
     // NOTE: Menu
-    bool play;
+    bool level1;
+    bool level2;
 
     // NOTE: Debug
     bool toggle_debug;

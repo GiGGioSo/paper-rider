@@ -16,8 +16,10 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     input->boost = false;
     input->left_right = 0.f;
     input->jump = false;
+    input->menu = false;
     // Menu
-    input->play = false;
+    input->level1 = false;
+    input->level2 = false;
     // Debug
     input->toggle_debug = false;
 
@@ -98,9 +100,16 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         }
     }
 
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        input->play = true;
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+        input->level1 = true;
     }
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+        input->level2 = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+        input->menu = true;
+    }
+
 
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ||
             (c1_present && (lj_v <= -0.2f || dpad_up))) {

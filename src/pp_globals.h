@@ -32,30 +32,6 @@ struct PR {
         float mass;
         float alar_surface;
     };
-    Plane plane;
-
-    struct Rendering {
-        glm::mat4 ortho_proj;
-        RendererQuad quad_renderer;
-
-        Shader shaders[2];
-
-        Texture global_sprite;
-    };
-    Rendering rend;
-
-    struct Camera {
-        glm::vec2 pos;
-
-        float speed_multiplier;
-    };
-    Camera cam;
-
-    struct Atmosphere {
-        float density;
-    };
-    Atmosphere air;
-
     struct Rider {
         Rect body;
 
@@ -74,15 +50,45 @@ struct PR {
         bool attached;
         float jump_time_elapsed;
     };
-    Rider rider;
+    struct Camera {
+        glm::vec2 pos;
 
-    Rect obstacles[300];
+        float speed_multiplier;
+    };
+    struct Atmosphere {
+        float density;
+    };
+
+    struct Level {
+        Plane plane;
+        Camera camera;
+
+        Atmosphere air;
+        Rider rider;
+
+        size_t obstacles_number;
+        Rect *obstacles;
+        // TODO: Boost pads
+        // TODO: Coins?
+    };
+    Level current_level;
+
+    struct Rendering {
+        glm::mat4 ortho_proj;
+        RendererQuad quad_renderer;
+
+        Shader shaders[2];
+
+        Texture global_sprite;
+    };
+    Rendering rend;
 
     InputController input;
 
     enum game_state {
         MENU = 0,
-        LEVEL1 = 1
+        LEVEL1 = 1,
+        LEVEL2 = 2,
     };
     game_state current_state;
 
