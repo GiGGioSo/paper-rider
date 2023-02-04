@@ -14,6 +14,10 @@
 //  - Particle system
 //  - Sound system
 
+// TODO: Create levels, options:
+//          - from image, a pixel is mapped to an arbitrary dimension
+//          - from a file with a format specified by me
+
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
 
@@ -33,6 +37,60 @@ void apply_air_resistances(PR::Plane* p);
 int fps_to_display;
 int fps_counter;
 float time_from_last_fps_update;
+
+// TODO: A LOT of error handling
+// TODO: Sometimes crushes, understand why
+int load_map_from_file(const char *file_path,
+                       Rect **obstacles,
+                       size_t *number_of_obstacles) {
+    FILE *map_file = std::fopen(file_path, "r");
+    if (!map_file) {
+        std::cout << "Could not open " << file_path << std::endl;
+    }
+
+    std::fscanf(map_file, "%i", number_of_obstacles);
+
+    if (std::ferror(map_file)) {
+        std::fclose(map_file);
+        return 1;
+    }
+
+    *obstacles = (Rect *) malloc(sizeof(Rect) * *number_of_obstacles);
+
+    for (size_t obstacle_index = 0;
+         obstacle_index < *number_of_obstacles;
+         ++obstacle_index) {
+
+        int x, y, w, h, r;
+
+        std::fscanf(map_file, " %i %i %i %i %i", &x, &y, &w, &h, &r);
+
+        if (std::ferror(map_file)) {
+            std::fclose(map_file);
+            return 1;
+        } else
+        if (std::feof(map_file)) {
+            std::fclose(map_file);
+            return 1;
+        }
+
+        Rect *rec = *obstacles + obstacle_index;
+        rec->pos.x = x;
+        rec->pos.y = y;
+        rec->dim.x = w;
+        rec->dim.y = h;
+        rec->angle = r;
+
+        std::cout << "x: " << x
+                  << " y: " << y
+                  << " w: " << w
+                  << " h: " << h
+                  << " r: " << r
+                  << std::endl;
+    }
+    std::fclose(map_file);
+    return 0;
+}
 
 void menu_update(float dt) {
     InputController *input = &glob->input;
@@ -463,23 +521,12 @@ void level2_prepare(PR::Level *level) {
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
 
-    level->obstacles_number = 50;
-    level->obstacles = (Rect *) malloc(sizeof(Rect) * level->obstacles_number);
+    level->obstacles_number = 0;
 
-    for(int obstacle_index = 0;
-        obstacle_index < level->obstacles_number;
-        obstacle_index++) {
+    load_map_from_file("test_map.prmap",
+                       &level->obstacles,
+                       &level->obstacles_number);
 
-        Rect *obs = level->obstacles + obstacle_index;
-
-        obs->pos.x = win->w * 1.0f * obstacle_index;
-        obs->pos.y = win->h * 0.4f;
-
-        obs->dim.x = win->w * 0.15f;
-        obs->dim.y = win->h * 0.2f;
-
-        obs->angle = 0.0f;
-    }
 }
 
 void level2_update(float dt) {

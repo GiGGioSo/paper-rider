@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <cstdio>
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window,
@@ -28,6 +29,7 @@ void glob_free();
 float last_frame = 0;
 float this_frame = 0;
 float delta_time = 0;
+
 
 int main() {
 
