@@ -1,7 +1,7 @@
 #include <cassert>
 #include <math.h>
 #include <iostream>
-#include <cstdio>
+#include <stdio.h>
 #include <errno.h>
 
 #include "pp_game.h"
@@ -31,15 +31,11 @@
 // TODO: Will this always be some arbitrary numbers that kind of just works? YES!!
 #define GRAVITY (9.81f * 50.f)
 
-#define PLANE_VELOCITY_LIMIT (800.f)
-#define RIDER_VELOCITY_Y_LIMIT (500.f)
+#define PLANE_VELOCITY_LIMIT (1000.f)
+#define RIDER_VELOCITY_Y_LIMIT (600.f)
 #define RIDER_INPUT_VELOCITY_LIMIT (400.f)
 
 void apply_air_resistances(PR::Plane* p);
-
-int fps_to_display;
-int fps_counter;
-float time_from_last_fps_update;
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
@@ -50,11 +46,12 @@ int load_map_from_file(const char *file_path,
     int result = 0;
     FILE *map_file;
 
+
     {
         map_file = std::fopen(file_path, "r");
         if (map_file == NULL) return_defer(errno);
 
-        std::fscanf(map_file, "%i", number_of_obstacles);
+        std::fscanf(map_file, "%zu", number_of_obstacles);
         if (std::ferror(map_file)) return_defer(errno);
 
         *obstacles = (Rect *) malloc(sizeof(Rect) * *number_of_obstacles);
@@ -88,8 +85,7 @@ int load_map_from_file(const char *file_path,
             }
         }
     }
-
-defer:
+    defer:
     if (map_file) std::fclose(map_file);
     return result;
 }
@@ -98,12 +94,12 @@ void menu_update(float dt) {
     InputController *input = &glob->input;
 
     if (input->level1) {
-        level1_prepare(&glob->current_level);
-        glob->current_state = PR::LEVEL1;
+        int preparation_result = level1_prepare(&glob->current_level);
+        if (preparation_result == 0) glob->current_state = PR::LEVEL1;
     } else
     if (input->level2) {
-        level2_prepare(&glob->current_level);
-        glob->current_state = PR::LEVEL2;
+        int preparation_result = level2_prepare(&glob->current_level);
+        if (preparation_result == 0) glob->current_state = PR::LEVEL2;
     }
     return; 
 }
@@ -122,7 +118,7 @@ void menu_draw(void) {
 }
 
 
-void level1_prepare(PR::Level *level) {
+int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
 
     PR::Plane *p = &level->plane;
@@ -194,6 +190,8 @@ void level1_prepare(PR::Level *level) {
 
         obs->angle = 0.0f;
     }
+
+    return 0;
 }
 
 void level1_update(float dt) {
@@ -213,17 +211,6 @@ void level1_update(float dt) {
     if (input->menu) {
         free(obstacles);
         glob->current_state = PR::MENU;
-    }
-
-    fps_counter++;
-    time_from_last_fps_update += dt;
-    if (time_from_last_fps_update > 1.f) {
-        fps_to_display = fps_counter;
-        fps_counter = 0;
-        time_from_last_fps_update -= 1.f;
-
-        if (input->toggle_debug)
-            std::cout << "FPS: " << fps_to_display << std::endl;
     }
 
     // NOTE: Reset the accelleration for it to be recalculated
@@ -336,8 +323,8 @@ void level1_update(float dt) {
             free(obstacles);
             glob->current_state = PR::MENU;
 
-            if (input->toggle_debug)
-                std::cout << "Plane collided with " << obstacle_index << std::endl;
+            // TODO: Debug flag
+            std::cout << "Plane collided with " << obstacle_index << std::endl;
         }
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
@@ -345,8 +332,8 @@ void level1_update(float dt) {
             free(obstacles);
             glob->current_state = PR::MENU;
 
-            if (input->toggle_debug)
-                std::cout << "Rider collided with " << obstacle_index << std::endl;
+            // TODO: Debug flag
+            std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
 
@@ -468,10 +455,15 @@ void level1_draw(void) {
     quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
 }
 
-void level2_prepare(PR::Level *level) {
-    PR::WinInfo *win = &glob->window;
+int level2_prepare(PR::Level *level) {
+    int loading_result = load_map_from_file("level2.prmap",
+                                            &level->obstacles,
+                                            &level->obstacles_number);
+    if (loading_result != 0) return loading_result;
 
+    PR::WinInfo *win = &glob->window;
     PR::Plane *p = &level->plane;
+
     p->body.pos.x = 200.0f;
     p->body.pos.y = 350.0f;
     p->body.dim.y = 40.f;
@@ -523,14 +515,7 @@ void level2_prepare(PR::Level *level) {
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
 
-    level->obstacles_number = 0;
-
-    // TODO: I should load this before changing the level.
-    //       This way I can stay in the menu if something fails.
-    load_map_from_file("test_map.prmap",
-                       &level->obstacles,
-                       &level->obstacles_number);
-
+    return 0;
 }
 
 void level2_update(float dt) {
@@ -550,17 +535,6 @@ void level2_update(float dt) {
     if (input->menu) {
         free(obstacles);
         glob->current_state = PR::MENU;
-    }
-
-    fps_counter++;
-    time_from_last_fps_update += dt;
-    if (time_from_last_fps_update > 1.f) {
-        fps_to_display = fps_counter;
-        fps_counter = 0;
-        time_from_last_fps_update -= 1.f;
-
-        if (input->toggle_debug)
-            std::cout << "FPS: " << fps_to_display << std::endl;
     }
 
     // NOTE: Reset the accelleration for it to be recalculated
@@ -673,8 +647,8 @@ void level2_update(float dt) {
             free(glob->current_level.obstacles);
             glob->current_state = PR::MENU;
 
-            if (input->toggle_debug)
-                std::cout << "Plane collided with " << obstacle_index << std::endl;
+            // TODO: Debug flag
+            std::cout << "Plane collided with " << obstacle_index << std::endl;
         }
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
@@ -682,8 +656,8 @@ void level2_update(float dt) {
             free(glob->current_level.obstacles);
             glob->current_state = PR::MENU;
 
-            if (input->toggle_debug)
-                std::cout << "Rider collided with " << obstacle_index << std::endl;
+            // TODO: Debug flag
+            std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
 

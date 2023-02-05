@@ -4,6 +4,7 @@ SetLocal EnableDelayedExpansion
 SET CFLAGS=-ggdb -Wall
 SET LIBS=-LC:\dev\paper-rider\lib -lUser32.lib -lGdi32.lib -lShell32.lib -lmsvcrt.lib -lopengl32.lib -lglfw3.lib
 SET INCLUDES=-IC:\dev\paper-rider\include
+SET PREPROCESSOR_DEFINITIONS=-D _CRT_SECURE_NO_WARNINGS
 
 SET EXE=.\bin\paper.exe
 
@@ -18,4 +19,4 @@ MKDIR bin
 ECHO Compiling the following sources:
 ECHO %SRCS_FILES%
 
-clang++ %SRCS_FILES% %CFLAGS% -o %EXE% %INCLUDES% %LIBS%
+clang++ %PREPROCESSOR_DEFINITIONS% %SRCS_FILES% %CFLAGS% -o %EXE% %INCLUDES% %LIBS%
