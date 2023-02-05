@@ -1,12 +1,15 @@
+#include <cassert>
+#include <math.h>
+#include <iostream>
+#include <cstdio>
+#include <errno.h>
+
 #include "pp_game.h"
 #include "pp_globals.h"
 #include "pp_input.h"
 #include "pp_quad_renderer.h"
 #include "pp_rect.h"
 
-#include <cassert>
-#include <math.h>
-#include <iostream>
 
 // TODO:
 //  - Proper wind
@@ -38,58 +41,57 @@ int fps_to_display;
 int fps_counter;
 float time_from_last_fps_update;
 
-// TODO: A LOT of error handling
-// TODO: Sometimes crushes, understand why
+#define return_defer(ret) do { result = ret; goto defer; } while(0)
+
 int load_map_from_file(const char *file_path,
                        Rect **obstacles,
                        size_t *number_of_obstacles) {
-    FILE *map_file = std::fopen(file_path, "r");
-    if (!map_file) {
-        std::cout << "Could not open " << file_path << std::endl;
-    }
+    
+    int result = 0;
+    FILE *map_file;
 
-    std::fscanf(map_file, "%i", number_of_obstacles);
+    {
+        map_file = std::fopen(file_path, "r");
+        if (map_file == NULL) return_defer(errno);
 
-    if (std::ferror(map_file)) {
-        std::fclose(map_file);
-        return 1;
-    }
+        std::fscanf(map_file, "%i", number_of_obstacles);
+        if (std::ferror(map_file)) return_defer(errno);
 
-    *obstacles = (Rect *) malloc(sizeof(Rect) * *number_of_obstacles);
+        *obstacles = (Rect *) malloc(sizeof(Rect) * *number_of_obstacles);
 
-    for (size_t obstacle_index = 0;
-         obstacle_index < *number_of_obstacles;
-         ++obstacle_index) {
+        for (size_t obstacle_index = 0;
+             obstacle_index < *number_of_obstacles;
+             ++obstacle_index) {
 
-        int x, y, w, h, r;
+            int x, y, w, h, r;
 
-        std::fscanf(map_file, " %i %i %i %i %i", &x, &y, &w, &h, &r);
+            std::fscanf(map_file, " %i %i %i %i %i", &x, &y, &w, &h, &r);
+            if (std::ferror(map_file)) return_defer(errno);
 
-        if (std::ferror(map_file)) {
-            std::fclose(map_file);
-            return 1;
-        } else
-        if (std::feof(map_file)) {
-            std::fclose(map_file);
-            return 1;
+            Rect *rec = *obstacles + obstacle_index;
+            rec->pos.x = x;
+            rec->pos.y = y;
+            rec->dim.x = w;
+            rec->dim.y = h;
+            rec->angle = r;
+
+            std::cout << "x: " << x
+                      << " y: " << y
+                      << " w: " << w
+                      << " h: " << h
+                      << " r: " << r
+                      << std::endl;
+
+            if (std::feof(map_file)) {
+                *number_of_obstacles = obstacle_index;
+                return_defer(errno);
+            }
         }
-
-        Rect *rec = *obstacles + obstacle_index;
-        rec->pos.x = x;
-        rec->pos.y = y;
-        rec->dim.x = w;
-        rec->dim.y = h;
-        rec->angle = r;
-
-        std::cout << "x: " << x
-                  << " y: " << y
-                  << " w: " << w
-                  << " h: " << h
-                  << " r: " << r
-                  << std::endl;
     }
-    std::fclose(map_file);
-    return 0;
+
+defer:
+    if (map_file) std::fclose(map_file);
+    return result;
 }
 
 void menu_update(float dt) {
@@ -523,6 +525,8 @@ void level2_prepare(PR::Level *level) {
 
     level->obstacles_number = 0;
 
+    // TODO: I should load this before changing the level.
+    //       This way I can stay in the menu if something fails.
     load_map_from_file("test_map.prmap",
                        &level->obstacles,
                        &level->obstacles_number);
