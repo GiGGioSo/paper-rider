@@ -10,7 +10,6 @@
 
 #include <iostream>
 #include <math.h>
-#include <cstdio>
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window,
@@ -30,9 +29,11 @@ float last_frame = 0;
 float this_frame = 0;
 float delta_time = 0;
 
+int fps_to_display;
+int fps_counter;
+float time_from_last_fps_update;
 
 int main() {
-
     glob = (PR*) malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
     glob->window.w = 1280;
@@ -80,6 +81,16 @@ int main() {
         delta_time = this_frame - last_frame;
         last_frame = this_frame;
 
+        fps_counter++;
+        time_from_last_fps_update += delta_time;
+        if (time_from_last_fps_update > 1.f) {
+            fps_to_display = fps_counter;
+            fps_counter = 0;
+            time_from_last_fps_update -= 1.f;
+
+            // TODO: Debug flag
+            std::cout << "FPS: " << fps_to_display << std::endl;
+        }
 
         glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

@@ -7,11 +7,11 @@
 void menu_update(float dt);
 void menu_draw(void);
 
-void level1_prepare(PR::Level *level);
+int level1_prepare(PR::Level *level);
 void level1_update(float dt);
 void level1_draw(void);
 
-void level2_prepare(PR::Level *level);
+int level2_prepare(PR::Level *level);
 void level2_update(float dt);
 void level2_draw(void);
 
