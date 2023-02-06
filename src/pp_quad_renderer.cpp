@@ -7,7 +7,7 @@
 #include <iostream>
 #include <math.h>
 
-#define PP_MAX_UNICOLOR_QUADS 500
+#define PP_MAX_UNICOLOR_QUADS 5000
 
 #define PP_MAX_TEXTURED_QUADS 10
 

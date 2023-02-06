@@ -1,3 +1,8 @@
+#include <iostream>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+
 #include "../include/glad/glad.h"
 #include "../include/glfw3.h"
 #include "../include/glm/ext.hpp"
@@ -7,9 +12,6 @@
 #include "pp_quad_renderer.h"
 #include "pp_game.h"
 #include "pp_texturer.h"
-
-#include <iostream>
-#include <math.h>
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window,
@@ -34,6 +36,9 @@ int fps_counter;
 float time_from_last_fps_update;
 
 int main() {
+
+    srand(time(NULL));
+
     glob = (PR*) malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
     glob->window.w = 1280;
@@ -110,13 +115,13 @@ int main() {
             case PR::LEVEL1:
             {
                 level1_update(delta_time);
-                level1_draw();
+                level1_draw(delta_time);
                 break;
             }
             case PR::LEVEL2:
             {
                 level2_update(delta_time);
-                level2_draw();
+                level2_draw(delta_time);
                 break;
             }
         }

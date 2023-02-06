@@ -9,11 +9,11 @@ void menu_draw(void);
 
 int level1_prepare(PR::Level *level);
 void level1_update(float dt);
-void level1_draw(void);
+void level1_draw(float dt);
 
 int level2_prepare(PR::Level *level);
 void level2_update(float dt);
-void level2_draw(void);
+void level2_draw(float dt);
 
 #define POW2(x) (x * x)
 

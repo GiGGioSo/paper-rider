@@ -17,10 +17,6 @@
 //  - Particle system
 //  - Sound system
 
-// TODO: Create levels, options:
-//          - from image, a pixel is mapped to an arbitrary dimension
-//          - from a file with a format specified by me
-
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
 
@@ -46,13 +42,16 @@ int load_map_from_file(const char *file_path,
     int result = 0;
     FILE *map_file;
 
-
     {
         map_file = std::fopen(file_path, "r");
         if (map_file == NULL) return_defer(errno);
 
         std::fscanf(map_file, "%zu", number_of_obstacles);
         if (std::ferror(map_file)) return_defer(errno);
+
+        std::cout << "Loading " << *number_of_obstacles
+                  << " obstacles from the file " << file_path
+                  << std::endl;
 
         *obstacles = (Rect *) malloc(sizeof(Rect) * *number_of_obstacles);
 
@@ -118,7 +117,45 @@ void menu_draw(void) {
 }
 
 
+struct Particle {
+    Rect body;
+    glm::vec2 vel;
+    glm::vec4 color;
+};
+
+struct ParticleSystem {
+    Particle particles[200];
+    int current_particle = 0;
+    float time_between_particles = 0.05f;
+    float time_elapsed;
+};
+
+ParticleSystem ps;
+
+
 int level1_prepare(PR::Level *level) {
+#if 0
+    for (size_t particle_index = 0;
+         particle_index < ARRAY_LENGTH(ps.particles);
+         ++particle_index) {
+
+        Particle *particle = &ps.particles[particle_index];
+
+        particle->body.pos.x = 0.f;
+        particle->body.pos.y = 0.f;
+        particle->body.angle = 0.f;
+
+        particle->vel.x = 0.f;
+        particle->vel.y = 0.f;
+
+        particle->color.r = 1.0f;
+        particle->color.g = 0.0f;
+        particle->color.b = 0.0f;
+        particle->color.a = 1.0f;
+
+    }
+#endif
+
     PR::WinInfo *win = &glob->window;
 
     PR::Plane *p = &level->plane;
@@ -249,13 +286,13 @@ void level1_update(float dt) {
             p->body.angle += 150.f * -input->left_right * dt;
         }
 
-        rid->body.angle = p->render_zone.angle;
-        rid->body.pos.x = p->render_zone.pos.x + (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-                    (p->render_zone.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
-                    (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-        rid->body.pos.y = p->render_zone.pos.y + (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-                    (p->render_zone.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
-                    (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+        rid->body.angle = p->body.angle;
+        rid->body.pos.x = p->body.pos.x + (p->body.dim.x - rid->body.dim.x)*0.5f -
+                    (p->body.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
+                    (p->body.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+        rid->body.pos.y = p->body.pos.y + (p->body.dim.y - rid->body.dim.y)*0.5f -
+                    (p->body.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
+                    (p->body.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
 
 
         // NOTE: If the rider is attached, make it jump
@@ -387,7 +424,7 @@ void level1_update(float dt) {
     }
 }
 
-void level1_draw(void) {
+void level1_draw(float dt) {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
@@ -395,6 +432,41 @@ void level1_draw(void) {
     Rect *obstacles = glob->current_level.obstacles;
 
     PR::WinInfo *win = &glob->window;
+
+    ps.time_between_particles = lerp(0.02f, 0.005f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
+
+    ps.time_elapsed += dt;
+    if (ps.time_elapsed > ps.time_between_particles) {
+        ps.time_elapsed -= ps.time_between_particles;
+
+        Particle *particle = &ps.particles[ps.current_particle++];
+        ps.current_particle = ps.current_particle % ARRAY_LENGTH(ps.particles);
+
+        particle->body.pos = p->body.pos + p->body.dim * 0.5f;
+        particle->body.dim.x = 10.f;
+        particle->body.dim.y = 10.f;
+        particle->color.r = 1.0f;
+        particle->color.g = 1.0f;
+        particle->color.b = 1.0f;
+        particle->color.a = 1.0f;
+        float movement_angle = glm::radians(p->body.angle);
+        particle->vel.x = (glm::length(p->vel) - 400.f) * cos(movement_angle) + (float)((rand() % 101) - 50);
+        particle->vel.y = -(glm::length(p->vel) - 400.f) * sin(movement_angle) + (float)((rand() % 101) - 50);
+    }
+
+    for (size_t particle_index = 0;
+         particle_index < ARRAY_LENGTH(ps.particles);
+         ++particle_index) {
+
+        Particle *particle = &ps.particles[particle_index];
+
+        particle->vel *= (1.f - dt); 
+        particle->color.a -= particle->color.a * dt * 3.0f;
+        particle->body.pos += particle->vel * dt;
+
+        quad_render_add_queue(rect_in_camera_space(particle->body, cam),
+                             particle->color, true);
+    }
 
     // High wind zone
     /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
@@ -464,12 +536,12 @@ int level2_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
     PR::Plane *p = &level->plane;
 
-    p->body.pos.x = 200.0f;
-    p->body.pos.y = 350.0f;
-    p->body.dim.y = 40.f;
+    p->body.pos.x = 100.0f;
+    p->body.pos.y = 0.0f;
+    p->body.dim.y = 30.f;
     p->body.dim.x = p->body.dim.y * 3.f;
     p->body.angle = 0.f;
-    p->render_zone.dim.y = 40.f;
+    p->render_zone.dim.y = 30.f;
     p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
     p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
     p->render_zone.angle = p->body.angle;
@@ -711,7 +783,7 @@ void level2_update(float dt) {
     }
 }
 
-void level2_draw(void) {
+void level2_draw(float dt) {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
