@@ -28,6 +28,11 @@ struct InputController {
 
     // NOTE: Debug
     bool toggle_debug;
+
+    bool up;
+    bool down;
+    bool left;
+    bool right;
 };
 
 /* Updates the InputController global struct

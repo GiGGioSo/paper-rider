@@ -37,7 +37,9 @@ void apply_air_resistances(PR::Plane* p);
 
 int load_map_from_file(const char *file_path,
                        Rect **obstacles,
-                       size_t *number_of_obstacles) {
+                       size_t *number_of_obstacles,
+                       PR::BoostPad **boosts,
+                       size_t *number_of_boosts) {
     
     int result = 0;
     FILE *map_file;
@@ -46,7 +48,7 @@ int load_map_from_file(const char *file_path,
         map_file = std::fopen(file_path, "r");
         if (map_file == NULL) return_defer(errno);
 
-        std::fscanf(map_file, "%zu", number_of_obstacles);
+        std::fscanf(map_file, " %zu", number_of_obstacles);
         if (std::ferror(map_file)) return_defer(errno);
 
         std::cout << "Loading " << *number_of_obstacles
@@ -59,9 +61,11 @@ int load_map_from_file(const char *file_path,
              obstacle_index < *number_of_obstacles;
              ++obstacle_index) {
 
-            int x, y, w, h, r;
+            float x, y, w, h, r;
 
-            std::fscanf(map_file, " %i %i %i %i %i", &x, &y, &w, &h, &r);
+            std::fscanf(map_file,
+                        " %f %f %f %f %f",
+                        &x, &y, &w, &h, &r);
             if (std::ferror(map_file)) return_defer(errno);
 
             Rect *rec = *obstacles + obstacle_index;
@@ -83,7 +87,61 @@ int load_map_from_file(const char *file_path,
                 return_defer(errno);
             }
         }
+
+        // NOTE: Loading the boosts from memory
+        std::fscanf(map_file, " %zu", number_of_boosts);
+        if (std::ferror(map_file)) return_defer(errno);
+
+        std::cout << "[LOADING] " << *number_of_boosts
+                  << " boost pads from file " << file_path
+                  << std::endl;
+
+        *boosts = (PR::BoostPad *) malloc(sizeof(PR::BoostPad) *
+                                   *number_of_boosts);
+
+        for(size_t boost_index = 0;
+            boost_index < *number_of_boosts;
+            ++boost_index) {
+            
+            float x, y, w, h, r, ba, bp;
+
+            std::fscanf(map_file,
+                        " %f %f %f %f %f %f %f",
+                        &x, &y, &w, &h, &r, &ba, &bp);
+            if (std::ferror(map_file)) return_defer(errno);
+
+            PR::BoostPad *pad = *boosts + boost_index;
+            pad->body.pos.x = x;
+            pad->body.pos.y = y;
+            pad->body.dim.x = w;
+            pad->body.dim.y = h;
+            pad->body.angle = r;
+            pad->boost_angle = ba;
+            pad->boost_power = bp;
+
+            pad->col.r = 0.f;
+            pad->col.g = 1.f;
+            pad->col.b = 0.f;
+            pad->col.a = 1.f;
+
+            std::cout << "x: " << x
+                      << " y: " << y
+                      << " w: " << w
+                      << " h: " << h
+                      << " r: " << r
+                      << " ba: " << ba
+                      << " bp: " << bp
+                      << std::endl;
+
+            if (std::feof(map_file)) {
+                *number_of_boosts = boost_index;
+                return_defer(errno);
+            }
+
+        }
+
     }
+
     defer:
     if (map_file) std::fclose(map_file);
     return result;
@@ -225,9 +283,9 @@ int level1_prepare(PR::Level *level) {
         pad->body.pos.y = 300.f;
         pad->body.dim.x = 700.f;
         pad->body.dim.y = 200.f;
-        pad->body.angle = 0.f;
+        pad->body.angle = 40.f;
         pad->boost_angle = pad->body.angle;
-        pad->boost_power = 2.f;
+        pad->boost_power = 20.f;
 
         pad->col.r = 0.f;
         pad->col.g = 1.f;
@@ -285,9 +343,9 @@ void level1_update(float dt) {
         if (rect_are_colliding(&p->body, &pad->body)) {
 
             p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
-            p->acc.y += pad->boost_power * sin(glm::radians(pad->boost_angle));
+            p->acc.y += pad->boost_power * -sin(glm::radians(pad->boost_angle));
 
-            std::cout << "BOOOST!!! against " << boost_index << std::endl;
+            // std::cout << "BOOOST!!! against " << boost_index << std::endl;
         }
     }
 
@@ -300,7 +358,14 @@ void level1_update(float dt) {
 
     // NOTE: Motion of the plane
     p->vel += p->acc * dt;
+
     p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
+    // DEBUG
+    // float vel = 300.f;
+    // if (input->up) p->body.pos.y -= vel * dt;
+    // if (input->down) p->body.pos.y += vel * dt;
+    // if (input->left) p->body.pos.x -= vel * dt;
+    // if (input->right) p->body.pos.x += vel * dt;
 
     if (rid->attached) {
 
@@ -577,7 +642,9 @@ void level1_draw(float dt) {
 int level2_prepare(PR::Level *level) {
     int loading_result = load_map_from_file("level2.prmap",
                                             &level->obstacles,
-                                            &level->obstacles_number);
+                                            &level->obstacles_number,
+                                            &level->boosts,
+                                            &level->boosts_number);
     if (loading_result != 0) return loading_result;
 
     PR::WinInfo *win = &glob->window;
@@ -585,7 +652,7 @@ int level2_prepare(PR::Level *level) {
 
     p->body.pos.x = 100.0f;
     p->body.pos.y = 0.0f;
-    p->body.dim.y = 30.f;
+    p->body.dim.y = 20.f;
     p->body.dim.x = p->body.dim.y * 3.f;
     p->body.angle = 0.f;
     p->render_zone.dim.y = 30.f;
@@ -634,34 +701,6 @@ int level2_prepare(PR::Level *level) {
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
 
-    level->boosts_number = 0;
-    if (level->boosts_number) {
-        level->boosts = (PR::BoostPad *) malloc(sizeof(PR::BoostPad) *
-                                       level->boosts_number);
-        if (level->boosts == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
-            return 1;
-        }
-    }
-    for (size_t boost_index = 0;
-         boost_index < level->boosts_number;
-         ++boost_index) {
-        PR::BoostPad *pad = level->boosts + boost_index;
-
-        pad->body.pos.x = 1000.f;
-        pad->body.pos.y = 200.f;
-        pad->body.dim.x = 1000.f;
-        pad->body.dim.y = 300.f;
-        pad->body.angle = 0.f;
-        pad->boost_angle = pad->body.angle;
-        pad->boost_power = 20.f;
-
-        pad->col.r = 0.f;
-        pad->col.g = 1.f;
-        pad->col.b = 0.f;
-        pad->col.a = 1.f;
-    }
-
     return 0;
 }
 
@@ -703,9 +742,9 @@ void level2_update(float dt) {
         if (rect_are_colliding(&p->body, &pad->body)) {
 
             p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
-            p->acc.y += pad->boost_power * sin(glm::radians(pad->boost_angle));
+            p->acc.y += pad->boost_power * -sin(glm::radians(pad->boost_angle));
 
-            std::cout << "BOOOST!!! against " << boost_index << std::endl;
+            // std::cout << "BOOOST!!! against " << boost_index << std::endl;
         }
     }
 

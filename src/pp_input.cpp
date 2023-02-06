@@ -23,6 +23,23 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     // Debug
     input->toggle_debug = false;
 
+    input->up = false;
+    input->down = false;
+    input->left = false;
+    input->right = false;
+    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        input->up = true;
+    }
+    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        input->down = true;
+    }
+    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        input->left = true;
+    }
+    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        input->right = true;
+    }
+
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         input->exit = true;
     }

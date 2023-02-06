@@ -12,11 +12,10 @@ bool lines_are_colliding(float x0, float y0,
                          float* x, float* y);
 
 bool rect_are_colliding(Rect* r1, Rect* r2) {
-
-    if (r1->pos.x + r1->dim.x*2 < r2->pos.x
-        || r1->pos.x > r2->pos.x + r2->dim.x*2
-        || r1->pos.y + r1->dim.y*2 < r2->pos.y
-        || r1->pos.y > r2->pos.y + r2->dim.y*2
+    if (glm::abs(r1->pos.x - r2->pos.x) >
+            r1->dim.x + r1->dim.y + r2->dim.x + r2->dim.y
+     || glm::abs(r1->pos.y - r2->pos.y) >
+            r1->dim.x + r1->dim.y + r2->dim.x + r2->dim.y
     ) return false;
 
     float center_x1 = r1->pos.x + r1->dim.x * 0.5f;
