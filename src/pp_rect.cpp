@@ -22,61 +22,66 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
     float center_x1 = r1->pos.x + r1->dim.x * 0.5f;
     float center_y1 = r1->pos.y + r1->dim.y * 0.5f;
     float r1_angle = glm::radians(-r1->angle);
+    float cos_r1 = cos(r1_angle);
+    float sin_r1 = sin(r1_angle);
 
     float x0 = center_x1 +
-                (r1->pos.x - center_x1) * cos(r1_angle) -
-                (r1->pos.y - center_y1) * sin(r1_angle);
+                (r1->pos.x - center_x1) * cos_r1 -
+                (r1->pos.y - center_y1) * sin_r1;
     float y0 = center_y1 +
-                (r1->pos.x - center_x1) * sin(r1_angle) +
-                (r1->pos.y - center_y1) * cos(r1_angle);
+                (r1->pos.x - center_x1) * sin_r1 +
+                (r1->pos.y - center_y1) * cos_r1;
     float x1 = center_x1 +
-                (r1->pos.x + r1->dim.x - center_x1) * cos(r1_angle) -
-                (r1->pos.y - center_y1) * sin(r1_angle);
+                (r1->pos.x + r1->dim.x - center_x1) * cos_r1 -
+                (r1->pos.y - center_y1) * sin_r1;
     float y1 = center_y1 +
-                (r1->pos.x + r1->dim.x - center_x1) * sin(r1_angle) +
-                (r1->pos.y - center_y1) * cos(r1_angle);
+                (r1->pos.x + r1->dim.x - center_x1) * sin_r1 +
+                (r1->pos.y - center_y1) * cos_r1;
     float x2 = center_x1 +
-                (r1->pos.x + r1->dim.x - center_x1) * cos(r1_angle) -
-                (r1->pos.y + r1->dim.y - center_y1) * sin(r1_angle);
+                (r1->pos.x + r1->dim.x - center_x1) * cos_r1 -
+                (r1->pos.y + r1->dim.y - center_y1) * sin_r1;
     float y2 = center_y1 +
-                (r1->pos.x + r1->dim.x - center_x1) * sin(r1_angle) +
-                (r1->pos.y + r1->dim.y - center_y1) * cos(r1_angle);
+                (r1->pos.x + r1->dim.x - center_x1) * sin_r1 +
+                (r1->pos.y + r1->dim.y - center_y1) * cos_r1;
     float x3 = center_x1 +
-                (r1->pos.x - center_x1) * cos(r1_angle) -
-                (r1->pos.y + r1->dim.y - center_y1) * sin(r1_angle);
+                (r1->pos.x - center_x1) * cos_r1 -
+                (r1->pos.y + r1->dim.y - center_y1) * sin_r1;
     float y3 = center_y1 +
-                (r1->pos.x - center_x1) * sin(r1_angle) +
-                (r1->pos.y + r1->dim.y - center_y1) * cos(r1_angle);
+                (r1->pos.x - center_x1) * sin_r1 +
+                (r1->pos.y + r1->dim.y - center_y1) * cos_r1;
 
 
     float center_x2 = r2->pos.x + r2->dim.x * 0.5f;
     float center_y2 = r2->pos.y + r2->dim.y * 0.5f;
     float r2_angle = glm::radians(-r2->angle);
+    float cos_r2 = cos(r2_angle);
+    float sin_r2 = sin(r2_angle);
 
     float s0 = center_x2 +
-                (r2->pos.x - center_x2) * cos(r2_angle) -
-                (r2->pos.y - center_y2) * sin(r2_angle);
+                (r2->pos.x - center_x2) * cos_r2 -
+                (r2->pos.y - center_y2) * sin_r2;
     float t0 = center_y2 +
-                (r2->pos.x - center_x2) * sin(r2_angle) +
-                (r2->pos.y - center_y2) * cos(r2_angle);
+                (r2->pos.x - center_x2) * sin_r2 +
+                (r2->pos.y - center_y2) * cos_r2;
     float s1 = center_x2 +
-                (r2->pos.x + r2->dim.x - center_x2) * cos(r2_angle) -
-                (r2->pos.y - center_y2) * sin(r2_angle);
+                (r2->pos.x + r2->dim.x - center_x2) * cos_r2 -
+                (r2->pos.y - center_y2) * sin_r2;
     float t1 = center_y2 +
-                (r2->pos.x + r2->dim.x - center_x2) * sin(r2_angle) +
-                (r2->pos.y - center_y2) * cos(r2_angle);
+                (r2->pos.x + r2->dim.x - center_x2) * sin_r2 +
+                (r2->pos.y - center_y2) * cos_r2;
     float s2 = center_x2 +
-                (r2->pos.x + r2->dim.x - center_x2) * cos(r2_angle) -
-                (r2->pos.y + r2->dim.y - center_y2) * sin(r2_angle);
+                (r2->pos.x + r2->dim.x - center_x2) * cos_r2 -
+                (r2->pos.y + r2->dim.y - center_y2) * sin_r2;
     float t2 = center_y2 +
-                (r2->pos.x + r2->dim.x - center_x2) * sin(r2_angle) +
-                (r2->pos.y + r2->dim.y - center_y2) * cos(r2_angle);
+                (r2->pos.x + r2->dim.x - center_x2) * sin_r2 +
+                (r2->pos.y + r2->dim.y - center_y2) * cos_r2;
     float s3 = center_x2 +
-                (r2->pos.x - center_x2) * cos(r2_angle) -
-                (r2->pos.y + r2->dim.y - center_y2) * sin(r2_angle);
+                (r2->pos.x - center_x2) * cos_r2 -
+                (r2->pos.y + r2->dim.y - center_y2) * sin_r2;
     float t3 = center_y2 +
-                (r2->pos.x - center_x2) * sin(r2_angle) +
-                (r2->pos.y + r2->dim.y - center_y2) * cos(r2_angle);
+                (r2->pos.x - center_x2) * sin_r2 +
+                (r2->pos.y + r2->dim.y - center_y2) * cos_r2;
+
 
     /* std::cout << "---------------------\n" */
     /*         << "x0: " << (int)x0 */
@@ -209,6 +214,39 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
             NULL, NULL
         )) return true;
 
+    float cos1 = cos(-r1_angle);
+    float sin1 = sin(-r1_angle);
+    float cos2 = cos(-r2_angle);
+    float sin2 = sin(-r2_angle);
+
+    // NOTE: Check if a vertex of r1 is inside r2
+    glm::vec2 p1;
+    p1.x = center_x2 +
+            (x0 - center_x2) * cos2 -
+            (y0 - center_y2) * sin2;
+    p1.y = center_y2 +
+            (x0 - center_x2) * sin2 +
+            (y0 - center_y2) * cos2;
+    if (r2->pos.x < p1.x && p1.x < r2->pos.x+r2->dim.x &&
+        r2->pos.y < p1.y && p1.y < r2->pos.y+r2->dim.y) {
+        std::cout << "R1 inside R2" << std::endl;
+        return true;
+    }
+
+    // NOTE: Check if a vertex of r2 is inside r1
+    glm::vec2 p2;
+    p2.x = center_x1 +
+            (s0 - center_x1) * cos1 -
+            (t0 - center_y1) * sin1;
+    p2.y = center_y1 +
+            (s0 - center_x1) * sin1 +
+            (t0 - center_y1) * cos1;
+    if (r1->pos.x < p2.x && p2.x < r1->pos.x+r1->dim.x &&
+        r1->pos.y < p2.y && p2.y < r1->pos.y+r1->dim.y) {
+        std::cout << "R2 inside R1" << std::endl;
+        return true;
+    }
+
     return false;
 }
 
@@ -243,37 +281,3 @@ bool lines_are_colliding(float x0, float y0,
 
     return false; // No collision
 }
-
-#if 0 // NOTE: I'm using another method, that's able to handle edge cases
-bool lines_are_colliding(float x0, float y0,
-                         float x1, float y1,
-                         float s0, float t0,
-                         float s1, float t1) {
-
-    // NOTE: The m (inclination) of the lines created by the points
-    float m1 = (y1-y0) / (x1-x0);
-    float m2 = (t1-t0) / (s1-s0);
-
-    /* std::cout << "m1: " << m1 << ", m2: " << m2 << std::endl; */
-
-    // NOTE: The q (offset at x=0) of the lines created by the points
-    float q1 = y0 - x0 * m1;
-    float q2 = t0 - s0 * m2;
-
-    // NOTE: Coordinates of the resulting point
-    float x = (q2-q1) / (m1-m2);
-    float y = m1 * x + q1;
-
-    /* std::cout << "Int.x: " << x */
-    /*             << ", Int.y: " << y << std::endl; */
-        
-
-    // NOTE: The resulting point must be inside both lines
-    bool result = ((x0 <= x && x <= x1) || (x1 <= x && x <= x0)) &&
-                    ((y0 <= y && y <= y1) || (y1 <= y && y <= y0)) &&
-                  ((s0 <= x && x <= s1) || (s1 <= x && x <= s0)) &&
-                    ((t0 <= y && y <= t1) || (t1 <= y && y <= t0));
-
-    return result;
-}
-#endif

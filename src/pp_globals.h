@@ -50,6 +50,12 @@ struct PR {
         bool attached;
         float jump_time_elapsed;
     };
+    struct BoostPad {
+        Rect body;
+        float boost_angle;
+        float boost_power;
+        glm::vec4 col;
+    };
     struct Camera {
         glm::vec2 pos;
 
@@ -68,7 +74,8 @@ struct PR {
 
         size_t obstacles_number;
         Rect *obstacles;
-        // TODO: Boost pads
+        size_t boosts_number;
+        BoostPad *boosts;
         // TODO: Coins?
     };
     Level current_level;

@@ -14,7 +14,7 @@
 // TODO:
 //  - Proper wind
 //  - Find textures
-//  - Particle system
+//  - Proper particle system
 //  - Sound system
 
 //  - Make changing angle more or less difficult
@@ -126,36 +126,13 @@ struct Particle {
 struct ParticleSystem {
     Particle particles[200];
     int current_particle = 0;
-    float time_between_particles = 0.05f;
+    float time_between_particles;
     float time_elapsed;
 };
 
 ParticleSystem ps;
 
-
 int level1_prepare(PR::Level *level) {
-#if 0
-    for (size_t particle_index = 0;
-         particle_index < ARRAY_LENGTH(ps.particles);
-         ++particle_index) {
-
-        Particle *particle = &ps.particles[particle_index];
-
-        particle->body.pos.x = 0.f;
-        particle->body.pos.y = 0.f;
-        particle->body.angle = 0.f;
-
-        particle->vel.x = 0.f;
-        particle->vel.y = 0.f;
-
-        particle->color.r = 1.0f;
-        particle->color.g = 0.0f;
-        particle->color.b = 0.0f;
-        particle->color.a = 1.0f;
-
-    }
-#endif
-
     PR::WinInfo *win = &glob->window;
 
     PR::Plane *p = &level->plane;
@@ -212,10 +189,14 @@ int level1_prepare(PR::Level *level) {
 
     level->obstacles_number = 50;
     level->obstacles = (Rect *) malloc(sizeof(Rect) * level->obstacles_number);
+    if (level->obstacles == NULL) {
+        std::cout << "Buy more RAM!" << std::endl;
+        return 1;
+    }
 
-    for(int obstacle_index = 0;
+    for(size_t obstacle_index = 0;
         obstacle_index < level->obstacles_number;
-        obstacle_index++) {
+        ++obstacle_index) {
 
         Rect *obs = level->obstacles + obstacle_index;
 
@@ -228,6 +209,32 @@ int level1_prepare(PR::Level *level) {
         obs->angle = 0.0f;
     }
 
+    level->boosts_number = 2;
+    level->boosts = (PR::BoostPad *) malloc(sizeof(PR::BoostPad) *
+                                       level->boosts_number);
+    if (level->boosts == NULL) {
+        std::cout << "Buy more RAM!" << std::endl;
+        return 1;
+    }
+    for (size_t boost_index = 0;
+         boost_index < level->boosts_number;
+         ++boost_index) {
+        PR::BoostPad *pad = level->boosts + boost_index;
+
+        pad->body.pos.x = (boost_index + 1) * 1100.f;
+        pad->body.pos.y = 300.f;
+        pad->body.dim.x = 700.f;
+        pad->body.dim.y = 200.f;
+        pad->body.angle = 0.f;
+        pad->boost_angle = pad->body.angle;
+        pad->boost_power = 2.f;
+
+        pad->col.r = 0.f;
+        pad->col.g = 1.f;
+        pad->col.b = 0.f;
+        pad->col.a = 1.f;
+    }
+
     return 0;
 }
 
@@ -236,8 +243,10 @@ void level1_update(float dt) {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
-    int obstacles_number = glob->current_level.obstacles_number;
+    size_t obstacles_number = glob->current_level.obstacles_number;
     Rect *obstacles = glob->current_level.obstacles;
+    size_t boosts_number = glob->current_level.boosts_number;
+    PR::BoostPad *boosts = glob->current_level.boosts;
 
     // Global stuff
     PR::WinInfo *win = &glob->window;
@@ -246,7 +255,8 @@ void level1_update(float dt) {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu) {
-        free(obstacles);
+        if (obstacles_number) free(obstacles);
+        if (boosts_number) free(boosts);
         glob->current_state = PR::MENU;
     }
 
@@ -265,12 +275,27 @@ void level1_update(float dt) {
         /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
     }
 
+    // NOTE: Checking collision with boost_pads
+    for (size_t boost_index = 0;
+         boost_index < boosts_number;
+         ++boost_index) {
+
+        PR::BoostPad *pad = boosts + boost_index;
+
+        if (rect_are_colliding(&p->body, &pad->body)) {
+
+            p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
+            p->acc.y += pad->boost_power * sin(glm::radians(pad->boost_angle));
+
+            std::cout << "BOOOST!!! against " << boost_index << std::endl;
+        }
+    }
+
     // NOTE: The mass is greater if the rider is attached
     if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
     else p->acc *= 1.f/p->mass;
 
     // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-    // Apply gravity based on the mass
     p->acc.y += GRAVITY;
 
     // NOTE: Motion of the plane
@@ -357,7 +382,8 @@ void level1_update(float dt) {
         if (rect_are_colliding(&p->body, obs)) {
             // NOTE: Plane colliding with an obstacle
 
-            free(obstacles);
+            if (obstacles_number) free(obstacles);
+            if (boosts_number) free(boosts);
             glob->current_state = PR::MENU;
 
             // TODO: Debug flag
@@ -366,13 +392,15 @@ void level1_update(float dt) {
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
 
-            free(obstacles);
+            if (obstacles_number) free(obstacles);
+            if (boosts_number) free(boosts);
             glob->current_state = PR::MENU;
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
+
 
     // NOTE: Limit velocities
     if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
@@ -430,6 +458,8 @@ void level1_draw(float dt) {
     PR::Rider *rid = &glob->current_level.rider;
     size_t obstacles_number = glob->current_level.obstacles_number;
     Rect *obstacles = glob->current_level.obstacles;
+    size_t boosts_number = glob->current_level.boosts_number;
+    PR::BoostPad *boosts = glob->current_level.boosts;
 
     PR::WinInfo *win = &glob->window;
 
@@ -471,10 +501,27 @@ void level1_draw(float dt) {
     // High wind zone
     /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
+    // NOTE: Rendering the boosts
+    for(size_t boost_index = 0;
+        boost_index < boosts_number;
+        ++boost_index) {
+
+        PR::BoostPad *pad = boosts + boost_index;
+
+        Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
+
+        if (pad_in_cam_pos.pos.x < -((float)win->w) ||
+            pad_in_cam_pos.pos.x > win->w * 2.f) continue;
+
+        quad_render_add_queue(pad_in_cam_pos,
+                              pad->col,
+                              false);
+    }
+
     // NOTE: Rendering the obstacles
     for(size_t obstacle_index = 0;
         obstacle_index < obstacles_number;
-        obstacle_index++) {
+        ++obstacle_index) {
 
         Rect *obs = obstacles + obstacle_index;
 
@@ -587,6 +634,34 @@ int level2_prepare(PR::Level *level) {
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
 
+    level->boosts_number = 0;
+    if (level->boosts_number) {
+        level->boosts = (PR::BoostPad *) malloc(sizeof(PR::BoostPad) *
+                                       level->boosts_number);
+        if (level->boosts == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+            return 1;
+        }
+    }
+    for (size_t boost_index = 0;
+         boost_index < level->boosts_number;
+         ++boost_index) {
+        PR::BoostPad *pad = level->boosts + boost_index;
+
+        pad->body.pos.x = 1000.f;
+        pad->body.pos.y = 200.f;
+        pad->body.dim.x = 1000.f;
+        pad->body.dim.y = 300.f;
+        pad->body.angle = 0.f;
+        pad->boost_angle = pad->body.angle;
+        pad->boost_power = 20.f;
+
+        pad->col.r = 0.f;
+        pad->col.g = 1.f;
+        pad->col.b = 0.f;
+        pad->col.a = 1.f;
+    }
+
     return 0;
 }
 
@@ -595,8 +670,10 @@ void level2_update(float dt) {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
-    int obstacles_number = glob->current_level.obstacles_number;
+    size_t obstacles_number = glob->current_level.obstacles_number;
     Rect *obstacles = glob->current_level.obstacles;
+    size_t boosts_number = glob->current_level.boosts_number;
+    PR::BoostPad *boosts = glob->current_level.boosts;
 
     // Global stuff
     PR::WinInfo *win = &glob->window;
@@ -605,7 +682,9 @@ void level2_update(float dt) {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu) {
-        free(obstacles);
+        // Free the stuff only if it was allocated
+        if (obstacles_number) free(obstacles);
+        if (boosts_number) free(boosts);
         glob->current_state = PR::MENU;
     }
 
@@ -613,6 +692,22 @@ void level2_update(float dt) {
     p->acc *= 0;
 
     apply_air_resistances(p);
+
+    // NOTE: Checking collision with boost_pads
+    for (size_t boost_index = 0;
+         boost_index < boosts_number;
+         ++boost_index) {
+
+        PR::BoostPad *pad = boosts + boost_index;
+
+        if (rect_are_colliding(&p->body, &pad->body)) {
+
+            p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
+            p->acc.y += pad->boost_power * sin(glm::radians(pad->boost_angle));
+
+            std::cout << "BOOOST!!! against " << boost_index << std::endl;
+        }
+    }
 
     // Propulsion
     // TODO: Could this be a "powerup" or something?
@@ -716,7 +811,8 @@ void level2_update(float dt) {
         if (rect_are_colliding(&p->body, obs)) {
             // NOTE: Plane colliding with an obstacle
 
-            free(glob->current_level.obstacles);
+            if (obstacles_number) free(obstacles);
+            if (boosts_number) free(boosts);
             glob->current_state = PR::MENU;
 
             // TODO: Debug flag
@@ -725,7 +821,8 @@ void level2_update(float dt) {
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
 
-            free(glob->current_level.obstacles);
+            if (obstacles_number) free(obstacles);
+            if (boosts_number) free(boosts);
             glob->current_state = PR::MENU;
 
             // TODO: Debug flag
@@ -789,11 +886,30 @@ void level2_draw(float dt) {
     PR::Rider *rid = &glob->current_level.rider;
     size_t obstacles_number = glob->current_level.obstacles_number;
     Rect *obstacles = glob->current_level.obstacles;
+    size_t boosts_number = glob->current_level.boosts_number;
+    PR::BoostPad *boosts = glob->current_level.boosts;
 
     PR::WinInfo *win = &glob->window;
 
     // High wind zone
     /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
+
+    // NOTE: Rendering the boosts
+    for(size_t boost_index = 0;
+        boost_index < boosts_number;
+        ++boost_index) {
+
+        PR::BoostPad *pad = boosts + boost_index;
+
+        Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
+
+        if (pad_in_cam_pos.pos.x < -((float)win->w) ||
+            pad_in_cam_pos.pos.x > win->w * 2.f) continue;
+
+        quad_render_add_queue(pad_in_cam_pos,
+                              pad->col,
+                              false);
+    }
 
     // NOTE: Rendering the obstacles
     for(size_t obstacle_index = 0;
