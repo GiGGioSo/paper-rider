@@ -36,7 +36,6 @@ int fps_counter;
 float time_from_last_fps_update;
 
 int main() {
-
     srand(time(NULL));
 
     glob = (PR*) malloc(sizeof(PR));
@@ -53,7 +52,9 @@ int main() {
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    glob->window.glfw_win = glfwCreateWindow(glob->window.w, glob->window.h, glob->window.title, NULL, NULL);
+    glob->window.glfw_win =
+        glfwCreateWindow(glob->window.w, glob->window.h,
+                         glob->window.title, NULL, NULL);
     if (glob->window.glfw_win == NULL) {
         std::cout << "[ERROR] Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -67,11 +68,13 @@ int main() {
         return -1;
     }
 
+    glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     // Callbacks
-    glfwSetFramebufferSizeCallback(glob->window.glfw_win, callback_framebuffer_size);
+    glfwSetFramebufferSizeCallback(glob->window.glfw_win,
+                                   callback_framebuffer_size);
     glDebugMessageCallback(&callback_debug, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
@@ -139,13 +142,13 @@ int main() {
 void glob_init(void) {
 
     glob->current_state = PR::MENU;
+    menu_prepare(&glob->current_level);
 
     PR::WinInfo* win = &glob->window;
 
     // Rendering
     glob->rend.ortho_proj = glm::ortho(0.0f, (float)win->w,
-                                  (float)win->h, 0.0f,
-                                  -1.f, 1.f);
+                                       (float)win->h, 0.0f);
 
     // NOTE: 1 is the number of shaders
     /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
@@ -162,8 +165,6 @@ void glob_init(void) {
 
     quad_render_init(&glob->rend.quad_renderer);
 
-     // glob->current_level = (PR::Level *) malloc(sizeof(PR::Level));
-
 }
 
 void glob_free(void) {
@@ -173,6 +174,14 @@ void glob_free(void) {
 void callback_framebuffer_size(GLFWwindow* window,
                                int width, int height) {
     glViewport(0, 0, width, height);
+    glob->rend.ortho_proj = glm::ortho(0.0f, (float)width,
+                                       (float)height, 0.0f);
+    for(size_t shader_index = 0;
+        shader_index < ARRAY_LENGTH(glob->rend.shaders);
+        ++shader_index) {
+
+        shaderer_set_mat4(glob->rend.shaders[shader_index], "projection", glob->rend.ortho_proj);
+    }
     glob->window.w = width;
     glob->window.h = height;
 }

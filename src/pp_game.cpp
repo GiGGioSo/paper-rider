@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstring>
 #include <math.h>
 #include <iostream>
 #include <stdio.h>
@@ -10,12 +11,15 @@
 #include "pp_quad_renderer.h"
 #include "pp_rect.h"
 
+// TODO: I probably do not need different update and draw method for each level
 
 // TODO:
 //  - Proper wind
 //  - Find textures
 //  - Proper particle system
 //  - Sound system
+//  - Text rendering
+//  - UI
 
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
@@ -51,7 +55,7 @@ int load_map_from_file(const char *file_path,
         std::fscanf(map_file, " %zu", number_of_obstacles);
         if (std::ferror(map_file)) return_defer(errno);
 
-        std::cout << "Loading " << *number_of_obstacles
+        std::cout << "[LOADING] " << *number_of_obstacles
                   << " obstacles from the file " << file_path
                   << std::endl;
 
@@ -147,16 +151,43 @@ int load_map_from_file(const char *file_path,
     return result;
 }
 
+int menu_prepare(PR::Level *level) {
+    glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    uint8_t cursor_pixels[16 * 16 * 4];
+    std::memset(cursor_pixels, 0xff, sizeof(cursor_pixels));
+
+    GLFWimage image;
+    image.width = 16;
+    image.height = 16;
+    image.pixels = cursor_pixels;
+
+    GLFWcursor *cursor = glfwCreateCursor(&image, 0, 0);
+
+    // Don't really need to check if the cursor is NULL,
+    // because if it is, then the cursor will be set to default
+    glfwSetCursor(glob->window.glfw_win, cursor);
+    return 0;
+}
+
 void menu_update(float dt) {
     InputController *input = &glob->input;
 
     if (input->level1) {
         int preparation_result = level1_prepare(&glob->current_level);
-        if (preparation_result == 0) glob->current_state = PR::LEVEL1;
+        if (preparation_result == 0) {
+            glob->current_state = PR::LEVEL1;
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        }
     } else
     if (input->level2) {
         int preparation_result = level2_prepare(&glob->current_level);
-        if (preparation_result == 0) glob->current_state = PR::LEVEL2;
+        if (preparation_result == 0) {
+            glob->current_state = PR::LEVEL2;
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        }
     }
     return; 
 }
@@ -315,23 +346,16 @@ void level1_update(float dt) {
     if (input->menu) {
         if (obstacles_number) free(obstacles);
         if (boosts_number) free(boosts);
-        glob->current_state = PR::MENU;
+        int preparation_result = menu_prepare(&glob->current_level);
+        if (preparation_result == 0) {
+            glob->current_state = PR::MENU;
+        }
     }
 
     // NOTE: Reset the accelleration for it to be recalculated
     p->acc *= 0;
 
     apply_air_resistances(p);
-
-    // Propulsion
-    // TODO: Could this be a "powerup" or something?
-    if (glob->input.boost) {
-        float propulsion = 8.f;
-        p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-        p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
-        /* std::cout << "PROP.x: " << propulsion * cos(glm::radians(p->body.angle)) */
-        /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
-    }
 
     // NOTE: Checking collision with boost_pads
     for (size_t boost_index = 0;
@@ -348,6 +372,16 @@ void level1_update(float dt) {
             // std::cout << "BOOOST!!! against " << boost_index << std::endl;
         }
     }
+    // Propulsion
+    // TODO: Could this be a "powerup" or something?
+    if (glob->input.boost) {
+        float propulsion = 8.f;
+        p->acc.x += propulsion * cos(glm::radians(p->body.angle));
+        p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+        /* std::cout << "PROP.x: " << propulsion * cos(glm::radians(p->body.angle)) */
+        /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
+    }
+
 
     // NOTE: The mass is greater if the rider is attached
     if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
@@ -358,7 +392,6 @@ void level1_update(float dt) {
 
     // NOTE: Motion of the plane
     p->vel += p->acc * dt;
-
     p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
     // DEBUG
     // float vel = 300.f;
@@ -369,20 +402,30 @@ void level1_update(float dt) {
 
     if (rid->attached) {
 
-        cam->pos.x = lerp(cam->pos.x, p->render_zone.pos.x+p->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
+        cam->pos.x = lerp(cam->pos.x,
+                          p->render_zone.pos.x+p->render_zone.dim.x*0.5f,
+                          dt * cam->speed_multiplier);
 
         // NOTE: Changing plane angle based on the input
         if (input->left_right) {
-            p->body.angle += 150.f * -input->left_right * dt;
+            p->body.angle -= 150.f * input->left_right * dt;
         }
 
         rid->body.angle = p->body.angle;
-        rid->body.pos.x = p->body.pos.x + (p->body.dim.x - rid->body.dim.x)*0.5f -
-                    (p->body.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
-                    (p->body.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-        rid->body.pos.y = p->body.pos.y + (p->body.dim.y - rid->body.dim.y)*0.5f -
-                    (p->body.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
-                    (p->body.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+        rid->body.pos.x =
+            p->body.pos.x +
+            (p->body.dim.x - rid->body.dim.x)*0.5f -
+            (p->body.dim.y + rid->body.dim.y)*0.5f *
+                sin(glm::radians(rid->body.angle)) -
+            (p->body.dim.x*0.2f) *
+                cos(glm::radians(rid->body.angle));
+        rid->body.pos.y =
+            p->body.pos.y +
+            (p->body.dim.y - rid->body.dim.y)*0.5f -
+            (p->body.dim.y + rid->body.dim.y)*0.5f *
+                cos(glm::radians(rid->body.angle)) +
+            (p->body.dim.x*0.2f) *
+                sin(glm::radians(rid->body.angle));
 
 
         // NOTE: If the rider is attached, make it jump
@@ -390,15 +433,20 @@ void level1_update(float dt) {
             rid->attached = false;
             rid->base_velocity = p->vel.x;
             rid->vel.y = p->vel.y - 400.f;
+            rid->body.angle = 0.f;
             rid->jump_time_elapsed = 0.f;
         }
     } else {
-        cam->pos.x = lerp(cam->pos.x, rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
+        cam->pos.x = lerp(cam->pos.x,
+                          rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f,
+                          dt * cam->speed_multiplier);
 
         if (input->left_right) {
-            rid->input_velocity += rid->input_max_accelleration * input->left_right * dt;
+            rid->input_velocity += rid->input_max_accelleration *
+                                   input->left_right * dt;
         } else {
-            rid->input_velocity += rid->input_max_accelleration * -glm::sign(rid->input_velocity) * dt;
+            rid->input_velocity += rid->input_max_accelleration *
+                                   -glm::sign(rid->input_velocity) * dt;
         }
         // NOTE: Base speed is the speed of the plane at the moment of the jump,
         //          which decreases slowly but constantly overtime
@@ -406,14 +454,20 @@ void level1_update(float dt) {
         //
         //       This way, by touching nothing you get to keep the plane velocity,
         //       but you are still able to move left and right in a satisfying way
-        if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) rid->input_velocity = glm::sign(rid->input_velocity) * RIDER_INPUT_VELOCITY_LIMIT;
-        rid->base_velocity -= glm::sign(rid->base_velocity) * rid->air_friction_acc * dt;
+        if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
+            rid->input_velocity = glm::sign(rid->input_velocity) *
+                                  RIDER_INPUT_VELOCITY_LIMIT;
+        }
+        rid->base_velocity -= glm::sign(rid->base_velocity) *
+                              rid->air_friction_acc * dt;
 
         rid->vel.x = rid->base_velocity + rid->input_velocity;
         rid->vel.y += GRAVITY * dt;
 
-        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT)
-            rid->vel.y = RIDER_VELOCITY_Y_LIMIT * glm::sign(rid->vel.y);
+        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+            rid->vel.y = glm::sign(rid->vel.y) *
+                         RIDER_VELOCITY_Y_LIMIT ;
+        }
 
         rid->body.pos += rid->vel * dt;
 
@@ -449,7 +503,10 @@ void level1_update(float dt) {
 
             if (obstacles_number) free(obstacles);
             if (boosts_number) free(boosts);
-            glob->current_state = PR::MENU;
+            int preparation_result = menu_prepare(&glob->current_level);
+            if (preparation_result == 0) {
+                glob->current_state = PR::MENU;
+            }
 
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
@@ -459,13 +516,15 @@ void level1_update(float dt) {
 
             if (obstacles_number) free(obstacles);
             if (boosts_number) free(boosts);
-            glob->current_state = PR::MENU;
+            int preparation_result = menu_prepare(&glob->current_level);
+            if (preparation_result == 0) {
+                glob->current_state = PR::MENU;
+            }
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
-
 
     // NOTE: Limit velocities
     if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
@@ -491,10 +550,12 @@ void level1_update(float dt) {
     }
 
     // NOTE: Update the `render_zone`s based on the `body`s
-    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
+    p->render_zone.pos = p->body.pos +
+                         (p->body.dim - p->render_zone.dim) * 0.5f;
     p->render_zone.angle = p->body.angle;
 
-    rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->render_zone.pos = rid->body.pos +
+                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
     rid->render_zone.angle = rid->body.angle;
 
     // NOTE: Animation based on the accelleration
@@ -503,12 +564,24 @@ void level1_update(float dt) {
             p->current_animation = PR::Plane::IDLE_ACC;
             p->animation_countdown = 0.25f;
         } else {
-            if (p->current_animation == PR::Plane::UPWARDS_ACC)
-                p->current_animation = (p->acc.y > 0) ? PR::Plane::IDLE_ACC : PR::Plane::UPWARDS_ACC;
-            else if (p->current_animation == PR::Plane::IDLE_ACC)
-                p->current_animation = (p->acc.y > 0) ? PR::Plane::DOWNWARDS_ACC : PR::Plane::UPWARDS_ACC;
-            else if (p->current_animation == PR::Plane::DOWNWARDS_ACC)
-                p->current_animation = (p->acc.y > 0) ? PR::Plane::DOWNWARDS_ACC : PR::Plane::IDLE_ACC;
+            if (p->current_animation == PR::Plane::UPWARDS_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::IDLE_ACC :
+                    PR::Plane::UPWARDS_ACC;
+            } else
+            if (p->current_animation == PR::Plane::IDLE_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::DOWNWARDS_ACC :
+                    PR::Plane::UPWARDS_ACC;
+            } else
+            if (p->current_animation == PR::Plane::DOWNWARDS_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::DOWNWARDS_ACC :
+                    PR::Plane::IDLE_ACC;
+            }
 
             p->animation_countdown = 0.25f;
         }
@@ -724,7 +797,10 @@ void level2_update(float dt) {
         // Free the stuff only if it was allocated
         if (obstacles_number) free(obstacles);
         if (boosts_number) free(boosts);
-        glob->current_state = PR::MENU;
+        int preparation_result = menu_prepare(&glob->current_level);
+        if (preparation_result == 0) {
+            glob->current_state = PR::MENU;
+        }
     }
 
     // NOTE: Reset the accelleration for it to be recalculated
@@ -763,7 +839,6 @@ void level2_update(float dt) {
     else p->acc *= 1.f/p->mass;
 
     // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-    // Apply gravity based on the mass
     p->acc.y += GRAVITY;
 
     // NOTE: Motion of the plane
@@ -780,12 +855,20 @@ void level2_update(float dt) {
         }
 
         rid->body.angle = p->render_zone.angle;
-        rid->body.pos.x = p->render_zone.pos.x + (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-                    (p->render_zone.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
-                    (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-        rid->body.pos.y = p->render_zone.pos.y + (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-                    (p->render_zone.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
-                    (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+        rid->body.pos.x =
+            p->render_zone.pos.x +
+            (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+            (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+                sin(glm::radians(rid->body.angle)) -
+            (p->render_zone.dim.x*0.2f) *
+                cos(glm::radians(rid->body.angle));
+        rid->body.pos.y =
+            p->render_zone.pos.y +
+            (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+            (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+                cos(glm::radians(rid->body.angle)) +
+            (p->render_zone.dim.x*0.2f) *
+                sin(glm::radians(rid->body.angle));
 
 
         // NOTE: If the rider is attached, make it jump
@@ -793,15 +876,20 @@ void level2_update(float dt) {
             rid->attached = false;
             rid->base_velocity = p->vel.x;
             rid->vel.y = p->vel.y - 400.f;
+            rid->body.angle = 0.f;
             rid->jump_time_elapsed = 0.f;
         }
     } else {
-        cam->pos.x = lerp(cam->pos.x, rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
+        cam->pos.x = lerp(cam->pos.x,
+                          rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f,
+                          dt * cam->speed_multiplier);
 
         if (input->left_right) {
-            rid->input_velocity += rid->input_max_accelleration * input->left_right * dt;
+            rid->input_velocity += rid->input_max_accelleration *
+                                   input->left_right * dt;
         } else {
-            rid->input_velocity += rid->input_max_accelleration * -glm::sign(rid->input_velocity) * dt;
+            rid->input_velocity += rid->input_max_accelleration *
+                                   -glm::sign(rid->input_velocity) * dt;
         }
         // NOTE: Base speed is the speed of the plane at the moment of the jump,
         //          which decreases slowly but constantly overtime
@@ -815,8 +903,10 @@ void level2_update(float dt) {
         rid->vel.x = rid->base_velocity + rid->input_velocity;
         rid->vel.y += GRAVITY * dt;
 
-        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT)
-            rid->vel.y = RIDER_VELOCITY_Y_LIMIT * glm::sign(rid->vel.y);
+        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+            rid->vel.y = glm::sign(rid->vel.y) *
+                         RIDER_VELOCITY_Y_LIMIT ;
+        }
 
         rid->body.pos += rid->vel * dt;
 
@@ -852,7 +942,10 @@ void level2_update(float dt) {
 
             if (obstacles_number) free(obstacles);
             if (boosts_number) free(boosts);
-            glob->current_state = PR::MENU;
+            int preparation_result = menu_prepare(&glob->current_level);
+            if (preparation_result == 0) {
+                glob->current_state = PR::MENU;
+            }
 
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
@@ -862,7 +955,10 @@ void level2_update(float dt) {
 
             if (obstacles_number) free(obstacles);
             if (boosts_number) free(boosts);
-            glob->current_state = PR::MENU;
+            int preparation_result = menu_prepare(&glob->current_level);
+            if (preparation_result == 0) {
+                glob->current_state = PR::MENU;
+            }
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;
@@ -893,10 +989,12 @@ void level2_update(float dt) {
     }
 
     // NOTE: Update the `render_zone`s based on the `body`s
-    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
+    p->render_zone.pos = p->body.pos +
+                         (p->body.dim - p->render_zone.dim) * 0.5f;
     p->render_zone.angle = p->body.angle;
 
-    rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->render_zone.pos = rid->body.pos +
+                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
     rid->render_zone.angle = rid->body.angle;
 
     // NOTE: Animation based on the accelleration
@@ -905,12 +1003,24 @@ void level2_update(float dt) {
             p->current_animation = PR::Plane::IDLE_ACC;
             p->animation_countdown = 0.25f;
         } else {
-            if (p->current_animation == PR::Plane::UPWARDS_ACC)
-                p->current_animation = (p->acc.y > 0) ? PR::Plane::IDLE_ACC : PR::Plane::UPWARDS_ACC;
-            else if (p->current_animation == PR::Plane::IDLE_ACC)
-                p->current_animation = (p->acc.y > 0) ? PR::Plane::DOWNWARDS_ACC : PR::Plane::UPWARDS_ACC;
-            else if (p->current_animation == PR::Plane::DOWNWARDS_ACC)
-                p->current_animation = (p->acc.y > 0) ? PR::Plane::DOWNWARDS_ACC : PR::Plane::IDLE_ACC;
+            if (p->current_animation == PR::Plane::UPWARDS_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::IDLE_ACC :
+                    PR::Plane::UPWARDS_ACC;
+            } else
+            if (p->current_animation == PR::Plane::IDLE_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::DOWNWARDS_ACC :
+                    PR::Plane::UPWARDS_ACC;
+            } else
+            if (p->current_animation == PR::Plane::DOWNWARDS_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::DOWNWARDS_ACC :
+                    PR::Plane::IDLE_ACC;
+            }
 
             p->animation_countdown = 0.25f;
         }
@@ -1007,7 +1117,6 @@ void level2_draw(float dt) {
 }
 
 void apply_air_resistances(PR::Plane* p) {
-
     PR::Atmosphere *air = &glob->current_level.air;
 
 

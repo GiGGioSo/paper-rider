@@ -4,6 +4,7 @@
 #include "../include/glm/trigonometric.hpp"
 #include "pp_globals.h"
 
+int menu_prepare(PR::Level *level);
 void menu_update(float dt);
 void menu_draw(void);
 
