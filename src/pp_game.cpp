@@ -601,7 +601,8 @@ void level1_draw(float dt) {
 
     PR::WinInfo *win = &glob->window;
 
-    ps.time_between_particles = lerp(0.02f, 0.005f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
+    ps.time_between_particles = lerp(0.02f, 0.005f,
+		    		     glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
 
     ps.time_elapsed += dt;
     if (ps.time_elapsed > ps.time_between_particles) {
@@ -618,8 +619,12 @@ void level1_draw(float dt) {
         particle->color.b = 1.0f;
         particle->color.a = 1.0f;
         float movement_angle = glm::radians(p->body.angle);
-        particle->vel.x = (glm::length(p->vel) - 400.f) * cos(movement_angle) + (float)((rand() % 101) - 50);
-        particle->vel.y = -(glm::length(p->vel) - 400.f) * sin(movement_angle) + (float)((rand() % 101) - 50);
+        particle->vel.x =
+		(glm::length(p->vel) - 400.f) * cos(movement_angle) +
+		(float)((rand() % 101) - 50);
+        particle->vel.y =
+		-(glm::length(p->vel) - 400.f) * sin(movement_angle) +
+		(float)((rand() % 101) - 50);
     }
 
     for (size_t particle_index = 0;
@@ -705,9 +710,10 @@ void level1_draw(float dt) {
 
     // NOTE: Rendering plane texture
     quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                              texcoords_in_texture_space(p->current_animation * 32.f, 0.f,
-                                                         32.f, 8.f,
-                                                         &glob->rend.global_sprite));
+                              texcoords_in_texture_space(
+				      p->current_animation * 32.f, 0.f,
+                                      32.f, 8.f,
+                                      &glob->rend.global_sprite));
 
     quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
 }
