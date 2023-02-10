@@ -4,7 +4,6 @@
 #include <iostream>
 
 void input_controller_update(GLFWwindow *window, InputController* input) {
-
     // NOTE: Multiple values might be set based off the same keys.
     //       This could happen because a menu action has the
     //          same keybinding as a gameplay one.
@@ -56,12 +55,12 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     //DIGITALE
     bool dpad_up = false; // DPAD controls
     /* bool dpad_right; */
-    /* bool dpad_left; */
+    bool dpad_left;
     bool dpad_down = false;
 
     bool b_up = false; // Button controls (I put the direction instead of the name)
     /* bool b_right; */
-    /* bool b_down; */
+    bool b_down;
     /* bool b_left; */
 
     /* bool ls; // left shoulder */
@@ -97,7 +96,7 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         // TODO: Decent Warning handling
         if (buttons_count != 17); //std::cout << "[WARNING] Controller with " << buttons_count << " buttons!!" << std::endl;
         else {
-            /* b_down = buttons[0] == GLFW_PRESS; */
+            b_down = buttons[0] == GLFW_PRESS;
             /* b_right = buttons[1] == GLFW_PRESS; */
             /* b_left = buttons[3] == GLFW_PRESS; */
             b_up = buttons[2] == GLFW_PRESS;
@@ -112,18 +111,21 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
             /* rj_click = buttons[12] == GLFW_PRESS; */
             dpad_up = buttons[13] == GLFW_PRESS;
             /* dpad_right = buttons[14] == GLFW_PRESS; */
-            /* dpad_left = buttons[16] == GLFW_PRESS; */
+            dpad_left = buttons[16] == GLFW_PRESS;
             dpad_down = buttons[15] == GLFW_PRESS;
         }
     }
 
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS ||
+        (c1_present && dpad_left)) {
         input->level1 = true;
     }
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS ||
+        (c1_present && dpad_up)) {
         input->level2 = true;
     }
-    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS ||
+        (c1_present && dpad_down)) {
         input->menu = true;
     }
 
@@ -132,19 +134,18 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
             (c1_present && (lj_v <= -0.2f || dpad_up))) {
 
         input->left_right = (lj_v <= -0.2f) ? lj_v : -1.0f;
-
     } else if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ||
             (c1_present && (lj_v >= 0.2f || dpad_down))) {
 
         input->left_right = (lj_v >= 0.2f) ? lj_v : 1.0f;
-
     }
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
         input->toggle_debug = true;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_H)) {
+    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS ||
+        (c1_present && b_down)) {
         input->jump = true;
     }
 
@@ -152,5 +153,4 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         (c1_present && b_up)) {
         input->boost = true;
     }
-
 }

@@ -19,6 +19,9 @@ struct PR {
 
         Rect render_zone;
 
+        bool crashed;
+        glm::vec2 crash_position;
+
         glm::vec2 vel;
         glm::vec2 acc;
 
@@ -38,6 +41,9 @@ struct PR {
         Rect render_zone;
 
         glm::vec2 vel;
+
+        bool crashed;
+        glm::vec2 crash_position;
 
         float base_velocity;
         float input_velocity;
@@ -71,6 +77,8 @@ struct PR {
 
         Atmosphere air;
         Rider rider;
+
+        bool game_over;
 
         size_t obstacles_number;
         Rect *obstacles;

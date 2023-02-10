@@ -206,6 +206,7 @@ void menu_draw(void) {
 }
 
 
+// TODO: Integrate once you used it more than one time
 struct Particle {
     Rect body;
     glm::vec2 vel;
@@ -225,6 +226,9 @@ int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
 
     PR::Plane *p = &level->plane;
+    p->crashed = false;
+    p->crash_position.x = 0.f;
+    p->crash_position.y = 0.f;
     p->body.pos.x = 200.0f;
     p->body.pos.y = 350.0f;
     p->body.dim.y = 20.f;
@@ -232,7 +236,8 @@ int level1_prepare(PR::Level *level) {
     p->body.angle = 0.f;
     p->render_zone.dim.y = 30.f;
     p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
+    p->render_zone.pos = p->body.pos +
+                         (p->body.dim - p->render_zone.dim) * 0.5f;
     p->render_zone.angle = p->body.angle;
     p->vel.x = 0.f;
     p->vel.y = 0.f;
@@ -245,18 +250,30 @@ int level1_prepare(PR::Level *level) {
     p->current_animation = PR::Plane::IDLE_ACC;
     p->animation_countdown = 0.f;
 
+
+
     PR::Rider *rid = &level->rider;
+    rid->crashed = false;
+    rid->crash_position.x = 0.f;
+    rid->crash_position.y = 0.f;
     rid->body.dim.x = 30.f;
     rid->body.dim.y = 50.f;
     rid->body.angle = p->render_zone.angle;
-    rid->body.pos.x = p->render_zone.pos.x + (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f * sin(glm::radians(rid->body.angle)) -
-                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-    rid->body.pos.y = p->render_zone.pos.y + (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f * cos(glm::radians(rid->body.angle)) +
-                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+    rid->body.pos.x =
+        p->render_zone.pos.x +
+        (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+            sin(glm::radians(rid->body.angle)) -
+        (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+    rid->body.pos.y =
+        p->render_zone.pos.y +
+        (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+            cos(glm::radians(rid->body.angle)) +
+        (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
     rid->render_zone.dim = rid->body.dim;
-    rid->render_zone.pos = rid->body.pos + (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->render_zone.pos = rid->body.pos +
+                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
     rid->vel.x = 0.0f;
     rid->vel.y = 0.0f;
     rid->body.angle = p->body.angle;
@@ -327,6 +344,25 @@ int level1_prepare(PR::Level *level) {
     return 0;
 }
 
+/*
+ * case !plane.CRASHED && rid.ATTACHED
+ *      - plane.air_resistance
+ *      - plane.handle_input
+ *      - rid.move_to_plane
+ *
+ * case !plane.CRASHED && !rid.ATTACHED
+ *      - plane.air_resistance
+ *      - rid.handle_input
+ *
+ * case plane.CRASHED && !rid.ATTACHED
+ *      - rid.handle_input
+ *
+ *
+ * case plane.CRASHED && rid.ATTACHED
+ *      - 
+ *
+ */
+
 void level1_update(float dt) {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
@@ -352,143 +388,255 @@ void level1_update(float dt) {
         }
     }
 
-    // NOTE: Reset the accelleration for it to be recalculated
-    p->acc *= 0;
-
-    apply_air_resistances(p);
-
-    // NOTE: Checking collision with boost_pads
-    for (size_t boost_index = 0;
-         boost_index < boosts_number;
-         ++boost_index) {
-
-        PR::BoostPad *pad = boosts + boost_index;
-
-        if (rect_are_colliding(&p->body, &pad->body)) {
-
-            p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
-            p->acc.y += pad->boost_power * -sin(glm::radians(pad->boost_angle));
-
-            // std::cout << "BOOOST!!! against " << boost_index << std::endl;
+    #if 0
+    // Structure of the update loop of level1
+    if (!p->crashed) {
+        p->update();
+        if (!rid->crashed) {
+            if (rid->attached) {
+                p->input();
+                rid->move_to_plane();
+                cam->to_plane();
+            } else { // !rid->attached
+                rid->input();
+                rid->update();
+                cam->to_rider();
+            }
+        } else { // rid->crashed
+            rid->crash_particles();
+        }
+    } else { // p->crashed
+        p->particles();
+        if (!rid->crashed) {
+            if (rid->attached) {
+                rid->move_to_plane();
+                cam->to_plane();
+                nothing();
+            } else { // !rid->attached
+                rid->input();
+                rid->update();
+                cam->to_rider();
+            }
+        } else { // rid->crashed
+            rid->crash_particles();
         }
     }
-    // Propulsion
-    // TODO: Could this be a "powerup" or something?
-    if (glob->input.boost) {
-        float propulsion = 8.f;
-        p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-        p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
-        /* std::cout << "PROP.x: " << propulsion * cos(glm::radians(p->body.angle)) */
-        /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
-    }
+    #endif
 
+    if (!p->crashed) {
+        // #### START PLANE STUFF
+        // NOTE: Reset the accelleration for it to be recalculated
+        p->acc *= 0;
+        apply_air_resistances(p);
 
-    // NOTE: The mass is greater if the rider is attached
-    if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
-    else p->acc *= 1.f/p->mass;
+        // NOTE: Checking collision with boost_pads
+        for (size_t boost_index = 0;
+             boost_index < boosts_number;
+             ++boost_index) {
 
-    // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-    p->acc.y += GRAVITY;
+            PR::BoostPad *pad = boosts + boost_index;
 
-    // NOTE: Motion of the plane
-    p->vel += p->acc * dt;
-    p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
-    // DEBUG
-    // float vel = 300.f;
-    // if (input->up) p->body.pos.y -= vel * dt;
-    // if (input->down) p->body.pos.y += vel * dt;
-    // if (input->left) p->body.pos.x -= vel * dt;
-    // if (input->right) p->body.pos.x += vel * dt;
+            if (rect_are_colliding(&p->body, &pad->body)) {
 
-    if (rid->attached) {
+                p->acc.x += pad->boost_power *
+                            cos(glm::radians(pad->boost_angle));
+                p->acc.y += pad->boost_power *
+                            -sin(glm::radians(pad->boost_angle));
 
-        cam->pos.x = lerp(cam->pos.x,
-                          p->render_zone.pos.x+p->render_zone.dim.x*0.5f,
-                          dt * cam->speed_multiplier);
-
-        // NOTE: Changing plane angle based on the input
-        if (input->left_right) {
-            p->body.angle -= 150.f * input->left_right * dt;
+                // std::cout << "BOOOST!!! against " << boost_index << std::endl;
+            }
         }
-
-        rid->body.angle = p->body.angle;
-        rid->body.pos.x =
-            p->body.pos.x +
-            (p->body.dim.x - rid->body.dim.x)*0.5f -
-            (p->body.dim.y + rid->body.dim.y)*0.5f *
-                sin(glm::radians(rid->body.angle)) -
-            (p->body.dim.x*0.2f) *
-                cos(glm::radians(rid->body.angle));
-        rid->body.pos.y =
-            p->body.pos.y +
-            (p->body.dim.y - rid->body.dim.y)*0.5f -
-            (p->body.dim.y + rid->body.dim.y)*0.5f *
-                cos(glm::radians(rid->body.angle)) +
-            (p->body.dim.x*0.2f) *
-                sin(glm::radians(rid->body.angle));
-
-
-        // NOTE: If the rider is attached, make it jump
-        if (input->jump) {
-            rid->attached = false;
-            rid->base_velocity = p->vel.x;
-            rid->vel.y = p->vel.y - 400.f;
-            rid->body.angle = 0.f;
-            rid->jump_time_elapsed = 0.f;
+        // Propulsion
+        // TODO: Could this be a "powerup" or something?
+        if (glob->input.boost) {
+            float propulsion = 8.f;
+            p->acc.x += propulsion * cos(glm::radians(p->body.angle));
+            p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+            /* std::cout << "PROP.x: " << propulsion * cos(glm::radians(p->body.angle)) */
+            /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
         }
-    } else {
-        cam->pos.x = lerp(cam->pos.x,
-                          rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f,
-                          dt * cam->speed_multiplier);
+        // NOTE: The mass is greater if the rider is attached
+        if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
+        else p->acc *= 1.f/p->mass;
 
-        if (input->left_right) {
-            rid->input_velocity += rid->input_max_accelleration *
-                                   input->left_right * dt;
-        } else {
-            rid->input_velocity += rid->input_max_accelleration *
-                                   -glm::sign(rid->input_velocity) * dt;
+        // NOTE: Gravity is already an accelleration so it doesn't need to be divided
+        p->acc.y += GRAVITY;
+
+        // NOTE: Motion of the plane
+        p->vel += p->acc * dt;
+        // NOTE: Limit velocities
+        if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
+            p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
         }
-        // NOTE: Base speed is the speed of the plane at the moment of the jump,
-        //          which decreases slowly but constantly overtime
-        //       Input speed is the speed that results from the player input.
-        //
-        //       This way, by touching nothing you get to keep the plane velocity,
-        //       but you are still able to move left and right in a satisfying way
-        if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
-            rid->input_velocity = glm::sign(rid->input_velocity) *
-                                  RIDER_INPUT_VELOCITY_LIMIT;
+        p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
+        // DEBUG
+        // float vel = 300.f;
+        // if (input->up) p->body.pos.y -= vel * dt;
+        // if (input->down) p->body.pos.y += vel * dt;
+        // if (input->left) p->body.pos.x -= vel * dt;
+        // if (input->right) p->body.pos.x += vel * dt;
+        // #### END PLANE STUFF
+        if (!rid->crashed) {
+            if (rid->attached) {
+                // NOTE: Making the rider stick to the plane
+                rid->body.angle = p->body.angle;
+                rid->body.pos.x =
+                    p->body.pos.x +
+                    (p->body.dim.x - rid->body.dim.x)*0.5f -
+                    (p->body.dim.y + rid->body.dim.y)*0.5f *
+                        sin(glm::radians(rid->body.angle)) -
+                    (p->body.dim.x*0.2f) *
+                        cos(glm::radians(rid->body.angle));
+                rid->body.pos.y =
+                    p->body.pos.y +
+                    (p->body.dim.y - rid->body.dim.y)*0.5f -
+                    (p->body.dim.y + rid->body.dim.y)*0.5f *
+                        cos(glm::radians(rid->body.angle)) +
+                    (p->body.dim.x*0.2f) *
+                        sin(glm::radians(rid->body.angle));
+                // NOTE: Changing plane angle based on input
+                if (input->left_right) {
+                    p->body.angle -= 150.f * input->left_right * dt;
+                }
+                // NOTE: Limiting the angle of the plane
+                if (p->body.angle > 360.f) {
+                    p->body.angle -= 360.f;
+                }
+                if (p->body.angle < -360) {
+                    p->body.angle += 360.f;
+                }
+                // NOTE: Make the rider jump based on input
+                if (input->jump) {
+                    rid->attached = false;
+                    rid->base_velocity = p->vel.x;
+                    rid->vel.y = p->vel.y - 400.f;
+                    rid->body.angle = 0.f;
+                    rid->jump_time_elapsed = 0.f;
+                }
+                // NOTE: Making the camera move to the plane
+                cam->pos.x =
+                    lerp(cam->pos.x,
+                    p->render_zone.pos.x+p->render_zone.dim.x*0.5f,
+                    dt * cam->speed_multiplier);
+            } else { // !rid->attached
+
+                // NOTE: Modify accelleration based on input
+                if (input->left_right) {
+                    rid->input_velocity += rid->input_max_accelleration *
+                                           input->left_right * dt;
+                } else {
+                    rid->input_velocity += rid->input_max_accelleration *
+                                           -glm::sign(rid->input_velocity) * dt;
+                }
+                // NOTE: Base speed is the speed of the plane at the moment of the jump,
+                //          which decreases slowly but constantly overtime
+                //       Input speed is the speed that results from the player input.
+                //
+                //       This way, by touching nothing you get to keep the plane velocity,
+                //       but you are still able to move left and right in a satisfying way
+                if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
+                    rid->input_velocity = glm::sign(rid->input_velocity) *
+                                          RIDER_INPUT_VELOCITY_LIMIT;
+                }
+                rid->base_velocity -= glm::sign(rid->base_velocity) *
+                                      rid->air_friction_acc * dt;
+
+                rid->vel.x = rid->base_velocity + rid->input_velocity;
+                rid->vel.y += GRAVITY * dt;
+
+                // NOTE: Limit velocity before applying it to the rider
+                if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+                    rid->vel.y = glm::sign(rid->vel.y) *
+                                 RIDER_VELOCITY_Y_LIMIT ;
+                }
+                rid->body.pos += rid->vel * dt;
+                rid->jump_time_elapsed += dt;
+
+                // NOTE: Check if rider remounts the plane
+                if (rect_are_colliding(&p->body, &rid->body) &&
+                    rid->jump_time_elapsed > 0.5f) {
+                    rid->attached = true;
+                    p->vel += (rid->vel - p->vel) * 0.5f;
+                    rid->vel *= 0.f;
+                }
+
+                // NOTE: Make the camera follow the rider
+                cam->pos.x = lerp(cam->pos.x,
+                                  rid->render_zone.pos.x +
+                                      rid->render_zone.dim.x*0.5f,
+                                  dt * cam->speed_multiplier);
+            }
+        } else { // rid->crashed
+            // rid->crash_particles();
         }
-        rid->base_velocity -= glm::sign(rid->base_velocity) *
-                              rid->air_friction_acc * dt;
+    } else { // p->crashed
+        // p->particles();
+        if (!rid->crashed) {
+            if (rid->attached) {
+                // NOTE: Making the rider stick to the plane
+                rid->body.angle = p->body.angle;
+                rid->body.pos.x =
+                    p->body.pos.x +
+                    (p->body.dim.x - rid->body.dim.x)*0.5f -
+                    (p->body.dim.y + rid->body.dim.y)*0.5f *
+                        sin(glm::radians(rid->body.angle)) -
+                    (p->body.dim.x*0.2f) *
+                        cos(glm::radians(rid->body.angle));
+                rid->body.pos.y =
+                    p->body.pos.y +
+                    (p->body.dim.y - rid->body.dim.y)*0.5f -
+                    (p->body.dim.y + rid->body.dim.y)*0.5f *
+                        cos(glm::radians(rid->body.angle)) +
+                    (p->body.dim.x*0.2f) *
+                        sin(glm::radians(rid->body.angle));
+                // NOTE: Making the camera move to the plane
+                cam->pos.x =
+                    lerp(cam->pos.x,
+                    p->render_zone.pos.x+p->render_zone.dim.x*0.5f,
+                    dt * cam->speed_multiplier);
+            } else { // !rid->attached
 
-        rid->vel.x = rid->base_velocity + rid->input_velocity;
-        rid->vel.y += GRAVITY * dt;
+                // NOTE: Modify accelleration based on input
+                if (input->left_right) {
+                    rid->input_velocity += rid->input_max_accelleration *
+                                           input->left_right * dt;
+                } else {
+                    rid->input_velocity += rid->input_max_accelleration *
+                                           -glm::sign(rid->input_velocity) * dt;
+                }
+                // NOTE: Base speed is the speed of the plane at the moment of the jump,
+                //          which decreases slowly but constantly overtime
+                //       Input speed is the speed that results from the player input.
+                //
+                //       This way, by touching nothing you get to keep the plane velocity,
+                //       but you are still able to move left and right in a satisfying way
+                if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
+                    rid->input_velocity = glm::sign(rid->input_velocity) *
+                                          RIDER_INPUT_VELOCITY_LIMIT;
+                }
+                rid->base_velocity -= glm::sign(rid->base_velocity) *
+                                      rid->air_friction_acc * dt;
 
-        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
-            rid->vel.y = glm::sign(rid->vel.y) *
-                         RIDER_VELOCITY_Y_LIMIT ;
+                rid->vel.x = rid->base_velocity + rid->input_velocity;
+                rid->vel.y += GRAVITY * dt;
+
+                // NOTE: Limit velocity before applying it to the rider
+                if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+                    rid->vel.y = glm::sign(rid->vel.y) *
+                                 RIDER_VELOCITY_Y_LIMIT ;
+                }
+                rid->body.pos += rid->vel * dt;
+                rid->jump_time_elapsed += dt;
+
+                // NOTE: Make the camera follow the rider
+                cam->pos.x = lerp(cam->pos.x,
+                                  rid->render_zone.pos.x +
+                                      rid->render_zone.dim.x*0.5f,
+                                  dt * cam->speed_multiplier);
+            }
+        } else { // rid->crashed
+            // rid->crash_particles();
         }
-
-        rid->body.pos += rid->vel * dt;
-
-        rid->jump_time_elapsed += dt;
-
-        // NOTE: If rider not attached, check if recollided
-        if (rect_are_colliding(&p->body, &rid->body) &&
-            rid->jump_time_elapsed > 0.5f) {
-            rid->attached = true;
-            p->vel += (rid->vel - p->vel) * 0.5f;
-            rid->vel *= 0.f;
-        }
-
-    }
-
-    // NOTE: Limiting the angle
-    if (p->body.angle > 360.f) {
-        p->body.angle -= 360.f;
-    }
-    if (p->body.angle < -360) {
-        p->body.angle += 360.f;
     }
 
     // NOTE: Checking collision with obstacles
@@ -501,12 +649,16 @@ void level1_update(float dt) {
         if (rect_are_colliding(&p->body, obs)) {
             // NOTE: Plane colliding with an obstacle
 
-            if (obstacles_number) free(obstacles);
-            if (boosts_number) free(boosts);
-            int preparation_result = menu_prepare(&glob->current_level);
-            if (preparation_result == 0) {
-                glob->current_state = PR::MENU;
+            if (rid->attached) {
+                rid->crashed = true;
+                rid->vel *= 0.f;
+                rid->base_velocity = 0.f;
+                rid->input_velocity = 0.f;
             }
+            p->crashed = true;
+            p->crash_position = p->body.pos;
+            p->acc *= 0.f;
+            p->vel *= 0.f;
 
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
@@ -514,22 +666,23 @@ void level1_update(float dt) {
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
 
-            if (obstacles_number) free(obstacles);
-            if (boosts_number) free(boosts);
-            int preparation_result = menu_prepare(&glob->current_level);
-            if (preparation_result == 0) {
-                glob->current_state = PR::MENU;
+            if (rid->attached) {
+                p->crashed = true;
+                p->acc *= 0.f;
+                p->vel *= 0.f;
             }
+            rid->crashed = true;
+            rid->crash_position = rid->body.pos;
+            rid->vel *= 0.f;
+            rid->base_velocity = 0.f;
+            rid->input_velocity = 0.f;
+            glob->current_level.game_over = true;
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
 
-    // NOTE: Limit velocities
-    if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
-        p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
-    }
 
     // NOTE: Loop over window edged pacman style,
     //       but only on the top and bottom
@@ -1193,4 +1346,5 @@ void apply_air_resistances(PR::Plane* p) {
     /*             ",  HL: " << horizontal_lift << */
     /*             ",  HD: " << horizontal_drag << std::endl; */
 }
+
 
