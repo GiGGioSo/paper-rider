@@ -86,7 +86,7 @@ int main() {
     while (!glfwWindowShouldClose(glob->window.glfw_win)) {
 
         this_frame = (float)glfwGetTime();
-        delta_time = this_frame - last_frame;
+        glob->state.delta_time = this_frame - last_frame;
         last_frame = this_frame;
 
         fps_counter++;
@@ -108,23 +108,23 @@ int main() {
         if (glob->input.exit)
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
 
-        switch (glob->current_state) {
+        switch (glob->state.current_case) {
             case PR::MENU:
             {
-                menu_update(delta_time);
+                menu_update();
                 menu_draw();
                 break;
             }
             case PR::LEVEL1:
             {
-                level1_update(delta_time);
-                level1_draw(delta_time);
+                level1_update();
+                level1_draw();
                 break;
             }
             case PR::LEVEL2:
             {
-                level2_update(delta_time);
-                level2_draw(delta_time);
+                level2_update();
+                level2_draw();
                 break;
             }
         }
@@ -141,7 +141,7 @@ int main() {
 
 void glob_init(void) {
 
-    glob->current_state = PR::MENU;
+    glob->state.current_case = PR::MENU;
     menu_prepare(&glob->current_level);
 
     PR::WinInfo* win = &glob->window;

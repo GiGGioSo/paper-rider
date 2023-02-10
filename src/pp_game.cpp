@@ -36,6 +36,8 @@
 #define RIDER_INPUT_VELOCITY_LIMIT (400.f)
 
 void apply_air_resistances(PR::Plane* p);
+void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
+void move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
@@ -170,13 +172,13 @@ int menu_prepare(PR::Level *level) {
     return 0;
 }
 
-void menu_update(float dt) {
+void menu_update() {
     InputController *input = &glob->input;
 
     if (input->level1) {
         int preparation_result = level1_prepare(&glob->current_level);
         if (preparation_result == 0) {
-            glob->current_state = PR::LEVEL1;
+            glob->state.current_case = PR::LEVEL1;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         }
@@ -184,7 +186,7 @@ void menu_update(float dt) {
     if (input->level2) {
         int preparation_result = level2_prepare(&glob->current_level);
         if (preparation_result == 0) {
-            glob->current_state = PR::LEVEL2;
+            glob->state.current_case = PR::LEVEL2;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         }
@@ -344,26 +346,7 @@ int level1_prepare(PR::Level *level) {
     return 0;
 }
 
-/*
- * case !plane.CRASHED && rid.ATTACHED
- *      - plane.air_resistance
- *      - plane.handle_input
- *      - rid.move_to_plane
- *
- * case !plane.CRASHED && !rid.ATTACHED
- *      - plane.air_resistance
- *      - rid.handle_input
- *
- * case plane.CRASHED && !rid.ATTACHED
- *      - rid.handle_input
- *
- *
- * case plane.CRASHED && rid.ATTACHED
- *      - 
- *
- */
-
-void level1_update(float dt) {
+void level1_update() {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -376,6 +359,7 @@ void level1_update(float dt) {
     // Global stuff
     PR::WinInfo *win = &glob->window;
     InputController *input = &glob->input;
+    float dt = glob->state.delta_time;
 
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
@@ -384,11 +368,13 @@ void level1_update(float dt) {
         if (boosts_number) free(boosts);
         int preparation_result = menu_prepare(&glob->current_level);
         if (preparation_result == 0) {
-            glob->current_state = PR::MENU;
+            glob->state.current_case = PR::MENU;
         }
     }
 
     #if 0
+    // Do I want the plane to keep going if the rider crashes?
+
     // Structure of the update loop of level1
     if (!p->crashed) {
         p->update();
@@ -404,6 +390,11 @@ void level1_update(float dt) {
             }
         } else { // rid->crashed
             rid->crash_particles();
+            if (rid->attached) {
+                cam->to_plane();
+            } else {
+                cam->to_rider();
+            }
         }
     } else { // p->crashed
         p->particles();
@@ -411,7 +402,6 @@ void level1_update(float dt) {
             if (rid->attached) {
                 rid->move_to_plane();
                 cam->to_plane();
-                nothing();
             } else { // !rid->attached
                 rid->input();
                 rid->update();
@@ -419,6 +409,11 @@ void level1_update(float dt) {
             }
         } else { // rid->crashed
             rid->crash_particles();
+            if (rid->attached) {
+                cam->to_plane();
+            } else { // !rid->attached
+                cam->to_rider();
+            }
         }
     }
     #endif
@@ -478,22 +473,7 @@ void level1_update(float dt) {
         // #### END PLANE STUFF
         if (!rid->crashed) {
             if (rid->attached) {
-                // NOTE: Making the rider stick to the plane
-                rid->body.angle = p->body.angle;
-                rid->body.pos.x =
-                    p->body.pos.x +
-                    (p->body.dim.x - rid->body.dim.x)*0.5f -
-                    (p->body.dim.y + rid->body.dim.y)*0.5f *
-                        sin(glm::radians(rid->body.angle)) -
-                    (p->body.dim.x*0.2f) *
-                        cos(glm::radians(rid->body.angle));
-                rid->body.pos.y =
-                    p->body.pos.y +
-                    (p->body.dim.y - rid->body.dim.y)*0.5f -
-                    (p->body.dim.y + rid->body.dim.y)*0.5f *
-                        cos(glm::radians(rid->body.angle)) +
-                    (p->body.dim.x*0.2f) *
-                        sin(glm::radians(rid->body.angle));
+                move_rider_to_plane(rid, p);
                 // NOTE: Changing plane angle based on input
                 if (input->left_right) {
                     p->body.angle -= 150.f * input->left_right * dt;
@@ -514,10 +494,7 @@ void level1_update(float dt) {
                     rid->jump_time_elapsed = 0.f;
                 }
                 // NOTE: Making the camera move to the plane
-                cam->pos.x =
-                    lerp(cam->pos.x,
-                    p->render_zone.pos.x+p->render_zone.dim.x*0.5f,
-                    dt * cam->speed_multiplier);
+                lerp_camera_x_to_rect(cam, &p->body, true);
             } else { // !rid->attached
 
                 // NOTE: Modify accelleration based on input
@@ -561,39 +538,25 @@ void level1_update(float dt) {
                 }
 
                 // NOTE: Make the camera follow the rider
-                cam->pos.x = lerp(cam->pos.x,
-                                  rid->render_zone.pos.x +
-                                      rid->render_zone.dim.x*0.5f,
-                                  dt * cam->speed_multiplier);
+                lerp_camera_x_to_rect(cam, &rid->body, true);
             }
         } else { // rid->crashed
             // rid->crash_particles();
+            if (rid->attached) {
+                // NOTE: Making the camera move to the plane
+                lerp_camera_x_to_rect(cam, &p->body, true);
+            } else { // !rid->attached
+                // NOTE: Make the camera follow the rider
+                lerp_camera_x_to_rect(cam, &rid->body, true);
+            }
         }
     } else { // p->crashed
         // p->particles();
         if (!rid->crashed) {
             if (rid->attached) {
-                // NOTE: Making the rider stick to the plane
-                rid->body.angle = p->body.angle;
-                rid->body.pos.x =
-                    p->body.pos.x +
-                    (p->body.dim.x - rid->body.dim.x)*0.5f -
-                    (p->body.dim.y + rid->body.dim.y)*0.5f *
-                        sin(glm::radians(rid->body.angle)) -
-                    (p->body.dim.x*0.2f) *
-                        cos(glm::radians(rid->body.angle));
-                rid->body.pos.y =
-                    p->body.pos.y +
-                    (p->body.dim.y - rid->body.dim.y)*0.5f -
-                    (p->body.dim.y + rid->body.dim.y)*0.5f *
-                        cos(glm::radians(rid->body.angle)) +
-                    (p->body.dim.x*0.2f) *
-                        sin(glm::radians(rid->body.angle));
+                move_rider_to_plane(rid, p);
                 // NOTE: Making the camera move to the plane
-                cam->pos.x =
-                    lerp(cam->pos.x,
-                    p->render_zone.pos.x+p->render_zone.dim.x*0.5f,
-                    dt * cam->speed_multiplier);
+                lerp_camera_x_to_rect(cam, &p->body, true);
             } else { // !rid->attached
 
                 // NOTE: Modify accelleration based on input
@@ -629,13 +592,17 @@ void level1_update(float dt) {
                 rid->jump_time_elapsed += dt;
 
                 // NOTE: Make the camera follow the rider
-                cam->pos.x = lerp(cam->pos.x,
-                                  rid->render_zone.pos.x +
-                                      rid->render_zone.dim.x*0.5f,
-                                  dt * cam->speed_multiplier);
+                lerp_camera_x_to_rect(cam, &rid->body, true);
             }
         } else { // rid->crashed
             // rid->crash_particles();
+            if (rid->attached) {
+                // NOTE: Making the camera move to the plane
+                lerp_camera_x_to_rect(cam, &p->body, true);
+            } else { // !rid->attached
+                // NOTE: Make the camera follow the rider
+                lerp_camera_x_to_rect(cam, &rid->body, true);
+            }
         }
     }
 
@@ -650,7 +617,6 @@ void level1_update(float dt) {
             // NOTE: Plane colliding with an obstacle
 
             if (rid->attached) {
-                rid->crashed = true;
                 rid->vel *= 0.f;
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
@@ -666,12 +632,8 @@ void level1_update(float dt) {
         if (rect_are_colliding(&rid->body, obs)) {
             // NOTE: Rider colliding with an obstacle
 
-            if (rid->attached) {
-                p->crashed = true;
-                p->acc *= 0.f;
-                p->vel *= 0.f;
-            }
             rid->crashed = true;
+            rid->attached = false;
             rid->crash_position = rid->body.pos;
             rid->vel *= 0.f;
             rid->base_velocity = 0.f;
@@ -743,7 +705,7 @@ void level1_update(float dt) {
     }
 }
 
-void level1_draw(float dt) {
+void level1_draw() {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
@@ -752,7 +714,9 @@ void level1_draw(float dt) {
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
+    // Global stuff
     PR::WinInfo *win = &glob->window;
+    float dt = glob->state.delta_time;
 
     ps.time_between_particles = lerp(0.02f, 0.005f,
 		    		     glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
@@ -936,7 +900,7 @@ int level2_prepare(PR::Level *level) {
     return 0;
 }
 
-void level2_update(float dt) {
+void level2_update() {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -949,6 +913,7 @@ void level2_update(float dt) {
     // Global stuff
     PR::WinInfo *win = &glob->window;
     InputController *input = &glob->input;
+    float dt = glob->state.delta_time;
 
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
@@ -958,7 +923,7 @@ void level2_update(float dt) {
         if (boosts_number) free(boosts);
         int preparation_result = menu_prepare(&glob->current_level);
         if (preparation_result == 0) {
-            glob->current_state = PR::MENU;
+            glob->state.current_case = PR::MENU;
         }
     }
 
@@ -1103,7 +1068,7 @@ void level2_update(float dt) {
             if (boosts_number) free(boosts);
             int preparation_result = menu_prepare(&glob->current_level);
             if (preparation_result == 0) {
-                glob->current_state = PR::MENU;
+                glob->state.current_case = PR::MENU;
             }
 
             // TODO: Debug flag
@@ -1116,7 +1081,7 @@ void level2_update(float dt) {
             if (boosts_number) free(boosts);
             int preparation_result = menu_prepare(&glob->current_level);
             if (preparation_result == 0) {
-                glob->current_state = PR::MENU;
+                glob->state.current_case = PR::MENU;
             }
 
             // TODO: Debug flag
@@ -1188,7 +1153,7 @@ void level2_update(float dt) {
     }
 }
 
-void level2_draw(float dt) {
+void level2_draw() {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
@@ -1197,7 +1162,9 @@ void level2_draw(float dt) {
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
+    // Global stuff
     PR::WinInfo *win = &glob->window;
+    // float dt = glob->state.delta_time;
 
     // High wind zone
     /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
@@ -1275,6 +1242,8 @@ void level2_draw(float dt) {
     quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
 }
 
+// Utilities
+
 void apply_air_resistances(PR::Plane* p) {
     PR::Atmosphere *air = &glob->current_level.air;
 
@@ -1345,6 +1314,35 @@ void apply_air_resistances(PR::Plane* p) {
     /*             ",  VD: " << vertical_drag << */
     /*             ",  HL: " << horizontal_lift << */
     /*             ",  HD: " << horizontal_drag << std::endl; */
+}
+
+void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
+    // NOTE: Making the camera move to the plane
+    float dest_x = center ?
+                   rec->pos.x + rec->dim.x*0.5f :
+                   rec->pos.x;
+    cam->pos.x = lerp(cam->pos.x,
+                      dest_x,
+                      glob->state.delta_time * cam->speed_multiplier);
+}
+
+void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
+    // NOTE: Making the rider stick to the plane
+    rid->body.angle = p->body.angle;
+    rid->body.pos.x =
+        p->body.pos.x +
+        (p->body.dim.x - rid->body.dim.x)*0.5f -
+        (p->body.dim.y + rid->body.dim.y)*0.5f *
+            sin(glm::radians(rid->body.angle)) -
+        (p->body.dim.x*0.2f) *
+            cos(glm::radians(rid->body.angle));
+    rid->body.pos.y =
+        p->body.pos.y +
+        (p->body.dim.y - rid->body.dim.y)*0.5f -
+        (p->body.dim.y + rid->body.dim.y)*0.5f *
+            cos(glm::radians(rid->body.angle)) +
+        (p->body.dim.x*0.2f) *
+            sin(glm::radians(rid->body.angle));
 }
 
 

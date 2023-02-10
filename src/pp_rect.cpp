@@ -228,7 +228,6 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
             (y0 - center_y2) * cos2;
     if (r2->pos.x < p1.x && p1.x < r2->pos.x+r2->dim.x &&
         r2->pos.y < p1.y && p1.y < r2->pos.y+r2->dim.y) {
-        std::cout << "R1 inside R2" << std::endl;
         return true;
     }
 
@@ -242,7 +241,6 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
             (t0 - center_y1) * cos1;
     if (r1->pos.x < p2.x && p2.x < r1->pos.x+r1->dim.x &&
         r1->pos.y < p2.y && p2.y < r1->pos.y+r1->dim.y) {
-        std::cout << "R2 inside R1" << std::endl;
         return true;
     }
 

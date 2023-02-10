@@ -100,12 +100,16 @@ struct PR {
 
     InputController input;
 
-    enum game_state {
+    enum GameCase {
         MENU = 0,
         LEVEL1 = 1,
         LEVEL2 = 2,
     };
-    game_state current_state;
+    struct GameState {
+        float delta_time;
+        GameCase current_case;
+    };
+    GameState state;
 
     struct WinInfo {
         unsigned int w;

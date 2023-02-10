@@ -5,16 +5,16 @@
 #include "pp_globals.h"
 
 int menu_prepare(PR::Level *level);
-void menu_update(float dt);
+void menu_update(void);
 void menu_draw(void);
 
 int level1_prepare(PR::Level *level);
-void level1_update(float dt);
-void level1_draw(float dt);
+void level1_update(void);
+void level1_draw(void);
 
 int level2_prepare(PR::Level *level);
-void level2_update(float dt);
-void level2_draw(float dt);
+void level2_update(void);
+void level2_draw(void);
 
 #define POW2(x) (x * x)
 
