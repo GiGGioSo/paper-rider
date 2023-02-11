@@ -70,6 +70,23 @@ struct PR {
     struct Atmosphere {
         float density;
     };
+    struct Particle {
+        Rect body;
+        glm::vec2 vel;
+        glm::vec4 color;
+    };
+    struct ParticleSystem {
+        Particle *particles;
+        size_t particles_number;
+
+        size_t current_particle;
+
+        void (*create_particle)(PR::Particle *);
+        void (*update_particle)(PR::Particle *);
+
+        float time_between_particles;
+        float time_elapsed;
+    };
 
     struct Level {
         Plane plane;
@@ -79,6 +96,8 @@ struct PR {
         Rider rider;
 
         bool game_over;
+
+        ParticleSystem particle_systems[3];
 
         size_t obstacles_number;
         Rect *obstacles;

@@ -207,22 +207,30 @@ void menu_draw(void) {
     return;
 }
 
+void create_particle_plane_boost(PR::Particle *particle) {
+    PR::Plane *p = &glob->current_level.plane;
+    particle->body.pos = p->body.pos + p->body.dim * 0.5f;
+    particle->body.dim.x = 10.f;
+    particle->body.dim.y = 10.f;
+    particle->color.r = 1.0f;
+    particle->color.g = 1.0f;
+    particle->color.b = 1.0f;
+    particle->color.a = 1.0f;
+    float movement_angle = glm::radians(p->body.angle);
+    particle->vel.x =
+        (glm::length(p->vel) - 400.f) * cos(movement_angle) +
+        (float)((rand() % 101) - 50);
+    particle->vel.y =
+        -(glm::length(p->vel) - 400.f) * sin(movement_angle) +
+        (float)((rand() % 101) - 50);
+}
 
-// TODO: Integrate once you used it more than one time
-struct Particle {
-    Rect body;
-    glm::vec2 vel;
-    glm::vec4 color;
-};
-
-struct ParticleSystem {
-    Particle particles[200];
-    int current_particle = 0;
-    float time_between_particles;
-    float time_elapsed;
-};
-
-ParticleSystem ps;
+void update_particle_plane_boost(PR::Particle *particle) {
+    float dt = glob->state.delta_time;
+    particle->vel *= (1.f - dt); 
+    particle->color.a -= particle->color.a * dt * 3.0f;
+    particle->body.pos += particle->vel * dt;
+}
 
 int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
@@ -296,12 +304,15 @@ int level1_prepare(PR::Level *level) {
     air->density = 0.015f;
 
     level->obstacles_number = 50;
-    level->obstacles = (Rect *) malloc(sizeof(Rect) * level->obstacles_number);
-    if (level->obstacles == NULL) {
-        std::cout << "Buy more RAM!" << std::endl;
-        return 1;
+    if (level->obstacles_number) {
+        level->obstacles =
+            (Rect *) std::malloc(sizeof(Rect) *
+                            level->obstacles_number);
+        if (level->obstacles == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+            return 1;
+        }
     }
-
     for(size_t obstacle_index = 0;
         obstacle_index < level->obstacles_number;
         ++obstacle_index) {
@@ -318,11 +329,14 @@ int level1_prepare(PR::Level *level) {
     }
 
     level->boosts_number = 2;
-    level->boosts = (PR::BoostPad *) malloc(sizeof(PR::BoostPad) *
-                                       level->boosts_number);
-    if (level->boosts == NULL) {
-        std::cout << "Buy more RAM!" << std::endl;
-        return 1;
+    if (level->boosts_number) {
+        level->boosts =
+            (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
+                                    level->boosts_number);
+        if (level->boosts == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+            return 1;
+        }
     }
     for (size_t boost_index = 0;
          boost_index < level->boosts_number;
@@ -343,6 +357,100 @@ int level1_prepare(PR::Level *level) {
         pad->col.a = 1.f;
     }
 
+    // Populate particle systems
+    PR::ParticleSystem *boost_ps = &level->particle_systems[0];
+    boost_ps->current_particle = 0;
+    boost_ps->time_between_particles = 0.f;
+    boost_ps->time_elapsed = 0.f;
+    boost_ps->create_particle = create_particle_plane_boost;
+    boost_ps->update_particle = update_particle_plane_boost;
+    boost_ps->particles_number = 200;
+    if (boost_ps->particles_number) {
+        boost_ps->particles =
+            (PR::Particle *) std::malloc(sizeof(PR::Particle) *
+                                     boost_ps->particles_number);
+        if (boost_ps->particles == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+        }
+    }
+    for(size_t particle_index = 0;
+        particle_index < boost_ps->particles_number;
+        ++particle_index) {
+        PR::Particle *boost_particle = boost_ps->particles + particle_index;
+
+        boost_particle->body.pos.x = 0.f;
+        boost_particle->body.pos.y = 0.f;
+        boost_particle->body.dim.x = 0.f;
+        boost_particle->body.dim.y = 0.f;
+        boost_particle->vel.x = 0.f;
+        boost_particle->vel.y = 0.f;
+        boost_particle->color.r = 0.f;
+        boost_particle->color.g = 0.f;
+        boost_particle->color.b = 0.f;
+        boost_particle->color.a = 0.f;
+    }
+
+    PR::ParticleSystem *plane_crash_ps = &level->particle_systems[1];
+    plane_crash_ps->particles_number = 0;
+    plane_crash_ps->current_particle = 0;
+    plane_crash_ps->time_between_particles = 0.f;
+    plane_crash_ps->time_elapsed = 0.f;
+    if (plane_crash_ps->particles_number) {
+        plane_crash_ps->particles =
+            (PR::Particle *) std::malloc(sizeof(PR::Particle) *
+                                     plane_crash_ps->particles_number);
+        if (plane_crash_ps->particles == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+        }
+    }
+    for(size_t particle_index = 0;
+        particle_index < plane_crash_ps->particles_number;
+        ++particle_index) {
+        PR::Particle *plane_crash_particle = plane_crash_ps->particles +
+                                         particle_index;
+
+        plane_crash_particle->body.pos.x = 0.f;
+        plane_crash_particle->body.pos.y = 0.f;
+        plane_crash_particle->body.dim.x = 0.f;
+        plane_crash_particle->body.dim.y = 0.f;
+        plane_crash_particle->vel.x = 0.f;
+        plane_crash_particle->vel.y = 0.f;
+        plane_crash_particle->color.r = 0.f;
+        plane_crash_particle->color.g = 0.f;
+        plane_crash_particle->color.b = 0.f;
+        plane_crash_particle->color.a = 0.f;
+    }
+
+    PR::ParticleSystem *rider_crash_ps = &level->particle_systems[2];
+    rider_crash_ps->particles_number = 0;
+    rider_crash_ps->current_particle = 0;
+    rider_crash_ps->time_between_particles = 0.f;
+    rider_crash_ps->time_elapsed = 0.f;
+    if (rider_crash_ps->particles_number) {
+        rider_crash_ps->particles =
+            (PR::Particle *) std::malloc(sizeof(PR::Particle) *
+                                     rider_crash_ps->particles_number);
+        if (rider_crash_ps->particles == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+        }
+    }
+    for(size_t particle_index = 0;
+        particle_index < rider_crash_ps->particles_number;
+        ++particle_index) {
+        PR::Particle *rider_crash_particle = rider_crash_ps->particles +
+                                         particle_index;
+
+        rider_crash_particle->body.pos.x = 0.f;
+        rider_crash_particle->body.pos.y = 0.f;
+        rider_crash_particle->body.dim.x = 0.f;
+        rider_crash_particle->body.dim.y = 0.f;
+        rider_crash_particle->vel.x = 0.f;
+        rider_crash_particle->vel.y = 0.f;
+        rider_crash_particle->color.r = 0.f;
+        rider_crash_particle->color.g = 0.f;
+        rider_crash_particle->color.b = 0.f;
+        rider_crash_particle->color.a = 0.f;
+    }
     return 0;
 }
 
@@ -714,45 +822,38 @@ void level1_draw() {
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
+    PR::ParticleSystem *boost_ps =
+        &glob->current_level.particle_systems[0];
+    PR::ParticleSystem *plane_crash_ps =
+        &glob->current_level.particle_systems[1];
+    PR::ParticleSystem *rider_crash_ps =
+        &glob->current_level.particle_systems[2];
+
     // Global stuff
     PR::WinInfo *win = &glob->window;
     float dt = glob->state.delta_time;
 
-    ps.time_between_particles = lerp(0.02f, 0.005f,
+    boost_ps->time_between_particles = lerp(0.02f, 0.005f,
 		    		     glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
+    boost_ps->time_elapsed += dt;
+    if (boost_ps->time_elapsed > boost_ps->time_between_particles) {
+        boost_ps->time_elapsed -= boost_ps->time_between_particles;
 
-    ps.time_elapsed += dt;
-    if (ps.time_elapsed > ps.time_between_particles) {
-        ps.time_elapsed -= ps.time_between_particles;
+        PR::Particle *particle = boost_ps->particles +
+                                 boost_ps->current_particle;
+        boost_ps->current_particle = (boost_ps->current_particle + 1) %
+                                     boost_ps->particles_number;
 
-        Particle *particle = &ps.particles[ps.current_particle++];
-        ps.current_particle = ps.current_particle % ARRAY_LENGTH(ps.particles);
-
-        particle->body.pos = p->body.pos + p->body.dim * 0.5f;
-        particle->body.dim.x = 10.f;
-        particle->body.dim.y = 10.f;
-        particle->color.r = 1.0f;
-        particle->color.g = 1.0f;
-        particle->color.b = 1.0f;
-        particle->color.a = 1.0f;
-        float movement_angle = glm::radians(p->body.angle);
-        particle->vel.x =
-		(glm::length(p->vel) - 400.f) * cos(movement_angle) +
-		(float)((rand() % 101) - 50);
-        particle->vel.y =
-		-(glm::length(p->vel) - 400.f) * sin(movement_angle) +
-		(float)((rand() % 101) - 50);
+        (boost_ps->create_particle)(particle);
     }
 
     for (size_t particle_index = 0;
-         particle_index < ARRAY_LENGTH(ps.particles);
+         particle_index < boost_ps->particles_number;
          ++particle_index) {
 
-        Particle *particle = &ps.particles[particle_index];
+        PR::Particle *particle = boost_ps->particles + particle_index;
 
-        particle->vel *= (1.f - dt); 
-        particle->color.a -= particle->color.a * dt * 3.0f;
-        particle->body.pos += particle->vel * dt;
+        (boost_ps->update_particle)(particle);
 
         quad_render_add_queue(rect_in_camera_space(particle->body, cam),
                              particle->color, true);
