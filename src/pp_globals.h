@@ -81,8 +81,10 @@ struct PR {
 
         size_t current_particle;
 
-        void (*create_particle)(PR::Particle *);
-        void (*update_particle)(PR::Particle *);
+        bool active;
+
+        void (*create_particle)(PR::ParticleSystem *, PR::Particle *);
+        void (*update_particle)(PR::ParticleSystem *, PR::Particle *);
 
         float time_between_particles;
         float time_elapsed;

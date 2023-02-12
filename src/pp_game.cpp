@@ -11,7 +11,10 @@
 #include "pp_quad_renderer.h"
 #include "pp_rect.h"
 
-// TODO: I probably do not need different update and draw method for each level
+// FIXME: I probably do not need different update and draw method for each level
+
+// TODO: Add support to render triangles
+// TODO: Make the obstacles be possibly triangles, just add a bool to the rect
 
 // TODO:
 //  - Proper wind
@@ -38,6 +41,22 @@
 void apply_air_resistances(PR::Plane* p);
 void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
 void move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
+
+// Particle system functions
+void create_particle_plane_boost(PR::ParticleSystem *ps,
+                                 PR::Particle *particle);
+void update_particle_plane_boost(PR::ParticleSystem *ps,
+                                 PR::Particle *particle);
+
+void create_particle_plane_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle);
+void update_particle_plane_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle);
+
+void create_particle_rider_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle);
+void update_particle_rider_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle);
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
@@ -207,31 +226,6 @@ void menu_draw(void) {
     return;
 }
 
-void create_particle_plane_boost(PR::Particle *particle) {
-    PR::Plane *p = &glob->current_level.plane;
-    particle->body.pos = p->body.pos + p->body.dim * 0.5f;
-    particle->body.dim.x = 10.f;
-    particle->body.dim.y = 10.f;
-    particle->color.r = 1.0f;
-    particle->color.g = 1.0f;
-    particle->color.b = 1.0f;
-    particle->color.a = 1.0f;
-    float movement_angle = glm::radians(p->body.angle);
-    particle->vel.x =
-        (glm::length(p->vel) - 400.f) * cos(movement_angle) +
-        (float)((rand() % 101) - 50);
-    particle->vel.y =
-        -(glm::length(p->vel) - 400.f) * sin(movement_angle) +
-        (float)((rand() % 101) - 50);
-}
-
-void update_particle_plane_boost(PR::Particle *particle) {
-    float dt = glob->state.delta_time;
-    particle->vel *= (1.f - dt); 
-    particle->color.a -= particle->color.a * dt * 3.0f;
-    particle->body.pos += particle->vel * dt;
-}
-
 int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
 
@@ -241,10 +235,10 @@ int level1_prepare(PR::Level *level) {
     p->crash_position.y = 0.f;
     p->body.pos.x = 200.0f;
     p->body.pos.y = 350.0f;
-    p->body.dim.y = 20.f;
+    p->body.dim.y = 23.f;
     p->body.dim.x = p->body.dim.y * 3.f;
     p->body.angle = 0.f;
-    p->render_zone.dim.y = 30.f;
+    p->render_zone.dim.y = 25.f;
     p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
     p->render_zone.pos = p->body.pos +
                          (p->body.dim - p->render_zone.dim) * 0.5f;
@@ -253,10 +247,10 @@ int level1_prepare(PR::Level *level) {
     p->vel.y = 0.f;
     p->acc.x = 0.f;
     p->acc.y = 0.f;
-    p->mass = 0.005f; // kg
+    p->mass = 0.003f; // kg
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
-    p->alar_surface = 0.15f; // m squared
+    p->alar_surface = 0.12f; // m squared
     p->current_animation = PR::Plane::IDLE_ACC;
     p->animation_countdown = 0.f;
 
@@ -357,13 +351,8 @@ int level1_prepare(PR::Level *level) {
         pad->col.a = 1.f;
     }
 
-    // Populate particle systems
+
     PR::ParticleSystem *boost_ps = &level->particle_systems[0];
-    boost_ps->current_particle = 0;
-    boost_ps->time_between_particles = 0.f;
-    boost_ps->time_elapsed = 0.f;
-    boost_ps->create_particle = create_particle_plane_boost;
-    boost_ps->update_particle = update_particle_plane_boost;
     boost_ps->particles_number = 200;
     if (boost_ps->particles_number) {
         boost_ps->particles =
@@ -371,85 +360,70 @@ int level1_prepare(PR::Level *level) {
                                      boost_ps->particles_number);
         if (boost_ps->particles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
+            return 1;
         }
     }
+    boost_ps->current_particle = 0;
+    boost_ps->time_between_particles = 0.f;
+    boost_ps->time_elapsed = 0.f;
+    boost_ps->active = false;
+    boost_ps->create_particle = create_particle_plane_boost;
+    boost_ps->update_particle = update_particle_plane_boost;
     for(size_t particle_index = 0;
         particle_index < boost_ps->particles_number;
         ++particle_index) {
-        PR::Particle *boost_particle = boost_ps->particles + particle_index;
 
-        boost_particle->body.pos.x = 0.f;
-        boost_particle->body.pos.y = 0.f;
-        boost_particle->body.dim.x = 0.f;
-        boost_particle->body.dim.y = 0.f;
-        boost_particle->vel.x = 0.f;
-        boost_particle->vel.y = 0.f;
-        boost_particle->color.r = 0.f;
-        boost_particle->color.g = 0.f;
-        boost_particle->color.b = 0.f;
-        boost_particle->color.a = 0.f;
+        PR::Particle *particle = boost_ps->particles + particle_index;
+        (boost_ps->create_particle)(boost_ps, particle);
     }
 
     PR::ParticleSystem *plane_crash_ps = &level->particle_systems[1];
-    plane_crash_ps->particles_number = 0;
-    plane_crash_ps->current_particle = 0;
-    plane_crash_ps->time_between_particles = 0.f;
-    plane_crash_ps->time_elapsed = 0.f;
+    plane_crash_ps->particles_number = 50;
     if (plane_crash_ps->particles_number) {
         plane_crash_ps->particles =
             (PR::Particle *) std::malloc(sizeof(PR::Particle) *
                                      plane_crash_ps->particles_number);
         if (plane_crash_ps->particles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
+            return 1;
         }
     }
+    plane_crash_ps->current_particle = 0;
+    plane_crash_ps->time_between_particles = 0.03f;
+    plane_crash_ps->time_elapsed = 0.f;
+    plane_crash_ps->active = false;
+    plane_crash_ps->create_particle = create_particle_plane_crash;
+    plane_crash_ps->update_particle = update_particle_plane_crash;
     for(size_t particle_index = 0;
         particle_index < plane_crash_ps->particles_number;
         ++particle_index) {
-        PR::Particle *plane_crash_particle = plane_crash_ps->particles +
-                                         particle_index;
 
-        plane_crash_particle->body.pos.x = 0.f;
-        plane_crash_particle->body.pos.y = 0.f;
-        plane_crash_particle->body.dim.x = 0.f;
-        plane_crash_particle->body.dim.y = 0.f;
-        plane_crash_particle->vel.x = 0.f;
-        plane_crash_particle->vel.y = 0.f;
-        plane_crash_particle->color.r = 0.f;
-        plane_crash_particle->color.g = 0.f;
-        plane_crash_particle->color.b = 0.f;
-        plane_crash_particle->color.a = 0.f;
+        PR::Particle *particle = plane_crash_ps->particles + particle_index;
+        (plane_crash_ps->create_particle)(plane_crash_ps, particle);
     }
 
     PR::ParticleSystem *rider_crash_ps = &level->particle_systems[2];
     rider_crash_ps->particles_number = 0;
-    rider_crash_ps->current_particle = 0;
-    rider_crash_ps->time_between_particles = 0.f;
-    rider_crash_ps->time_elapsed = 0.f;
     if (rider_crash_ps->particles_number) {
         rider_crash_ps->particles =
             (PR::Particle *) std::malloc(sizeof(PR::Particle) *
                                      rider_crash_ps->particles_number);
         if (rider_crash_ps->particles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
+            return 1;
         }
     }
+    rider_crash_ps->current_particle = 0;
+    rider_crash_ps->time_between_particles = 0.f;
+    rider_crash_ps->time_elapsed = 0.f;
+    rider_crash_ps->active = false;
     for(size_t particle_index = 0;
         particle_index < rider_crash_ps->particles_number;
         ++particle_index) {
-        PR::Particle *rider_crash_particle = rider_crash_ps->particles +
-                                         particle_index;
 
-        rider_crash_particle->body.pos.x = 0.f;
-        rider_crash_particle->body.pos.y = 0.f;
-        rider_crash_particle->body.dim.x = 0.f;
-        rider_crash_particle->body.dim.y = 0.f;
-        rider_crash_particle->vel.x = 0.f;
-        rider_crash_particle->vel.y = 0.f;
-        rider_crash_particle->color.r = 0.f;
-        rider_crash_particle->color.g = 0.f;
-        rider_crash_particle->color.b = 0.f;
-        rider_crash_particle->color.a = 0.f;
+        PR::Particle *particle = rider_crash_ps->particles +
+                                 particle_index;
+        (rider_crash_ps->create_particle)(rider_crash_ps, particle);
     }
     return 0;
 }
@@ -463,6 +437,11 @@ void level1_update() {
     Rect *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
+
+    PR::ParticleSystem *boost_ps =
+        &glob->current_level.particle_systems[0];
+    PR::ParticleSystem *plane_crash_ps =
+        &glob->current_level.particle_systems[1];
 
     // Global stuff
     PR::WinInfo *win = &glob->window;
@@ -526,6 +505,10 @@ void level1_update() {
     }
     #endif
 
+    // It will be set to true once the boost key is pressed
+    boost_ps->active = false;
+    plane_crash_ps->active = false;
+
     if (!p->crashed) {
         // #### START PLANE STUFF
         // NOTE: Reset the accelleration for it to be recalculated
@@ -551,12 +534,12 @@ void level1_update() {
         }
         // Propulsion
         // TODO: Could this be a "powerup" or something?
-        if (glob->input.boost) {
+        if (glob->input.boost &&
+            !rid->crashed && rid->attached) {
             float propulsion = 8.f;
             p->acc.x += propulsion * cos(glm::radians(p->body.angle));
             p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
-            /* std::cout << "PROP.x: " << propulsion * cos(glm::radians(p->body.angle)) */
-            /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
+            boost_ps->active = true;
         }
         // NOTE: The mass is greater if the rider is attached
         if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
@@ -659,7 +642,8 @@ void level1_update() {
             }
         }
     } else { // p->crashed
-        // p->particles();
+        plane_crash_ps->active = true;
+        std::cout << "Crash activated" << std::endl;
         if (!rid->crashed) {
             if (rid->attached) {
                 move_rider_to_plane(rid, p);
@@ -822,45 +806,9 @@ void level1_draw() {
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
-    PR::ParticleSystem *boost_ps =
-        &glob->current_level.particle_systems[0];
-    PR::ParticleSystem *plane_crash_ps =
-        &glob->current_level.particle_systems[1];
-    PR::ParticleSystem *rider_crash_ps =
-        &glob->current_level.particle_systems[2];
-
     // Global stuff
     PR::WinInfo *win = &glob->window;
     float dt = glob->state.delta_time;
-
-    boost_ps->time_between_particles = lerp(0.02f, 0.005f,
-		    		     glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
-    boost_ps->time_elapsed += dt;
-    if (boost_ps->time_elapsed > boost_ps->time_between_particles) {
-        boost_ps->time_elapsed -= boost_ps->time_between_particles;
-
-        PR::Particle *particle = boost_ps->particles +
-                                 boost_ps->current_particle;
-        boost_ps->current_particle = (boost_ps->current_particle + 1) %
-                                     boost_ps->particles_number;
-
-        (boost_ps->create_particle)(particle);
-    }
-
-    for (size_t particle_index = 0;
-         particle_index < boost_ps->particles_number;
-         ++particle_index) {
-
-        PR::Particle *particle = boost_ps->particles + particle_index;
-
-        (boost_ps->update_particle)(particle);
-
-        quad_render_add_queue(rect_in_camera_space(particle->body, cam),
-                             particle->color, true);
-    }
-
-    // High wind zone
-    /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the boosts
     for(size_t boost_index = 0;
@@ -894,15 +842,55 @@ void level1_draw() {
         quad_render_add_queue(obs_in_cam_pos,
                               glm::vec4(1.f, 0.2f, 0.2f, 1.f),
                               false);
-
     }
+
+
+    // Set the time_between_particles for the boost based on the velocity
+    glob->current_level.particle_systems[0].time_between_particles =
+        lerp(0.02f, 0.005f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
+
+    // NOTE: Updating and rendering all the particle systems
+    for(size_t ps_index = 0;
+        ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
+        ++ps_index) {
+        PR::ParticleSystem *ps =
+            &glob->current_level.particle_systems[ps_index];
+
+        if (ps->particles_number == 0) continue;
+
+        ps->time_elapsed += dt;
+        if (ps->time_elapsed > ps->time_between_particles) {
+            ps->time_elapsed -= ps->time_between_particles;
+
+            PR::Particle *particle = ps->particles +
+                                     ps->current_particle;
+            ps->current_particle = (ps->current_particle + 1) %
+                                         ps->particles_number;
+
+            (ps->create_particle)(ps, particle);
+        }
+        for (size_t particle_index = 0;
+             particle_index < ps->particles_number;
+             ++particle_index) {
+
+            PR::Particle *particle = ps->particles + particle_index;
+
+            (ps->update_particle)(ps, particle);
+
+            quad_render_add_queue(rect_in_camera_space(particle->body, cam),
+                                 particle->color, true);
+        }
+    }
+
+    // High wind zone
+    /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the plane
     quad_render_add_queue(rect_in_camera_space(p->body, cam),
                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
                           false);
 
-    // TODO: Implement the boost as an actual thing
+    /*
     glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
     if (glob->input.boost) {
         float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
@@ -919,6 +907,7 @@ void level1_draw() {
                               glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
                               true);
     }
+    */
 
     quad_render_add_queue(rect_in_camera_space(rid->render_zone, cam),
                           glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
@@ -1051,7 +1040,7 @@ void level2_update() {
 
     // Propulsion
     // TODO: Could this be a "powerup" or something?
-    if (glob->input.boost) {
+    if (input->boost) {
         float propulsion = 8.f;
         p->acc.x += propulsion * cos(glm::radians(p->body.angle));
         p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
@@ -1446,4 +1435,105 @@ void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
             sin(glm::radians(rid->body.angle));
 }
 
+// Particle systems
 
+void create_particle_plane_boost(PR::ParticleSystem *ps,
+                                 PR::Particle *particle) {
+    if (ps->active) {
+        PR::Plane *p = &glob->current_level.plane;
+        particle->body.pos = p->body.pos + p->body.dim * 0.5f;
+        particle->body.dim.x = 10.f;
+        particle->body.dim.y = 10.f;
+        particle->color.r = 1.0f;
+        particle->color.g = 1.0f;
+        particle->color.b = 1.0f;
+        particle->color.a = 1.0f;
+        float movement_angle = glm::radians(p->body.angle);
+        particle->vel.x =
+            (glm::length(p->vel) - 400.f) * cos(movement_angle) +
+            (float)((rand() % 101) - 50);
+        particle->vel.y =
+            -(glm::length(p->vel) - 400.f) * sin(movement_angle) +
+            (float)((rand() % 101) - 50);
+    } else {
+        // NOTE: If the particle system is not active,
+        //       the new particles should just delete the old ones
+        particle->body.pos.x = 0.f;
+        particle->body.pos.y = 0.f;
+        particle->body.dim.x = 0.f;
+        particle->body.dim.y = 0.f;
+        particle->vel.x = 0.f;
+        particle->vel.y = 0.f;
+        particle->color.r = 0.0f;
+        particle->color.g = 0.0f;
+        particle->color.b = 0.0f;
+        particle->color.a = 0.0f;
+    }
+}
+void update_particle_plane_boost(PR::ParticleSystem *ps,
+                                 PR::Particle *particle) {
+    float dt = glob->state.delta_time;
+    particle->vel *= (1.f - dt); 
+    particle->color.a -= particle->color.a * dt * 3.0f;
+    particle->body.pos += particle->vel * dt;
+}
+
+void create_particle_plane_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle) {
+    if (ps->active) {
+        PR::Plane *p = &glob->current_level.plane;
+        particle->body.pos = p->body.pos + p->body.dim*0.5f;
+        particle->body.dim.x = 15.f;
+        particle->body.dim.y = 15.f;
+        particle->body.angle = 0.f;
+        particle->vel.x = (float)((rand() % 301) - 150.f);
+        particle->vel.y = -150.f + (float)((rand() % 131) - 130.f);
+        particle->color.r = 1.0f;
+        particle->color.g = 0.0f;
+        particle->color.b = 0.0f;
+        particle->color.a = 1.0f;
+    } else {
+        particle->body.pos.x = 0.f;
+        particle->body.pos.y = 0.f;
+        particle->body.dim.x = 0.f;
+        particle->body.dim.y = 0.f;
+        particle->vel.x = 0.f;
+        particle->vel.y = 0.f;
+        particle->color.r = 0.0f;
+        particle->color.g = 0.0f;
+        particle->color.b = 0.0f;
+        particle->color.a = 0.0f;
+    }
+}
+void update_particle_plane_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle) {
+    float dt = glob->state.delta_time;
+    particle->color.a -= particle->color.a * dt * 2.0f;
+    particle->vel.y += 400.f * dt;
+    particle->vel.x *= (1.f - dt);
+    particle->body.pos += particle->vel * dt;
+    particle->body.angle -=
+        glm::sign(particle->vel.x) *
+        lerp(0.f, 720.f, glm::abs(particle->vel.x)/150.f) * dt;
+}
+
+void create_particle_rider_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle) {
+    if (ps->active) {
+    } else {
+        particle->body.pos.x = 0.f;
+        particle->body.pos.y = 0.f;
+        particle->body.dim.x = 0.f;
+        particle->body.dim.y = 0.f;
+        particle->vel.x = 0.f;
+        particle->vel.y = 0.f;
+        particle->color.r = 0.0f;
+        particle->color.g = 0.0f;
+        particle->color.b = 0.0f;
+        particle->color.a = 0.0f;
+    }
+}
+void update_particle_rider_crash(PR::ParticleSystem *ps,
+                                 PR::Particle *particle) {
+    return;
+}
