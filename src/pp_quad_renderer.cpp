@@ -7,7 +7,7 @@
 #include <iostream>
 #include <math.h>
 
-#define PP_MAX_UNICOLOR_QUADS 5000
+#define PP_MAX_UNICOLOR_QUADS 2000
 
 #define PP_MAX_TEXTURED_QUADS 10
 
@@ -28,14 +28,20 @@ void quad_render_init(RendererQuad* quad_renderer) {
     // NOTE: `PP_MAX_UNICOLOR_QUADS` is the max number of unicolor quads displayable together on the screen
     //       6 is the number of vertices for a single quad
     //       6 is the number of floats per vertex (2: position, 4: color)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 6 * PP_MAX_UNICOLOR_QUADS, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(float) * 6 * 6 * PP_MAX_UNICOLOR_QUADS,
+                 NULL, GL_DYNAMIC_DRAW);
 
     // Vertex position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
+    glVertexAttribPointer(0, 2,
+                          GL_FLOAT, GL_FALSE,
+                          6 * sizeof(float), (void*) 0);
     // Vertex color
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) (2 * sizeof(float)));
+    glVertexAttribPointer(1, 4,
+                          GL_FLOAT, GL_FALSE,
+                          6 * sizeof(float), (void*) (2 * sizeof(float)));
 
  
     // Initialization of textured VAO and VBO
@@ -48,11 +54,15 @@ void quad_render_init(RendererQuad* quad_renderer) {
     // NOTE: 10 is the max number of textured quads displayable together on the screen
     //       6 is the number of vertices for a single quad
     //       4 is the number of floats per vertex (2: position, 3: tex_coords)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4 * PP_MAX_TEXTURED_QUADS, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(float) * 6 * 4 * PP_MAX_TEXTURED_QUADS,
+                 NULL, GL_DYNAMIC_DRAW);
 
     // Everything can be done in a single attribute pointer
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
+    glVertexAttribPointer(0, 4,
+                          GL_FLOAT, GL_FALSE,
+                          4 * sizeof(float), (void*) 0);
 
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -63,7 +73,7 @@ void quad_render_init(RendererQuad* quad_renderer) {
 
 }
 
-void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool centered) {
+void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered) {
 
     RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
@@ -72,25 +82,31 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
         y -= h/2;
     }
 
+    size_t vertices_number = triangle ? 3 : 6;
+
     float vertices[] = {
         x  , y+h, c.r, c.g, c.b, c.a,
+        x+w, y+h, c.r, c.g, c.b, c.a,
         x  , y  , c.r, c.g, c.b, c.a,
         x+w, y  , c.r, c.g, c.b, c.a,
-        x  , y+h, c.r, c.g, c.b, c.a,
-        x+w, y  , c.r, c.g, c.b, c.a,
-        x+w, y+h, c.r, c.g, c.b, c.a
+        x+w, y+h, c.r, c.g, c.b, c.a,
+        x  , y  , c.r, c.g, c.b, c.a,
     };
 
     r = glm::radians(-r);
     float center_x = x + w/2;
     float center_y = y + h/2;
 
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < vertices_number; i++) {
         float vx = vertices[i*6 + 0];
         float vy = vertices[i*6 + 1];
 
-        float newX = center_x + (vx - center_x) * cos(r) + (vy - center_y) * sin(r);
-        float newY = center_y + (vx - center_x) * sin(r) - (vy - center_y) * cos(r);
+        float newX = center_x +
+                     (vx - center_x) * cos(r) +
+                     (vy - center_y) * sin(r);
+        float newY = center_y +
+                     (vx - center_x) * sin(r) -
+                     (vy - center_y) * cos(r);
 
         vertices[i*6 + 0] = newX;
         vertices[i*6 + 1] = newY;
@@ -99,10 +115,26 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
     glBindVertexArray(quad_renderer->vao);
     glBindBuffer(GL_ARRAY_BUFFER, quad_renderer->vbo);
 
-    glBufferSubData(GL_ARRAY_BUFFER, quad_renderer->bytes_offset, sizeof(vertices), vertices);
+    if (triangle) {
+        float triangle_vertices[3 * 6];
+        for(size_t vertex_index = 0;
+            vertex_index < ARRAY_LENGTH(triangle_vertices);
+            ++vertex_index) {
+            triangle_vertices[vertex_index] = vertices[vertex_index];
+        }
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        quad_renderer->bytes_offset,
+                        vertices_number * 6 * sizeof(float),
+                        triangle_vertices);
+    } else {
+        glBufferSubData(GL_ARRAY_BUFFER,
+                        quad_renderer->bytes_offset,
+                        vertices_number * 6 * sizeof(float),
+                        vertices);
+    }
 
-    quad_renderer->bytes_offset += sizeof(vertices);
-    quad_renderer->vertex_count += 6;
+    quad_renderer->bytes_offset += vertices_number * 6 * sizeof(float);
+    quad_renderer->vertex_count += vertices_number;
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

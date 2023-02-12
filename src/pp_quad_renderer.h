@@ -19,7 +19,7 @@ struct RendererQuad {
 
 void quad_render_init(RendererQuad* quad_renderer);
 
-void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool centered);
+void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered);
 void quad_render_draw(Shader s);
 
 // NOTE: This is intended to be used with a single texture containing everything
@@ -31,7 +31,7 @@ inline
 void quad_render_add_queue(Rect rec, glm::vec4 c, bool centered) {
     quad_render_add_queue(rec.pos.x, rec.pos.y,
                           rec.dim.x, rec.dim.y, rec.angle,
-                          c, centered);
+                          c, rec.triangle, centered);
 }
 
 inline

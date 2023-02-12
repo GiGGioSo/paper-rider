@@ -27,9 +27,8 @@ PR* glob;
 void glob_init();
 void glob_free();
 
-float last_frame = 0;
-float this_frame = 0;
-float delta_time = 0;
+float last_frame = 0.f;
+float this_frame = 0.f;
 
 int fps_to_display;
 int fps_counter;
@@ -90,7 +89,7 @@ int main() {
         last_frame = this_frame;
 
         fps_counter++;
-        time_from_last_fps_update += delta_time;
+        time_from_last_fps_update += glob->state.delta_time;
         if (time_from_last_fps_update > 1.f) {
             fps_to_display = fps_counter;
             fps_counter = 0;

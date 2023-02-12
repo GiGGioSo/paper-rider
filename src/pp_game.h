@@ -68,6 +68,7 @@ Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
     res.pos = r.pos - cam->pos + glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
     res.dim = r.dim;
     res.angle = r.angle;
+    res.triangle = r.triangle;
 
     return res;
 }
