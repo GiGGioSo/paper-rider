@@ -82,8 +82,9 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
         y -= h/2;
     }
 
+    // NOTE: All the vertices get prepared, but only the 
+    //       necessary amount gets processed.
     size_t vertices_number = triangle ? 3 : 6;
-
     float vertices[] = {
         x  , y+h, c.r, c.g, c.b, c.a,
         x+w, y+h, c.r, c.g, c.b, c.a,
@@ -115,23 +116,10 @@ void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec
     glBindVertexArray(quad_renderer->vao);
     glBindBuffer(GL_ARRAY_BUFFER, quad_renderer->vbo);
 
-    if (triangle) {
-        float triangle_vertices[3 * 6];
-        for(size_t vertex_index = 0;
-            vertex_index < ARRAY_LENGTH(triangle_vertices);
-            ++vertex_index) {
-            triangle_vertices[vertex_index] = vertices[vertex_index];
-        }
-        glBufferSubData(GL_ARRAY_BUFFER,
-                        quad_renderer->bytes_offset,
-                        vertices_number * 6 * sizeof(float),
-                        triangle_vertices);
-    } else {
-        glBufferSubData(GL_ARRAY_BUFFER,
-                        quad_renderer->bytes_offset,
-                        vertices_number * 6 * sizeof(float),
-                        vertices);
-    }
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    quad_renderer->bytes_offset,
+                    vertices_number * 6 * sizeof(float),
+                    vertices);
 
     quad_renderer->bytes_offset += vertices_number * 6 * sizeof(float);
     quad_renderer->vertex_count += vertices_number;
