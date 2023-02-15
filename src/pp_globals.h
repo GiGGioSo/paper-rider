@@ -56,11 +56,15 @@ struct PR {
         bool attached;
         float jump_time_elapsed;
     };
+    struct Obstacle {
+        Rect body;
+        bool collide_plane;
+        bool collide_rider;
+    };
     struct BoostPad {
         Rect body;
         float boost_angle;
         float boost_power;
-        glm::vec4 col;
     };
     struct Camera {
         glm::vec2 pos;
@@ -97,12 +101,10 @@ struct PR {
         Atmosphere air;
         Rider rider;
 
-        bool game_over;
-
         ParticleSystem particle_systems[3];
 
         size_t obstacles_number;
-        Rect *obstacles;
+        Obstacle *obstacles;
         size_t boosts_number;
         BoostPad *boosts;
         // TODO: Coins?

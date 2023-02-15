@@ -11,13 +11,11 @@
 #include "pp_quad_renderer.h"
 #include "pp_rect.h"
 
-// TODO: Ability to make obstacles and pads loaded from a file triangles.
-//       Just add a 0 or a non-zero character in the file. 
+// TODO: Player double jump
 
 // TODO:
 //  - Proper wind
 //  - Find textures
-//  - Proper particle system
 //  - Sound system
 //  - Text rendering
 //  - UI
@@ -25,11 +23,6 @@
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
 
-// TODO: RESEARCH
-// - flags you probably want to google: -MF -MMD (clang & gcc)
-// - https://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
-
-// TODO: Will this always be some arbitrary numbers that kind of just works? YES!!
 #define GRAVITY (9.81f * 50.f)
 
 #define PLANE_VELOCITY_LIMIT (1000.f)
@@ -60,7 +53,7 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
 int load_map_from_file(const char *file_path,
-                       Rect **obstacles,
+                       PR::Obstacle **obstacles,
                        size_t *number_of_obstacles,
                        PR::BoostPad **boosts,
                        size_t *number_of_boosts) {
@@ -79,26 +72,32 @@ int load_map_from_file(const char *file_path,
                   << " obstacles from the file " << file_path
                   << std::endl;
 
-        *obstacles = (Rect *) malloc(sizeof(Rect) * *number_of_obstacles);
+        *obstacles = (PR::Obstacle *) malloc(sizeof(PR::Obstacle) *
+                                      *number_of_obstacles);
 
         for (size_t obstacle_index = 0;
              obstacle_index < *number_of_obstacles;
              ++obstacle_index) {
 
+            int collide_plane, collide_rider, triangle;
             float x, y, w, h, r;
 
             std::fscanf(map_file,
-                        " %f %f %f %f %f",
+                        " %i %i %i %f %f %f %f %f",
+                        &collide_plane, &collide_rider, &triangle,
                         &x, &y, &w, &h, &r);
             if (std::ferror(map_file)) return_defer(errno);
 
-            Rect *rec = *obstacles + obstacle_index;
-            rec->pos.x = x;
-            rec->pos.y = y;
-            rec->dim.x = w;
-            rec->dim.y = h;
-            rec->angle = r;
-            rec->triangle = false;
+            PR::Obstacle *obs = *obstacles + obstacle_index;
+            obs->body.pos.x = x;
+            obs->body.pos.y = y;
+            obs->body.dim.x = w;
+            obs->body.dim.y = h;
+            obs->body.angle = r;
+            obs->body.triangle = triangle;
+
+            obs->collide_plane = collide_plane;
+            obs->collide_rider = collide_rider;
 
             std::cout << "x: " << x
                       << " y: " << y
@@ -128,11 +127,12 @@ int load_map_from_file(const char *file_path,
             boost_index < *number_of_boosts;
             ++boost_index) {
             
+            int triangle;
             float x, y, w, h, r, ba, bp;
 
             std::fscanf(map_file,
-                        " %f %f %f %f %f %f %f",
-                        &x, &y, &w, &h, &r, &ba, &bp);
+                        " %i %f %f %f %f %f %f %f",
+                        &triangle, &x, &y, &w, &h, &r, &ba, &bp);
             if (std::ferror(map_file)) return_defer(errno);
 
             PR::BoostPad *pad = *boosts + boost_index;
@@ -141,14 +141,9 @@ int load_map_from_file(const char *file_path,
             pad->body.dim.x = w;
             pad->body.dim.y = h;
             pad->body.angle = r;
-            pad->body.triangle = false;
+            pad->body.triangle = triangle;
             pad->boost_angle = ba;
             pad->boost_power = bp;
-
-            pad->col.r = 0.f;
-            pad->col.g = 1.f;
-            pad->col.b = 0.f;
-            pad->col.a = 1.f;
 
             std::cout << "x: " << x
                       << " y: " << y
@@ -171,6 +166,36 @@ int load_map_from_file(const char *file_path,
     defer:
     if (map_file) std::fclose(map_file);
     return result;
+}
+
+glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
+    glm::vec4 col;
+
+    if (obs->collide_rider && obs->collide_plane) {
+        col.r = 0.8f;
+        col.g = 0.3f;
+        col.b = 0.3f;
+        col.a = 1.0f;
+    } else
+    if (obs->collide_rider) {
+        col.r = 0.8f;
+        col.g = 0.8f;
+        col.b = 0.8f;
+        col.a = 1.0f;
+    } else
+    if (obs->collide_plane) {
+        col.r = 0.3f;
+        col.g = 0.3f;
+        col.b = 0.8f;
+        col.a = 1.0f;
+    } else {
+        col.r = 0.4f;
+        col.g = 0.4f;
+        col.b = 0.4f;
+        col.a = 1.0f;
+    }
+
+    return col;
 }
 
 int menu_prepare(PR::Level *level) {
@@ -306,7 +331,7 @@ int level1_prepare(PR::Level *level) {
     level->obstacles_number = 50;
     if (level->obstacles_number) {
         level->obstacles =
-            (Rect *) std::malloc(sizeof(Rect) *
+            (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
                             level->obstacles_number);
         if (level->obstacles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
@@ -317,16 +342,19 @@ int level1_prepare(PR::Level *level) {
         obstacle_index < level->obstacles_number;
         ++obstacle_index) {
 
-        Rect *obs = level->obstacles + obstacle_index;
+        PR::Obstacle *obs = level->obstacles + obstacle_index;
 
-        obs->pos.x = win->w * 0.8f * obstacle_index;
-        obs->pos.y = win->h * 0.4f;
+        obs->body.pos.x = win->w * 0.8f * obstacle_index;
+        obs->body.pos.y = win->h * 0.4f;
 
-        obs->dim.x = win->w * 0.1f;
-        obs->dim.y = win->h * 0.3f;
+        obs->body.dim.x = win->w * 0.1f;
+        obs->body.dim.y = win->h * 0.3f;
 
-        obs->angle = 0.0f;
-        obs->triangle = false;
+        obs->body.angle = 0.0f;
+        obs->body.triangle = false;
+
+        obs->collide_plane = (obstacle_index % 2);
+        obs->collide_rider = !(obstacle_index % 2);
     }
 
     level->boosts_number = 2;
@@ -352,11 +380,6 @@ int level1_prepare(PR::Level *level) {
         pad->body.triangle = false;
         pad->boost_angle = pad->body.angle;
         pad->boost_power = 20.f;
-
-        pad->col.r = 0.f;
-        pad->col.g = 1.f;
-        pad->col.b = 0.f;
-        pad->col.a = 1.f;
     }
 
 
@@ -444,7 +467,7 @@ void level1_update() {
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
     size_t obstacles_number = glob->current_level.obstacles_number;
-    Rect *obstacles = glob->current_level.obstacles;
+    PR::Obstacle *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
@@ -716,9 +739,10 @@ void level1_update() {
          obstacle_index < obstacles_number;
          obstacle_index++) {
 
-        Rect *obs = obstacles + obstacle_index;
+        PR::Obstacle *obs = obstacles + obstacle_index;
 
-        if (!p->crashed && rect_are_colliding(&p->body, obs)) {
+        if (!p->crashed && obs->collide_plane &&
+            rect_are_colliding(&p->body, &obs->body)) {
             // NOTE: Plane colliding with an obstacle
 
             if (rid->attached) {
@@ -734,7 +758,8 @@ void level1_update() {
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
         }
-        if (!rid->crashed && rect_are_colliding(&rid->body, obs)) {
+        if (!rid->crashed && obs->collide_rider &&
+            rect_are_colliding(&rid->body, &obs->body)) {
             // NOTE: Rider colliding with an obstacle
 
             rid->crashed = true;
@@ -743,7 +768,6 @@ void level1_update() {
             rid->vel *= 0.f;
             rid->base_velocity = 0.f;
             rid->input_velocity = 0.f;
-            glob->current_level.game_over = true;
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;
@@ -816,7 +840,7 @@ void level1_draw() {
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
     size_t obstacles_number = glob->current_level.obstacles_number;
-    Rect *obstacles = glob->current_level.obstacles;
+    PR::Obstacle *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
@@ -837,7 +861,7 @@ void level1_draw() {
             pad_in_cam_pos.pos.x > win->w * 2.f) continue;
 
         quad_render_add_queue(pad_in_cam_pos,
-                              pad->col,
+                              glm::vec4(0.f, 1.f, 0.f, 1.f),
                               false);
     }
 
@@ -846,15 +870,15 @@ void level1_draw() {
         obstacle_index < obstacles_number;
         ++obstacle_index) {
 
-        Rect *obs = obstacles + obstacle_index;
+        PR::Obstacle *obs = obstacles + obstacle_index;
 
-        Rect obs_in_cam_pos = rect_in_camera_space(*obs, cam);
+        Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
         if (obs_in_cam_pos.pos.x < -((float)win->w) ||
             obs_in_cam_pos.pos.x > win->w * 2.f) continue;
 
         quad_render_add_queue(obs_in_cam_pos,
-                              glm::vec4(1.f, 0.2f, 0.2f, 1.f),
+                              get_obstacle_color(obs),
                               false);
     }
 
@@ -1021,7 +1045,7 @@ void level2_update() {
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
     size_t obstacles_number = glob->current_level.obstacles_number;
-    Rect *obstacles = glob->current_level.obstacles;
+    PR::Obstacle *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
@@ -1178,9 +1202,10 @@ void level2_update() {
          obstacle_index < obstacles_number;
          obstacle_index++) {
 
-        Rect *obs = obstacles + obstacle_index;
+        PR::Obstacle *obs = obstacles + obstacle_index;
 
-        if (rect_are_colliding(&p->body, obs)) {
+        if (!p->crashed && obs->collide_plane &&
+            rect_are_colliding(&p->body, &obs->body)) {
             // NOTE: Plane colliding with an obstacle
 
             if (obstacles_number) free(obstacles);
@@ -1193,7 +1218,8 @@ void level2_update() {
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
         }
-        if (rect_are_colliding(&rid->body, obs)) {
+        if (!rid->crashed && obs->collide_rider &&
+            rect_are_colliding(&rid->body, &obs->body)) {
             // NOTE: Rider colliding with an obstacle
 
             if (obstacles_number) free(obstacles);
@@ -1277,7 +1303,7 @@ void level2_draw() {
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
     size_t obstacles_number = glob->current_level.obstacles_number;
-    Rect *obstacles = glob->current_level.obstacles;
+    PR::Obstacle *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
 
@@ -1301,7 +1327,7 @@ void level2_draw() {
             pad_in_cam_pos.pos.x > win->w * 2.f) continue;
 
         quad_render_add_queue(pad_in_cam_pos,
-                              pad->col,
+                              glm::vec4(0.f, 1.f, 0.f, 1.f),
                               false);
     }
 
@@ -1310,15 +1336,15 @@ void level2_draw() {
         obstacle_index < obstacles_number;
         obstacle_index++) {
 
-        Rect *obs = obstacles + obstacle_index;
+        PR::Obstacle *obs = obstacles + obstacle_index;
 
-        Rect obs_in_cam_pos = rect_in_camera_space(*obs, cam);
+        Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
         if (obs_in_cam_pos.pos.x < -((float)win->w) ||
             obs_in_cam_pos.pos.x > win->w * 2.f) continue;
 
         quad_render_add_queue(obs_in_cam_pos,
-                              glm::vec4(1.f, 0.2f, 0.2f, 1.f),
+                              get_obstacle_color(obs),
                               false);
 
     }
