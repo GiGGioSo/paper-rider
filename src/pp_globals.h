@@ -55,6 +55,8 @@ struct PR {
 
         bool attached;
         float jump_time_elapsed;
+
+        bool second_jump;
     };
     struct Obstacle {
         Rect body;

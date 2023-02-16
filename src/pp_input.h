@@ -3,6 +3,29 @@
 
 #include "../include/glfw3.h"
 
+struct Key {
+    bool old;
+    bool clicked;
+    bool pressed;
+};
+
+inline
+void key_reset(Key *key) {
+    key->old = key->pressed;
+    key->pressed = false;
+    key->clicked = false;
+}
+
+inline
+void key_pressed(Key *key) {
+    key->pressed = true;
+    if (key->old == false) {
+        key->clicked = true;
+    } else {
+        key->clicked = false;
+    }
+}
+
 struct InputController {
     // Gameplay
     // TODO: This is mapped to the vertical movement
@@ -14,25 +37,24 @@ struct InputController {
     //        - Horizontal joystick movement for the rider
 
     // NOTE: Global
-    bool exit;
+    Key exit;
 
     // NOTE: Gameplay
     float left_right;
-    bool boost;
-    bool jump;
-    bool menu;
+    Key boost;
+    Key jump;
+    Key menu;
 
     // NOTE: Menu
-    bool level1;
-    bool level2;
+    Key level1;
+    Key level2;
 
     // NOTE: Debug
-    bool toggle_debug;
-
-    bool up;
-    bool down;
-    bool left;
-    bool right;
+    Key debug;
+    Key up;
+    Key down;
+    Key left;
+    Key right;
 };
 
 /* Updates the InputController global struct

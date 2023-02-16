@@ -3,6 +3,10 @@
 #include "pp_globals.h"
 #include <iostream>
 
+bool jump_old;
+bool jump_clicked;
+bool jump_pressed;
+
 void input_controller_update(GLFWwindow *window, InputController* input) {
     // NOTE: Multiple values might be set based off the same keys.
     //       This could happen because a menu action has the
@@ -10,37 +14,40 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
 
     // reset all to default
     // Global
-    input->exit = false;
+    key_reset(&input->exit);
     // Gameplay
-    input->boost = false;
+    key_reset(&input->boost);
     input->left_right = 0.f;
-    input->jump = false;
-    input->menu = false;
-    // Menu
-    input->level1 = false;
-    input->level2 = false;
-    // Debug
-    input->toggle_debug = false;
 
-    input->up = false;
-    input->down = false;
-    input->left = false;
-    input->right = false;
+    key_reset(&input->jump);
+
+    key_reset(&input->menu);
+    // Menu
+    key_reset(&input->level1);
+    key_reset(&input->level2);
+    // Debug
+    key_reset(&input->debug);
+
+    key_reset(&input->up);
+    key_reset(&input->down);
+    key_reset(&input->left);
+    key_reset(&input->right);
+
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        input->up = true;
+        key_pressed(&input->up);
     }
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        input->down = true;
+        key_pressed(&input->down);
     }
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        input->left = true;
+        key_pressed(&input->left);
     }
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        input->right = true;
+        key_pressed(&input->right);
     }
 
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        input->exit = true;
+        key_pressed(&input->exit);
     }
 
     // Fetching controller input
@@ -118,15 +125,15 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
 
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS ||
         (c1_present && dpad_left)) {
-        input->level1 = true;
+        key_pressed(&input->level1);
     }
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS ||
         (c1_present && dpad_up)) {
-        input->level2 = true;
+        key_pressed(&input->level2);
     }
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS ||
         (c1_present && dpad_down)) {
-        input->menu = true;
+        key_pressed(&input->menu);
     }
 
 
@@ -141,16 +148,16 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     }
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-        input->toggle_debug = true;
+        key_pressed(&input->debug);
     }
 
-    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS ||
+    if ((glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) ||
         (c1_present && b_down)) {
-        input->jump = true;
+        key_pressed(&input->jump);
     }
 
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS ||
         (c1_present && b_up)) {
-        input->boost = true;
+        key_pressed(&input->boost);
     }
 }

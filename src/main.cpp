@@ -104,7 +104,7 @@ int main() {
 
         // NOTE: Update input
         input_controller_update(glob->window.glfw_win, &glob->input);
-        if (glob->input.exit)
+        if (glob->input.exit.clicked)
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
 
         switch (glob->state.current_case) {

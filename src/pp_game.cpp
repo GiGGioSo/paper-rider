@@ -11,15 +11,12 @@
 #include "pp_quad_renderer.h"
 #include "pp_rect.h"
 
-// TODO: Player double jump
-
 // TODO:
 //  - Proper wind
 //  - Find textures
 //  - Sound system
 //  - Text rendering
 //  - UI
-
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
 
@@ -220,7 +217,7 @@ int menu_prepare(PR::Level *level) {
 void menu_update() {
     InputController *input = &glob->input;
 
-    if (input->level1) {
+    if (input->level1.clicked) {
         int preparation_result = level1_prepare(&glob->current_level);
         if (preparation_result == 0) {
             glob->state.current_case = PR::LEVEL1;
@@ -228,7 +225,7 @@ void menu_update() {
                              GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         }
     } else
-    if (input->level2) {
+    if (input->level2.clicked) {
         int preparation_result = level2_prepare(&glob->current_level);
         if (preparation_result == 0) {
             glob->state.current_case = PR::LEVEL2;
@@ -318,7 +315,7 @@ int level1_prepare(PR::Level *level) {
     rid->air_friction_acc = 100.f;
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
-    rid->input_max_accelleration = 4000.f;
+    rid->input_max_accelleration = 5000.f;
 
     PR::Camera *cam = &level->camera;
     cam->pos.x = p->body.pos.x;
@@ -485,7 +482,7 @@ void level1_update() {
 
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
-    if (input->menu) {
+    if (input->menu.clicked) {
         if (obstacles_number) free(obstacles);
         if (boosts_number) free(boosts);
         int preparation_result = menu_prepare(&glob->current_level);
@@ -570,7 +567,7 @@ void level1_update() {
         }
         // Propulsion
         // TODO: Could this be a "powerup" or something?
-        if (glob->input.boost &&
+        if (glob->input.boost.pressed &&
             !rid->crashed && rid->attached) {
             float propulsion = 8.f;
             p->acc.x += propulsion * cos(glm::radians(p->body.angle));
@@ -614,10 +611,11 @@ void level1_update() {
                     p->body.angle += 360.f;
                 }
                 // NOTE: Make the rider jump based on input
-                if (input->jump) {
+                if (input->jump.clicked) {
                     rid->attached = false;
+                    rid->second_jump = true;
                     rid->base_velocity = p->vel.x;
-                    rid->vel.y = p->vel.y - 400.f;
+                    rid->vel.y = p->vel.y*0.5f - 500.f;
                     rid->body.angle = 0.f;
                     rid->jump_time_elapsed = 0.f;
                 }
@@ -647,7 +645,13 @@ void level1_update() {
                                       rid->air_friction_acc * dt;
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
-                rid->vel.y += GRAVITY * dt;
+                rid->vel.y += GRAVITY * 1.5f * dt;
+
+                // NOTE: Rider double jump if available
+                if(rid->second_jump && input->jump.clicked) {
+                    rid->vel.y = -300.f;
+                    rid->second_jump = false;
+                }
 
                 // NOTE: Limit velocity before applying it to the rider
                 if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
@@ -709,7 +713,13 @@ void level1_update() {
                                       rid->air_friction_acc * dt;
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
-                rid->vel.y += GRAVITY * dt;
+                rid->vel.y += GRAVITY * 1.5f * dt;
+
+                // NOTE: Rider double jump if available
+                if(rid->second_jump && input->jump.clicked) {
+                    rid->vel.y -= 300.f;
+                    rid->second_jump = false;
+                }
 
                 // NOTE: Limit velocity before applying it to the rider
                 if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
@@ -1056,7 +1066,7 @@ void level2_update() {
 
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
-    if (input->menu) {
+    if (input->menu.clicked) {
         // Free the stuff only if it was allocated
         if (obstacles_number) free(obstacles);
         if (boosts_number) free(boosts);
@@ -1089,7 +1099,7 @@ void level2_update() {
 
     // Propulsion
     // TODO: Could this be a "powerup" or something?
-    if (input->boost) {
+    if (input->boost.pressed) {
         float propulsion = 8.f;
         p->acc.x += propulsion * cos(glm::radians(p->body.angle));
         p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
@@ -1135,7 +1145,7 @@ void level2_update() {
 
 
         // NOTE: If the rider is attached, make it jump
-        if (input->jump) {
+        if (input->jump.clicked) {
             rid->attached = false;
             rid->base_velocity = p->vel.x;
             rid->vel.y = p->vel.y - 400.f;
@@ -1168,7 +1178,7 @@ void level2_update() {
                               rid->air_friction_acc * dt;
 
         rid->vel.x = rid->base_velocity + rid->input_velocity;
-        rid->vel.y += GRAVITY * dt;
+        rid->vel.y += GRAVITY * 1.5f * dt;
 
         if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
             rid->vel.y = glm::sign(rid->vel.y) *
@@ -1356,7 +1366,7 @@ void level2_draw() {
 
     // TODO: Implement the boost as an actual thing
     glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
-    if (glob->input.boost) {
+    if (glob->input.boost.pressed) {
         float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
                     (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
                     cos(glm::radians(p->render_zone.angle));
