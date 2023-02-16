@@ -28,8 +28,12 @@ bool lines_are_colliding(float x0, float y0,
     if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
     {
         // Collision detected
-        if (x) *x = x0 + (t * s1_x);
-        if (y) *y = y0 + (t * s1_y);
+        if (x) {
+            *x = x0 + (t * s1_x);
+        }
+        if (y) {
+            *y = y0 + (t * s1_y);
+        }
 
         return true;
     }
@@ -37,7 +41,7 @@ bool lines_are_colliding(float x0, float y0,
     return false; // No collision
 }
 
-bool rect_are_colliding(Rect* r1, Rect* r2) {
+bool rect_are_colliding(Rect* r1, Rect* r2, float *cx, float *cy) {
     if (glm::abs(r1->pos.x - r2->pos.x) >
             r1->dim.x + r1->dim.y + r2->dim.x + r2->dim.y
      || glm::abs(r1->pos.y - r2->pos.y) >
@@ -133,14 +137,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
             x1, y1,
             s0, t0,
             s1, t1,
-            NULL, NULL
+            cx, cy
         )) return true;
     if (lines_are_colliding(
             x0, y0,
             x1, y1,
             s0, t0,
             s2, t2,
-            NULL, NULL
+            cx, cy
         )) return true;
     if (r2->triangle) {
         if (lines_are_colliding(
@@ -148,7 +152,7 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x1, y1,
                 s2, t2,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
     } else {
         if (lines_are_colliding(
@@ -156,14 +160,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x1, y1,
                 s2, t2,
                 s3, t3,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (lines_are_colliding(
                 x0, y0,
                 x1, y1,
                 s3, t3,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
     }
 
@@ -173,14 +177,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
             x2, y2,
             s0, t0,
             s1, t1,
-            NULL, NULL
+            cx, cy
         )) return true;
     if (lines_are_colliding(
             x0, y0,
             x2, y2,
             s0, t0,
             s2, t2,
-            NULL, NULL
+            cx, cy
         )) return true;
     if (r2->triangle) {
         if (lines_are_colliding(
@@ -188,7 +192,7 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x2, y2,
                 s2, t2,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
     } else {
         if (lines_are_colliding(
@@ -196,14 +200,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x2, y2,
                 s2, t2,
                 s3, t3,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (lines_are_colliding(
                 x0, y0,
                 x2, y2,
                 s3, t3,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
     }
 
@@ -214,14 +218,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x1, y1,
                 s0, t0,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (lines_are_colliding(
                 x2, y2,
                 x1, y1,
                 s0, t0,
                 s2, t2,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (r2->triangle) {
             if (lines_are_colliding(
@@ -229,7 +233,7 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                     x1, y1,
                     s2, t2,
                     s1, t1,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
         } else {
             if (lines_are_colliding(
@@ -237,14 +241,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                     x1, y1,
                     s2, t2,
                     s3, t3,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
             if (lines_are_colliding(
                     x2, y2,
                     x1, y1,
                     s3, t3,
                     s1, t1,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
         }
     } else {
@@ -254,14 +258,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x3, y3,
                 s0, t0,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (lines_are_colliding(
                 x2, y2,
                 x3, y3,
                 s0, t0,
                 s2, t2,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (r2->triangle) {
             if (lines_are_colliding(
@@ -269,7 +273,7 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                     x3, y3,
                     s2, t2,
                     s1, t1,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
         } else {
             if (lines_are_colliding(
@@ -277,14 +281,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                     x3, y3,
                     s2, t2,
                     s3, t3,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
             if (lines_are_colliding(
                     x2, y2,
                     x3, y3,
                     s3, t3,
                     s1, t1,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
         }
 
@@ -294,14 +298,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                 x1, y1,
                 s0, t0,
                 s1, t1,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (lines_are_colliding(
                 x3, y3,
                 x1, y1,
                 s0, t0,
                 s2, t2,
-                NULL, NULL
+                cx, cy
             )) return true;
         if (r2->triangle) {
             if (lines_are_colliding(
@@ -309,7 +313,7 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                     x1, y1,
                     s2, t2,
                     s1, t1,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
         } else {
             if (lines_are_colliding(
@@ -317,14 +321,14 @@ bool rect_are_colliding(Rect* r1, Rect* r2) {
                     x1, y1,
                     s2, t2,
                     s3, t3,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
             if (lines_are_colliding(
                     x3, y3,
                     x1, y1,
                     s3, t3,
                     s1, t1,
-                    NULL, NULL
+                    cx, cy
                 )) return true;
         }
     }

@@ -12,19 +12,20 @@
 #include "pp_rect.h"
 
 // TODO:
-//  - Proper wind
 //  - Find textures
-//  - Sound system
 //  - Text rendering
 //  - UI
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
 
+// TODO:
+//  - Maybe make the boost change the plane angle
+
 #define GRAVITY (9.81f * 50.f)
 
 #define PLANE_VELOCITY_LIMIT (1000.f)
 #define RIDER_VELOCITY_Y_LIMIT (600.f)
-#define RIDER_INPUT_VELOCITY_LIMIT (400.f)
+#define RIDER_INPUT_VELOCITY_LIMIT (550.f)
 
 // Utilities functions for code reuse
 void apply_air_resistances(PR::Plane* p);
@@ -381,7 +382,7 @@ int level1_prepare(PR::Level *level) {
 
 
     PR::ParticleSystem *boost_ps = &level->particle_systems[0];
-    boost_ps->particles_number = 100;
+    boost_ps->particles_number = 150;
     if (boost_ps->particles_number) {
         boost_ps->particles =
             (PR::Particle *) std::malloc(sizeof(PR::Particle) *
@@ -555,7 +556,7 @@ void level1_update() {
 
             PR::BoostPad *pad = boosts + boost_index;
 
-            if (rect_are_colliding(&p->body, &pad->body)) {
+            if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
 
                 p->acc.x += pad->boost_power *
                             cos(glm::radians(pad->boost_angle));
@@ -649,7 +650,11 @@ void level1_update() {
 
                 // NOTE: Rider double jump if available
                 if(rid->second_jump && input->jump.clicked) {
-                    rid->vel.y = -300.f;
+                    if (rid->vel.y < 0) {
+                        rid->vel.y -= 300.f;
+                    } else {
+                        rid->vel.y = -300.f;
+                    }
                     rid->second_jump = false;
                 }
 
@@ -662,7 +667,7 @@ void level1_update() {
                 rid->jump_time_elapsed += dt;
 
                 // NOTE: Check if rider remounts the plane
-                if (rect_are_colliding(&p->body, &rid->body) &&
+                if (rect_are_colliding(&p->body, &rid->body, NULL, NULL) &&
                     rid->jump_time_elapsed > 0.5f) {
                     rid->attached = true;
                     p->vel += (rid->vel - p->vel) * 0.5f;
@@ -752,7 +757,9 @@ void level1_update() {
         PR::Obstacle *obs = obstacles + obstacle_index;
 
         if (!p->crashed && obs->collide_plane &&
-            rect_are_colliding(&p->body, &obs->body)) {
+            rect_are_colliding(&p->body, &obs->body,
+                               &p->crash_position.x,
+                               &p->crash_position.y)) {
             // NOTE: Plane colliding with an obstacle
 
             if (rid->attached) {
@@ -769,7 +776,9 @@ void level1_update() {
             std::cout << "Plane collided with " << obstacle_index << std::endl;
         }
         if (!rid->crashed && obs->collide_rider &&
-            rect_are_colliding(&rid->body, &obs->body)) {
+            rect_are_colliding(&rid->body, &obs->body,
+                               &rid->crash_position.x,
+                               &rid->crash_position.y)) {
             // NOTE: Rider colliding with an obstacle
 
             rid->crashed = true;
@@ -984,6 +993,9 @@ int level2_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
     PR::Plane *p = &level->plane;
 
+    p->crashed = false;
+    p->crash_position.x = 0.f;
+    p->crash_position.y = 0.f;
     p->body.pos.x = 100.0f;
     p->body.pos.y = 0.0f;
     p->body.dim.y = 20.f;
@@ -1088,7 +1100,7 @@ void level2_update() {
 
         PR::BoostPad *pad = boosts + boost_index;
 
-        if (rect_are_colliding(&p->body, &pad->body)) {
+        if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
 
             p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
             p->acc.y += pad->boost_power * -sin(glm::radians(pad->boost_angle));
@@ -1190,7 +1202,7 @@ void level2_update() {
         rid->jump_time_elapsed += dt;
 
         // NOTE: If rider not attached, check if recollided
-        if (rect_are_colliding(&p->body, &rid->body) &&
+        if (rect_are_colliding(&p->body, &rid->body, NULL, NULL) &&
             rid->jump_time_elapsed > 0.5f) {
             rid->attached = true;
             p->vel += (rid->vel - p->vel) * 0.5f;
@@ -1215,7 +1227,9 @@ void level2_update() {
         PR::Obstacle *obs = obstacles + obstacle_index;
 
         if (!p->crashed && obs->collide_plane &&
-            rect_are_colliding(&p->body, &obs->body)) {
+            rect_are_colliding(&p->body, &obs->body,
+                               &p->crash_position.x,
+                               &p->crash_position.y)) {
             // NOTE: Plane colliding with an obstacle
 
             if (obstacles_number) free(obstacles);
@@ -1229,7 +1243,9 @@ void level2_update() {
             std::cout << "Plane collided with " << obstacle_index << std::endl;
         }
         if (!rid->crashed && obs->collide_rider &&
-            rect_are_colliding(&rid->body, &obs->body)) {
+            rect_are_colliding(&rid->body, &obs->body,
+                               &rid->crash_position.x,
+                               &rid->crash_position.y)) {
             // NOTE: Rider colliding with an obstacle
 
             if (obstacles_number) free(obstacles);
@@ -1550,9 +1566,10 @@ void create_particle_plane_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle) {
     if (ps->active) {
         PR::Plane *p = &glob->current_level.plane;
-        particle->body.pos = p->body.pos + p->body.dim*0.5f;
+        //particle->body.pos = p->body.pos + p->body.dim*0.5f;
         particle->body.dim.x = 15.f;
         particle->body.dim.y = 15.f;
+        particle->body.pos = p->crash_position - particle->body.dim*0.5f;
         particle->body.angle = 0.f;
         particle->body.triangle = false;
         particle->vel.x = (float)((rand() % 301) - 150.f);
@@ -1591,9 +1608,10 @@ void create_particle_rider_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle) {
     if (ps->active) {
         PR::Rider *rid = &glob->current_level.rider;
-        particle->body.pos = rid->body.pos + rid->body.dim*0.5f;
+        //particle->body.pos = rid->body.pos + rid->body.dim*0.5f;
         particle->body.dim.x = 15.f;
         particle->body.dim.y = 15.f;
+        particle->body.pos = rid->crash_position - particle->body.dim*0.5f;
         particle->body.angle = 0.f;
         particle->body.triangle = false;
         particle->vel.x = (float)((rand() % 301) - 150.f);

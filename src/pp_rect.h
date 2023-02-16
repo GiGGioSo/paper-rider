@@ -13,6 +13,6 @@ struct Rect {
     bool triangle;
 };
 
-bool rect_are_colliding(Rect* r1, Rect* r2);
+bool rect_are_colliding(Rect* r1, Rect* r2, float *cx, float *cy);
 
 #endif
