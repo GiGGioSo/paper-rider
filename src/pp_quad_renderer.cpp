@@ -73,7 +73,10 @@ void quad_render_init(RendererQuad* quad_renderer) {
 
 }
 
-void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered) {
+void quad_render_add_queue(float x, float y,
+                           float w, float h,
+                           float r, glm::vec4 c,
+                           bool triangle, bool centered) {
 
     RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
@@ -145,7 +148,10 @@ void quad_render_draw(Shader s) {
     quad_renderer->vertex_count = 0;
 }
 
-void quad_render_add_queue_tex(float x, float y, float w, float h, float r, float tx, float ty, float tw, float th) {
+void quad_render_add_queue_tex(float x, float y,
+                               float w, float h, float r,
+                               float tx, float ty,
+                               float tw, float th) {
 
     RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
@@ -190,7 +196,6 @@ void quad_render_add_queue_tex(float x, float y, float w, float h, float r, floa
 }
 
 void quad_render_draw_tex(Shader s, Texture* t) {
-
     RendererQuad* quad_renderer = &glob->rend.quad_renderer;
 
     glUseProgram(s);
@@ -209,5 +214,4 @@ void quad_render_draw_tex(Shader s, Texture* t) {
 
     quad_renderer->bytes_offset = 0;
     quad_renderer->vertex_count = 0;
-
 }

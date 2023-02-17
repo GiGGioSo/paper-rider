@@ -7,6 +7,7 @@
 #include "pp_shaderer.h"
 #include "pp_texturer.h"
 #include "pp_quad_renderer.h"
+#include "pp_text_renderer.h"
 #include "pp_input.h"
 #include "pp_rect.h"
 
@@ -117,11 +118,13 @@ struct PR {
         glm::mat4 ortho_proj;
         RendererQuad quad_renderer;
 
-        Shader shaders[2];
+        Shader shaders[3];
 
         Texture global_sprite;
     };
     Rendering rend;
+
+    TextRenderer text_rend;
 
     InputController input;
 

@@ -235,10 +235,12 @@ int menu_prepare(PR::Level *level) {
     // NOTE: Set custom cursor
     uint8_t cursor_pixels[16 * 16 * 4];
     std::memset(cursor_pixels, 0xff, sizeof(cursor_pixels));
+
     GLFWimage image;
     image.width = 16;
     image.height = 16;
     image.pixels = cursor_pixels;
+
     GLFWcursor *cursor = glfwCreateCursor(&image, 0, 0);
     // Don't really need to check if the cursor is NULL,
     // because if it is, then the cursor will be set to default

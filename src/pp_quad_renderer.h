@@ -19,11 +19,17 @@ struct RendererQuad {
 
 void quad_render_init(RendererQuad* quad_renderer);
 
-void quad_render_add_queue(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered);
+void quad_render_add_queue(float x, float y,
+                           float w, float h,
+                           float r, glm::vec4 c,
+                           bool triangle, bool centered);
 void quad_render_draw(Shader s);
 
 // NOTE: This is intended to be used with a single texture containing everything
-void quad_render_add_queue_tex(float x, float y, float w, float h, float r, float tx, float ty, float tw, float th);
+void quad_render_add_queue_tex(float x, float y,
+                               float w, float h, float r,
+                               float tx, float ty,
+                               float tw, float th);
 void quad_render_draw_tex(Shader s, Texture* t);
 
 // NOTE: To increase the ease of use with Rect types
