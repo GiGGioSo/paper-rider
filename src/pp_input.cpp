@@ -15,6 +15,14 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     // reset all to default
     // Global
     key_reset(&input->exit);
+
+    // Mouse
+    key_reset(&input->mouse_left);
+    key_reset(&input->mouse_right);
+    key_reset(&input->mouse_middle);
+    input->mouseX = 0.0;
+    input->mouseY = 0.0;
+
     // Gameplay
     key_reset(&input->boost);
     input->left_right = 0.f;
@@ -48,6 +56,23 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
 
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         key_pressed(&input->exit);
+    }
+
+    // Mouse fetching
+    if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_HIDDEN) {
+        glfwGetCursorPos(window,
+                         &input->mouseX,
+                         &input->mouseY);
+        // TODO: Maybe clip it to screen coordinates
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            key_pressed(&input->mouse_left);
+        }
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+            key_pressed(&input->mouse_right);
+        }
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS) {
+            key_pressed(&input->mouse_middle);
+        }
     }
 
     // Fetching controller input

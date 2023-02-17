@@ -41,7 +41,43 @@ bool lines_are_colliding(float x0, float y0,
     return false; // No collision
 }
 
-bool rect_are_colliding(Rect* r1, Rect* r2, float *cx, float *cy) {
+bool rect_contains_point(const Rect *rec, float px, float py, bool centered) {
+    // NOTE: Check if rec contains the point
+    float center_x, center_y;
+    float x, y, w, h;
+    if (centered) {
+        center_x = rec->pos.x;
+        center_y = rec->pos.y;
+        x = rec->pos.x - rec->dim.x * 0.5f;
+        y = rec->pos.y - rec->dim.y * 0.5f;
+    } else {
+        center_x = rec->pos.x + rec->dim.x * 0.5f;
+        center_y = rec->pos.y + rec->dim.y * 0.5f;
+        x = rec->pos.x;
+        y = rec->pos.y;
+    }
+    w = rec->dim.x;
+    h = rec->dim.y;
+    float cosine = cos(glm::radians(rec->angle));
+    float sine = sin(glm::radians(rec->angle));
+    if (!rec->triangle) {
+        float rx = center_x +
+                (px - center_x) * cosine -
+                (py - center_y) * sine;
+        float ry = center_y +
+                (px - center_x) * sine +
+                (py - center_y) * cosine;
+        if (x < rx && rx < x + w &&
+            y < ry && ry < y + h) {
+            return true;
+        }
+    } else {
+        // TODO: Implement if rec is a triangle
+    }
+    return false;
+}
+
+bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
     if (glm::abs(r1->pos.x - r2->pos.x) >
             r1->dim.x + r1->dim.y + r2->dim.x + r2->dim.y
      || glm::abs(r1->pos.y - r2->pos.y) >
@@ -333,44 +369,9 @@ bool rect_are_colliding(Rect* r1, Rect* r2, float *cx, float *cy) {
         }
     }
 
-    float cos1 = cos(-r1_angle);
-    float sin1 = sin(-r1_angle);
-    float cos2 = cos(-r2_angle);
-    float sin2 = sin(-r2_angle);
+    if (rect_contains_point(r2, x0, y0, false)) return true;
 
-    // NOTE: Check if a vertex of r1 is inside r2
-    if (!r2->triangle) {
-        glm::vec2 p1;
-        p1.x = center_x2 +
-                (x0 - center_x2) * cos2 -
-                (y0 - center_y2) * sin2;
-        p1.y = center_y2 +
-                (x0 - center_x2) * sin2 +
-                (y0 - center_y2) * cos2;
-        if (r2->pos.x < p1.x && p1.x < r2->pos.x+r2->dim.x &&
-            r2->pos.y < p1.y && p1.y < r2->pos.y+r2->dim.y) {
-            return true;
-        }
-    } else {
-        // TODO: Check if r1 vertex is inside r2 when r2 is a triangle
-    }
-
-    // NOTE: Check if a vertex of r2 is inside r1
-    if (!r1->triangle) {
-        glm::vec2 p2;
-        p2.x = center_x1 +
-                (s0 - center_x1) * cos1 -
-                (t0 - center_y1) * sin1;
-        p2.y = center_y1 +
-                (s0 - center_x1) * sin1 +
-                (t0 - center_y1) * cos1;
-        if (r1->pos.x < p2.x && p2.x < r1->pos.x+r1->dim.x &&
-            r1->pos.y < p2.y && p2.y < r1->pos.y+r1->dim.y) {
-            return true;
-        }
-    } else {
-        // TODO: Check if r2 vertex is inside r1 when r1 is a triangle
-    }
+    if (rect_contains_point(r1, s0, t0, false)) return true;
 
     return false;
 }

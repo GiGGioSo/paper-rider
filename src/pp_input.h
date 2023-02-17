@@ -2,6 +2,7 @@
 #define PP_INPUT_H
 
 #include "../include/glfw3.h"
+#include "../include/glm/vec2.hpp"
 
 struct Key {
     bool old;
@@ -38,6 +39,13 @@ struct InputController {
 
     // NOTE: Global
     Key exit;
+
+    // NOTE: Mouse
+    Key mouse_left;
+    Key mouse_right;
+    Key mouse_middle;
+    double mouseX;
+    double mouseY;
 
     // NOTE: Gameplay
     float left_right;

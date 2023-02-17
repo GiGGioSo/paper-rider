@@ -8,11 +8,12 @@ struct Rect {
     glm::vec2 dim;
 
     float angle;
-
     // lmao.
     bool triangle;
 };
 
-bool rect_are_colliding(Rect* r1, Rect* r2, float *cx, float *cy);
+bool rect_contains_point(const Rect *rec, float px, float py, bool centered);
+
+bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy);
 
 #endif

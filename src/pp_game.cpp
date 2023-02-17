@@ -196,19 +196,50 @@ glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
     return col;
 }
 
+struct Button {
+    Rect body;
+    glm::vec4 col;
+    bool from_center;
+};
+
+Button button_lvl1;
+Button button_lvl2;
+
 int menu_prepare(PR::Level *level) {
+    PR::WinInfo *win = &glob->window;
+
+    // NOTE: Buttons
+    button_lvl1.body.pos.x = win->w * 0.5f - 200.f;
+    button_lvl1.body.pos.y = win->h * 0.5f;
+    button_lvl1.body.dim.x = 300.f;
+    button_lvl1.body.dim.y = 100.f;
+    button_lvl1.col.r = 0.8f;
+    button_lvl1.col.g = 0.2f;
+    button_lvl1.col.b = 0.5f;
+    button_lvl1.col.a = 1.0f;
+    button_lvl1.from_center = true;
+
+    button_lvl2.body.pos.x = win->w * 0.5f + 200.f;
+    button_lvl2.body.pos.y = win->h * 0.5f;
+    button_lvl2.body.dim.x = 300.f;
+    button_lvl2.body.dim.y = 100.f;
+    button_lvl2.col.r = 0.2f;
+    button_lvl2.col.g = 0.5f;
+    button_lvl2.col.b = 0.8f;
+    button_lvl2.col.a = 1.0f;
+    button_lvl2.from_center = true;
+
+    // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
+    // NOTE: Set custom cursor
     uint8_t cursor_pixels[16 * 16 * 4];
     std::memset(cursor_pixels, 0xff, sizeof(cursor_pixels));
-
     GLFWimage image;
     image.width = 16;
     image.height = 16;
     image.pixels = cursor_pixels;
-
     GLFWcursor *cursor = glfwCreateCursor(&image, 0, 0);
-
     // Don't really need to check if the cursor is NULL,
     // because if it is, then the cursor will be set to default
     glfwSetCursor(glob->window.glfw_win, cursor);
@@ -234,18 +265,61 @@ void menu_update() {
                              GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         }
     }
+
+    if (rect_contains_point(&button_lvl1.body,
+                            input->mouseX, input->mouseY,
+                            button_lvl1.from_center)) {
+        button_lvl1.col.r = 0.6f;
+        button_lvl1.col.g = 0.0f;
+        button_lvl1.col.b = 0.3f;
+        button_lvl1.col.a = 1.0f;
+        if (input->mouse_left.clicked) {
+            int preparation_result = level1_prepare(&glob->current_level);
+            if (preparation_result == 0) {
+                glob->state.current_case = PR::LEVEL1;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            }
+        }
+    } else {
+        button_lvl1.col.r = 0.8f;
+        button_lvl1.col.g = 0.2f;
+        button_lvl1.col.b = 0.5f;
+        button_lvl1.col.a = 1.0f;
+    }
+
+    if (rect_contains_point(&button_lvl2.body,
+                            input->mouseX, input->mouseY,
+                            button_lvl2.from_center)) {
+        button_lvl2.col.r = 0.0f;
+        button_lvl2.col.g = 0.3f;
+        button_lvl2.col.b = 0.6f;
+        button_lvl2.col.a = 1.0f;
+        if (input->mouse_left.clicked) {
+            int preparation_result = level2_prepare(&glob->current_level);
+            if (preparation_result == 0) {
+                glob->state.current_case = PR::LEVEL2;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            }
+        }
+    } else {
+        button_lvl2.col.r = 0.2f;
+        button_lvl2.col.g = 0.5f;
+        button_lvl2.col.b = 0.8f;
+        button_lvl2.col.a = 1.0f;
+    }
+
     return; 
 }
 
 void menu_draw(void) {
-    PR::WinInfo *win = &glob->window;
-
-    quad_render_add_queue(win->w * 0.5f, win->h * 0.5f,
-                          win->w * 0.5f, win->h * 0.3f,
-                          0.f,
-                          glm::vec4(1.f, 0.f, 0.f, 1.f),
-                          false,
-                          true);
+    quad_render_add_queue(button_lvl1.body,
+                          button_lvl1.col,
+                          button_lvl1.from_center);
+    quad_render_add_queue(button_lvl2.body,
+                          button_lvl2.col,
+                          button_lvl2.from_center);
 
     quad_render_draw(glob->rend.shaders[0]);
     return;
