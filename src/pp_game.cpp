@@ -2,13 +2,13 @@
 #include <cstring>
 #include <math.h>
 #include <iostream>
-#include <stdio.h>
-#include <errno.h>
+#include <cstdio>
+#include <cerrno>
 
 #include "pp_game.h"
 #include "pp_globals.h"
 #include "pp_input.h"
-#include "pp_quad_renderer.h"
+#include "pp_renderer.h"
 #include "pp_rect.h"
 
 // TODO:
@@ -49,7 +49,6 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle);
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
-
 int load_map_from_file(const char *file_path,
                        PR::Obstacle **obstacles,
                        size_t *number_of_obstacles,
@@ -316,14 +315,14 @@ void menu_update() {
 }
 
 void menu_draw(void) {
-    quad_render_add_queue(button_lvl1.body,
+    renderer_add_queue_uni(button_lvl1.body,
                           button_lvl1.col,
                           button_lvl1.from_center);
-    quad_render_add_queue(button_lvl2.body,
+    renderer_add_queue_uni(button_lvl2.body,
                           button_lvl2.col,
                           button_lvl2.from_center);
 
-    quad_render_draw(glob->rend.shaders[0]);
+    renderer_draw_uni(glob->rend_res.shaders[0]);
     return;
 }
 
@@ -955,7 +954,7 @@ void level1_draw() {
         if (pad_in_cam_pos.pos.x < -((float)win->w) ||
             pad_in_cam_pos.pos.x > win->w * 2.f) continue;
 
-        quad_render_add_queue(pad_in_cam_pos,
+        renderer_add_queue_uni(pad_in_cam_pos,
                               glm::vec4(0.f, 1.f, 0.f, 1.f),
                               false);
     }
@@ -972,7 +971,7 @@ void level1_draw() {
         if (obs_in_cam_pos.pos.x < -((float)win->w) ||
             obs_in_cam_pos.pos.x > win->w * 2.f) continue;
 
-        quad_render_add_queue(obs_in_cam_pos,
+        renderer_add_queue_uni(obs_in_cam_pos,
                               get_obstacle_color(obs),
                               false);
     }
@@ -1010,16 +1009,16 @@ void level1_draw() {
 
             (ps->update_particle)(ps, particle);
 
-            quad_render_add_queue(rect_in_camera_space(particle->body, cam),
+            renderer_add_queue_uni(rect_in_camera_space(particle->body, cam),
                                  particle->color, true);
         }
     }
 
     // High wind zone
-    /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
+    /* renderer_add_queue_uni(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the plane
-    quad_render_add_queue(rect_in_camera_space(p->body, cam),
+    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
                           false);
 
@@ -1034,7 +1033,7 @@ void level1_draw() {
                     sin(glm::radians(p->render_zone.angle));
 
         // NOTE: Rendering the boost of the plane
-        quad_render_add_queue(bx, by,
+        renderer_add_queue_uni(bx, by,
                               p->render_zone.dim.y, p->render_zone.dim.y,
                               p->render_zone.angle,
                               glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
@@ -1042,20 +1041,20 @@ void level1_draw() {
     }
     */
 
-    quad_render_add_queue(rect_in_camera_space(rid->render_zone, cam),
+    renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
                           glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
                           false);
 
-    quad_render_draw(glob->rend.shaders[0]);
+    renderer_draw_uni(glob->rend_res.shaders[0]);
 
     // NOTE: Rendering plane texture
-    quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
+    renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
                               texcoords_in_texture_space(
 				      p->current_animation * 32.f, 0.f,
                                       32.f, 8.f,
-                                      &glob->rend.global_sprite));
+                                      &glob->rend_res.global_sprite));
 
-    quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
+    renderer_draw_tex(glob->rend_res.shaders[1], &glob->rend_res.global_sprite);
 }
 
 int level2_prepare(PR::Level *level) {
@@ -1414,7 +1413,7 @@ void level2_draw() {
     // float dt = glob->state.delta_time;
 
     // High wind zone
-    /* quad_render_add_queue(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
+    /* renderer_add_queue_uni(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the boosts
     for(size_t boost_index = 0;
@@ -1428,7 +1427,7 @@ void level2_draw() {
         if (pad_in_cam_pos.pos.x < -((float)win->w) ||
             pad_in_cam_pos.pos.x > win->w * 2.f) continue;
 
-        quad_render_add_queue(pad_in_cam_pos,
+        renderer_add_queue_uni(pad_in_cam_pos,
                               glm::vec4(0.f, 1.f, 0.f, 1.f),
                               false);
     }
@@ -1445,14 +1444,14 @@ void level2_draw() {
         if (obs_in_cam_pos.pos.x < -((float)win->w) ||
             obs_in_cam_pos.pos.x > win->w * 2.f) continue;
 
-        quad_render_add_queue(obs_in_cam_pos,
+        renderer_add_queue_uni(obs_in_cam_pos,
                               get_obstacle_color(obs),
                               false);
 
     }
 
     // NOTE: Rendering the plane
-    quad_render_add_queue(rect_in_camera_space(p->body, cam),
+    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
                           false);
 
@@ -1467,7 +1466,7 @@ void level2_draw() {
                     sin(glm::radians(p->render_zone.angle));
 
         // NOTE: Rendering the boost of the plane
-        quad_render_add_queue(bx, by,
+        renderer_add_queue_uni(bx, by,
                               p->render_zone.dim.y, p->render_zone.dim.y,
                               p->render_zone.angle,
                               glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
@@ -1475,19 +1474,19 @@ void level2_draw() {
                               true);
     }
 
-    quad_render_add_queue(rect_in_camera_space(rid->render_zone, cam),
+    renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
                           glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
                           false);
 
-    quad_render_draw(glob->rend.shaders[0]);
+    renderer_draw_uni(glob->rend_res.shaders[0]);
 
     // NOTE: Rendering plane texture
-    quad_render_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
+    renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
                               texcoords_in_texture_space(p->current_animation * 32.f, 0.f,
                                                          32.f, 8.f,
-                                                         &glob->rend.global_sprite));
+                                                         &glob->rend_res.global_sprite));
 
-    quad_render_draw_tex(glob->rend.shaders[1], &glob->rend.global_sprite);
+    renderer_draw_tex(glob->rend_res.shaders[1], &glob->rend_res.global_sprite);
 }
 
 // Utilities

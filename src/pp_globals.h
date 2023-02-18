@@ -5,9 +5,7 @@
 #include "../include/glm/mat4x4.hpp"
 
 #include "pp_shaderer.h"
-#include "pp_texturer.h"
-#include "pp_quad_renderer.h"
-#include "pp_text_renderer.h"
+#include "pp_renderer.h"
 #include "pp_input.h"
 #include "pp_rect.h"
 
@@ -114,17 +112,14 @@ struct PR {
     };
     Level current_level;
 
-    struct Rendering {
+    struct RenderResources {
         glm::mat4 ortho_proj;
-        RendererQuad quad_renderer;
-
         Shader shaders[3];
-
+        Font fonts[1];
         Texture global_sprite;
     };
-    Rendering rend;
-
-    TextRenderer text_rend;
+    RenderResources rend_res;
+    Renderer renderer;
 
     InputController input;
 

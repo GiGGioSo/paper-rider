@@ -9,9 +9,8 @@
 
 #include "pp_globals.h"
 #include "pp_shaderer.h"
-#include "pp_quad_renderer.h"
+#include "pp_renderer.h"
 #include "pp_game.h"
-#include "pp_texturer.h"
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window,
@@ -103,8 +102,9 @@ int main() {
 
         // NOTE: Update input
         input_controller_update(glob->window.glfw_win, &glob->input);
-        if (glob->input.exit.clicked)
+        if (glob->input.exit.clicked) {
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
+        }
 
         switch (glob->state.current_case) {
             case PR::MENU:
@@ -127,10 +127,11 @@ int main() {
             }
         }
 
-        text_render_add_queue(20.f, 20.f, "CIAO",
-                              glm::vec3(1.0f, 1.0f, 1.0f),
-                              &glob->text_rend.fonts[0]);
-        text_render_draw(&glob->text_rend.fonts[0], glob->rend.shaders[2]);
+        renderer_add_queue_text(30.f, 120.f, "CIAO",
+                                glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                &glob->rend_res.fonts[0]);
+        renderer_draw_text(&glob->rend_res.fonts[0],
+                           glob->rend_res.shaders[2]);
 
         glfwSwapBuffers(glob->window.glfw_win);
         glfwPollEvents();
@@ -150,36 +151,46 @@ void glob_init(void) {
     PR::WinInfo* win = &glob->window;
 
     // Rendering
-    glob->rend.ortho_proj = glm::ortho(0.0f, (float)win->w,
+    glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)win->w,
                                        (float)win->h, 0.0f);
 
-    // NOTE: 1 is the number of shaders
+    // NOTE: Initializing of the shaders
     /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
-    Shader *s1 = &glob->rend.shaders[0];
+    Shader *s1 = &glob->rend_res.shaders[0];
     shaderer_create_program(s1, "res/shaders/quad_default.vs",
                             "res/shaders/quad_default.fs");
     shaderer_set_mat4(*s1, "projection",
-                      glob->rend.ortho_proj);
+                      glob->rend_res.ortho_proj);
 
-    Shader *s2 = &glob->rend.shaders[1];
+    Shader *s2 = &glob->rend_res.shaders[1];
     shaderer_create_program(s2, "res/shaders/tex_default.vs",
                             "res/shaders/tex_default.fs");
     shaderer_set_mat4(*s2, "projection",
-                      glob->rend.ortho_proj);
+                      glob->rend_res.ortho_proj);
 
-    Shader *s3 = &glob->rend.shaders[2];
+    Shader *s3 = &glob->rend_res.shaders[2];
     shaderer_create_program(s3, "res/shaders/text_default.vs",
                             "res/shaders/text_default.fs");
     shaderer_set_mat4(*s3, "projection",
-                      glob->rend.ortho_proj);
+                      glob->rend_res.ortho_proj);
 
     // NOTE: Initializing the global_sprite
-    texturer_create_texture(&glob->rend.global_sprite,
+    renderer_create_texture(&glob->rend_res.global_sprite,
                             "res/paper-rider_sprite.png");
 
-    quad_render_init(&glob->rend.quad_renderer);
+    Font *f1 = &glob->rend_res.fonts[0];
+    f1->filename = "./arial.ttf";
+    f1->first_char = 32;
+    f1->num_chars = 96;
+    f1->font_height = 32.0f;
+    f1->bitmap_width = 512;
+    f1->bitmap_height = 512;
+    f1->char_data = (stbtt_bakedchar*) malloc(sizeof(stbtt_bakedchar) *
+                                              f1->num_chars);
+    int error = renderer_create_font_atlas(f1);
+    std::cout << error << std::endl;
 
-    text_render_init(&glob->text_rend);
+    renderer_init(&glob->renderer);
 
 }
 
@@ -190,13 +201,14 @@ void glob_free(void) {
 void callback_framebuffer_size(GLFWwindow* window,
                                int width, int height) {
     glViewport(0, 0, width, height);
-    glob->rend.ortho_proj = glm::ortho(0.0f, (float)width,
+    glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)width,
                                        (float)height, 0.0f);
     for(size_t shader_index = 0;
-        shader_index < ARRAY_LENGTH(glob->rend.shaders);
+        shader_index < ARRAY_LENGTH(glob->rend_res.shaders);
         ++shader_index) {
 
-        shaderer_set_mat4(glob->rend.shaders[shader_index], "projection", glob->rend.ortho_proj);
+        shaderer_set_mat4(glob->rend_res.shaders[shader_index],
+                          "projection", glob->rend_res.ortho_proj);
     }
     glob->window.w = width;
     glob->window.h = height;
