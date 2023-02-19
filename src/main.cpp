@@ -36,7 +36,7 @@ float time_from_last_fps_update;
 int main() {
     srand(time(NULL));
 
-    glob = (PR*) malloc(sizeof(PR));
+    glob = (PR*) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
     glob->window.w = 1280;
     glob->window.h = 720;
@@ -127,12 +127,6 @@ int main() {
             }
         }
 
-        renderer_add_queue_text(30.f, 120.f, "CIAO",
-                                glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-                                &glob->rend_res.fonts[0]);
-        renderer_draw_text(&glob->rend_res.fonts[0],
-                           glob->rend_res.shaders[2]);
-
         glfwSwapBuffers(glob->window.glfw_win);
         glfwPollEvents();
     }
@@ -185,8 +179,8 @@ void glob_init(void) {
     f1->font_height = 32.0f;
     f1->bitmap_width = 512;
     f1->bitmap_height = 512;
-    f1->char_data = (stbtt_bakedchar*) malloc(sizeof(stbtt_bakedchar) *
-                                              f1->num_chars);
+    f1->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
+                                                   f1->num_chars);
     int error = renderer_create_font_atlas(f1);
     std::cout << error << std::endl;
 
@@ -195,7 +189,8 @@ void glob_init(void) {
 }
 
 void glob_free(void) {
-    free(glob);
+    std::free(glob->rend_res.fonts[0].char_data);
+    std::free(glob);
 }
 
 void callback_framebuffer_size(GLFWwindow* window,
@@ -219,6 +214,9 @@ void callback_debug(GLenum source,
                     GLsizei length, const GLchar* message,
                     const void* user) {
 
-    std::cout << message << std::endl;
-
+    std::cout << "------------------------------"
+              << "\nSource: " << source
+              << "\nType: " << type
+              << "\nMessage: " << message
+              << "\n-----------------------------";
 }

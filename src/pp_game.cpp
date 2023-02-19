@@ -27,6 +27,17 @@
 #define RIDER_VELOCITY_Y_LIMIT (600.f)
 #define RIDER_INPUT_VELOCITY_LIMIT (550.f)
 
+#define CHANGE_CASE_TO(new_case, prepare_func)  do {\
+        PR::Level temp_level = glob->current_level;\
+        int preparation_result = (prepare_func)(&temp_level);\
+        if (preparation_result == 0) {\
+            free_level(&glob->current_level);\
+            glob->current_level = temp_level;\
+            glob->state.current_case = new_case;\
+            return;\
+        }\
+    } while(0)
+
 // Utilities functions for code reuse
 void apply_air_resistances(PR::Plane* p);
 void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -47,6 +58,23 @@ void create_particle_rider_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle);
 void update_particle_rider_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle);
+
+void free_level(PR::Level *level) {
+    if (level->obstacles) {
+        std::free(level->obstacles);
+        level->obstacles = NULL;
+    }
+    if (level->boosts) {
+        std::free(level->boosts);
+        level->boosts = NULL;
+    }
+    for(size_t ps_index = 0;
+        ps_index < ARRAY_LENGTH(level->particle_systems);
+        ++ps_index) {
+        std::free(level->particle_systems[ps_index].particles);
+        level->particle_systems[ps_index].particles = NULL;
+    }
+}
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 int load_map_from_file(const char *file_path,
@@ -69,8 +97,8 @@ int load_map_from_file(const char *file_path,
                   << " obstacles from the file " << file_path
                   << std::endl;
 
-        *obstacles = (PR::Obstacle *) malloc(sizeof(PR::Obstacle) *
-                                      *number_of_obstacles);
+        *obstacles = (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
+                                                  *number_of_obstacles);
 
         for (size_t obstacle_index = 0;
              obstacle_index < *number_of_obstacles;
@@ -228,6 +256,14 @@ int menu_prepare(PR::Level *level) {
     button_lvl2.col.a = 1.0f;
     button_lvl2.from_center = true;
 
+    level->obstacles = NULL;
+    level->boosts = NULL;
+    for(size_t ps_index = 0;
+        ps_index < ARRAY_LENGTH(level->particle_systems);
+        ++ps_index) {
+        level->particle_systems[ps_index].particles = NULL;
+    }
+
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
@@ -249,22 +285,11 @@ int menu_prepare(PR::Level *level) {
 
 void menu_update() {
     InputController *input = &glob->input;
-
     if (input->level1.clicked) {
-        int preparation_result = level1_prepare(&glob->current_level);
-        if (preparation_result == 0) {
-            glob->state.current_case = PR::LEVEL1;
-            glfwSetInputMode(glob->window.glfw_win,
-                             GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-        }
+        CHANGE_CASE_TO(PR::LEVEL1, level1_prepare);
     } else
     if (input->level2.clicked) {
-        int preparation_result = level2_prepare(&glob->current_level);
-        if (preparation_result == 0) {
-            glob->state.current_case = PR::LEVEL2;
-            glfwSetInputMode(glob->window.glfw_win,
-                             GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-        }
+        CHANGE_CASE_TO(PR::LEVEL2, level2_prepare);
     }
 
     if (rect_contains_point(&button_lvl1.body,
@@ -275,12 +300,7 @@ void menu_update() {
         button_lvl1.col.b = 0.3f;
         button_lvl1.col.a = 1.0f;
         if (input->mouse_left.clicked) {
-            int preparation_result = level1_prepare(&glob->current_level);
-            if (preparation_result == 0) {
-                glob->state.current_case = PR::LEVEL1;
-                glfwSetInputMode(glob->window.glfw_win,
-                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-            }
+            CHANGE_CASE_TO(PR::LEVEL1, level1_prepare);
         }
     } else {
         button_lvl1.col.r = 0.8f;
@@ -297,12 +317,7 @@ void menu_update() {
         button_lvl2.col.b = 0.6f;
         button_lvl2.col.a = 1.0f;
         if (input->mouse_left.clicked) {
-            int preparation_result = level2_prepare(&glob->current_level);
-            if (preparation_result == 0) {
-                glob->state.current_case = PR::LEVEL2;
-                glfwSetInputMode(glob->window.glfw_win,
-                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-            }
+            CHANGE_CASE_TO(PR::LEVEL2, level2_prepare);
         }
     } else {
         button_lvl2.col.r = 0.2f;
@@ -311,10 +326,12 @@ void menu_update() {
         button_lvl2.col.a = 1.0f;
     }
 
+
     return; 
 }
 
 void menu_draw(void) {
+    if (glob->state.current_case != PR::MENU) return;
     renderer_add_queue_uni(button_lvl1.body,
                           button_lvl1.col,
                           button_lvl1.from_center);
@@ -328,6 +345,8 @@ void menu_draw(void) {
 
 int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
+
+    glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     PR::Plane *p = &level->plane;
     p->crashed = false;
@@ -405,7 +424,7 @@ int level1_prepare(PR::Level *level) {
     if (level->obstacles_number) {
         level->obstacles =
             (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
-                            level->obstacles_number);
+                                         level->obstacles_number);
         if (level->obstacles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
             return 1;
@@ -559,12 +578,7 @@ void level1_update() {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu.clicked) {
-        if (obstacles_number) free(obstacles);
-        if (boosts_number) free(boosts);
-        int preparation_result = menu_prepare(&glob->current_level);
-        if (preparation_result == 0) {
-            glob->state.current_case = PR::MENU;
-        }
+        CHANGE_CASE_TO(PR::MENU, menu_prepare);
     }
 
     #if 0
@@ -930,6 +944,8 @@ void level1_update() {
 }
 
 void level1_draw() {
+    if (glob->state.current_case != PR::LEVEL1) return;
+
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
@@ -1066,6 +1082,9 @@ int level2_prepare(PR::Level *level) {
     if (loading_result != 0) return loading_result;
 
     PR::WinInfo *win = &glob->window;
+
+    glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
     PR::Plane *p = &level->plane;
 
     p->crashed = false;
@@ -1154,13 +1173,7 @@ void level2_update() {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu.clicked) {
-        // Free the stuff only if it was allocated
-        if (obstacles_number) free(obstacles);
-        if (boosts_number) free(boosts);
-        int preparation_result = menu_prepare(&glob->current_level);
-        if (preparation_result == 0) {
-            glob->state.current_case = PR::MENU;
-        }
+        CHANGE_CASE_TO(PR::MENU, menu_prepare);
     }
 
     // NOTE: Reset the accelleration for it to be recalculated
@@ -1400,6 +1413,8 @@ void level2_update() {
 }
 
 void level2_draw() {
+    if (glob->state.current_case != PR::LEVEL2) return;
+
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
