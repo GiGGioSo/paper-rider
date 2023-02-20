@@ -51,7 +51,7 @@ To describe a boost pad these fiels have to be present:
 - `boost_angle` (float): angle of the boost effect (could be different from the rotation).
 - `boost_power` (float): power of the boost effect.
 
-**N.B.**: New lines and spaces are treated the same way. Any additional spaces is trimmed.
+**N.B.**: New lines and spaces are treated the same way. Any additional spaces are trimmed.
 
 #### Example of a map file
 Here's an exaple of a map file:
