@@ -27,7 +27,7 @@ As of now levels can be created in two ways:
 ### Map file format
 The extension should be `.prmap`.
 
-The map file consists in a list of obstacles and a list of boost pads, in this order.
+The map file consists of a list of obstacles and a list of boost pads, in this order.
 
 Before every list, the number of elements of that list has to be specified.
 
