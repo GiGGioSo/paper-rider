@@ -1479,9 +1479,9 @@ void level2_draw() {
     }
 
     // NOTE: Rendering the plane
-    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
+    /*renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                          false);
+                          false);*/
 
     // TODO: Implement the boost as an actual thing
     glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
