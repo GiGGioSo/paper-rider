@@ -138,7 +138,6 @@ int main() {
 }
 
 void glob_init(void) {
-
     glob->state.current_case = PR::MENU;
     menu_prepare(&glob->current_level);
 
@@ -176,16 +175,15 @@ void glob_init(void) {
     f1->filename = "./arial.ttf";
     f1->first_char = 32;
     f1->num_chars = 96;
-    f1->font_height = 32.0f;
-    f1->bitmap_width = 512;
-    f1->bitmap_height = 512;
+    f1->font_height = 64.0f;
+    f1->bitmap_width = 1024;
+    f1->bitmap_height = 1024;
     f1->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
                                                    f1->num_chars);
     int error = renderer_create_font_atlas(f1);
     std::cout << error << std::endl;
 
     renderer_init(&glob->renderer);
-
 }
 
 void glob_free(void) {

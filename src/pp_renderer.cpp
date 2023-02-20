@@ -332,13 +332,18 @@ int renderer_create_font_atlas(Font* font) {
 
 void renderer_add_queue_text(float x, float y,
                              const char *text, glm::vec4 c,
-                             Font* font) {
+                             Font* font, bool centered) {
 
     Renderer *renderer = &glob->renderer;
 
     int length = strlen(text);
 
     float vertices[length * 6][8];
+
+    float minX = 0.f;
+    float minY = 0.f;
+    float maxX = 0.f;
+    float maxY = 0.f;
 
     for(int i = 0; i < length; i++) {
         if (text[i] >= font->first_char &&
@@ -350,6 +355,18 @@ void renderer_add_queue_text(float x, float y,
                                font->bitmap_height,
                                text[i] - font->first_char,
                                &x, &y, &q, 1);
+
+            if (i == 0) {
+                minX = q.x0;
+                minY = q.y0;
+                maxX = q.x1;
+                maxY = q.y1;
+            } else {
+                if (q.x0 < minX) minX = q.x0;
+                if (q.y0 < minY) minY = q.y0;
+                if (q.x1 > maxX) maxX = q.x1;
+                if (q.y1 > maxY) maxY = q.y1;
+            }
 
             // down left
             vertices[i*6 + 0][0] = q.x0;
@@ -416,7 +433,25 @@ void renderer_add_queue_text(float x, float y,
             vertices[i*6 + 5][5] = c.g;
             vertices[i*6 + 5][6] = c.b;
             vertices[i*6 + 5][7] = c.a;
+        } else {
+            std::cout << "Unexpected char: " << text[i] << std::endl;
+            return;
         }
+    }
+
+    if (centered) {
+        float half_text_w = (maxX - minX) * 0.5f;
+        float half_text_h = (maxY - minY) * 0.5f;
+
+        for(size_t vertex_index = 0;
+            vertex_index < length * 6;
+            ++vertex_index) {
+
+            vertices[vertex_index][0] -= half_text_w;
+            vertices[vertex_index][1] += half_text_h;
+        }
+
+
     }
 
     glBindVertexArray(renderer->text_vao);

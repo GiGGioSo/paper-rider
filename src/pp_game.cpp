@@ -227,6 +227,7 @@ struct Button {
     Rect body;
     glm::vec4 col;
     bool from_center;
+    const char *text;
 };
 
 Button button_lvl1;
@@ -245,6 +246,7 @@ int menu_prepare(PR::Level *level) {
     button_lvl1.col.b = 0.5f;
     button_lvl1.col.a = 1.0f;
     button_lvl1.from_center = true;
+    button_lvl1.text = "LEVEL 1";
 
     button_lvl2.body.pos.x = win->w * 0.5f + 200.f;
     button_lvl2.body.pos.y = win->h * 0.5f;
@@ -255,6 +257,7 @@ int menu_prepare(PR::Level *level) {
     button_lvl2.col.b = 0.8f;
     button_lvl2.col.a = 1.0f;
     button_lvl2.from_center = true;
+    button_lvl2.text = "LEVEL 2";
 
     level->obstacles = NULL;
     level->boosts = NULL;
@@ -339,7 +342,16 @@ void menu_draw(void) {
                           button_lvl2.col,
                           button_lvl2.from_center);
 
+    renderer_add_queue_text(button_lvl1.body.pos.x, button_lvl1.body.pos.y,
+                            button_lvl1.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
+    renderer_add_queue_text(button_lvl2.body.pos.x, button_lvl2.body.pos.y,
+                            button_lvl2.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
+
     renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+
     return;
 }
 
@@ -995,12 +1007,13 @@ void level1_draw() {
 
     // Set the time_between_particles for the boost based on the velocity
     glob->current_level.particle_systems[0].time_between_particles =
-        lerp(0.02f, 0.005f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
+        lerp(0.02f, 0.01f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
 
     // NOTE: Updating and rendering all the particle systems
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
         ++ps_index) {
+
         PR::ParticleSystem *ps =
             &glob->current_level.particle_systems[ps_index];
 
@@ -1034,9 +1047,9 @@ void level1_draw() {
     /* renderer_add_queue_uni(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the plane
-    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
+    /*renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                          false);
+                          false);*/
 
     /*
     glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
@@ -1066,7 +1079,7 @@ void level1_draw() {
     // NOTE: Rendering plane texture
     renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
                               texcoords_in_texture_space(
-				      p->current_animation * 32.f, 0.f,
+				                      p->current_animation * 32.f, 0.f,
                                       32.f, 8.f,
                                       &glob->rend_res.global_sprite));
 

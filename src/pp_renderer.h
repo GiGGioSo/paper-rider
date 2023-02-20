@@ -6,6 +6,8 @@
 #include "pp_rect.h"
 #include "pp_shaderer.h"
 
+#include <iostream>
+
 struct Font {
     const char* filename;
     unsigned int texture;
@@ -86,7 +88,7 @@ void renderer_draw_tex(Shader s, Texture* t);
 int renderer_create_font_atlas(Font *font);
 
 void renderer_add_queue_text(float x, float y, const char* text,
-                             glm::vec4 c, Font* font);
+                             glm::vec4 c, Font* font, bool centered);
 
 void renderer_draw_text(Font* font, Shader s);
 
