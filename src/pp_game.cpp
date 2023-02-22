@@ -13,7 +13,6 @@
 
 // TODO:
 //  - Find textures
-//  - Text rendering
 //  - UI
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
@@ -71,8 +70,10 @@ void free_level(PR::Level *level) {
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(level->particle_systems);
         ++ps_index) {
-        std::free(level->particle_systems[ps_index].particles);
-        level->particle_systems[ps_index].particles = NULL;
+        if (level->particle_systems[ps_index].particles) {
+            std::free(level->particle_systems[ps_index].particles);
+            level->particle_systems[ps_index].particles = NULL;
+        }
     }
 }
 
@@ -111,7 +112,16 @@ int load_map_from_file(const char *file_path,
                         " %i %i %i %f %f %f %f %f",
                         &collide_plane, &collide_rider, &triangle,
                         &x, &y, &w, &h, &r);
+
             if (std::ferror(map_file)) return_defer(errno);
+            // TODO: You cannot check feof on the obstacles
+            //       because after them there are the boosts
+            if (std::feof(map_file)) {
+                *number_of_obstacles = obstacle_index;
+                std::cout << "[WARNING] Found only " << obstacle_index
+                          << " obstacles in the map file" << std::endl;
+                return_defer(errno);
+            }
 
             PR::Obstacle *obs = *obstacles + obstacle_index;
             obs->body.pos.x = x;
@@ -131,10 +141,6 @@ int load_map_from_file(const char *file_path,
                       << " r: " << r
                       << std::endl;
 
-            if (std::feof(map_file)) {
-                *number_of_obstacles = obstacle_index;
-                return_defer(errno);
-            }
         }
 
         // NOTE: Loading the boosts from memory
@@ -158,7 +164,14 @@ int load_map_from_file(const char *file_path,
             std::fscanf(map_file,
                         " %i %f %f %f %f %f %f %f",
                         &triangle, &x, &y, &w, &h, &r, &ba, &bp);
+
             if (std::ferror(map_file)) return_defer(errno);
+            if (std::feof(map_file)) {
+                *number_of_boosts = boost_index;
+                std::cout << "[WARNING] Found only " << boost_index
+                          << " boosts in the map file" << std::endl;
+                return_defer(errno);
+            }
 
             PR::BoostPad *pad = *boosts + boost_index;
             pad->body.pos.x = x;
@@ -179,10 +192,6 @@ int load_map_from_file(const char *file_path,
                       << " bp: " << bp
                       << std::endl;
 
-            if (std::feof(map_file)) {
-                *number_of_boosts = boost_index;
-                return_defer(errno);
-            }
 
         }
 
@@ -270,19 +279,6 @@ int menu_prepare(PR::Level *level) {
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    // NOTE: Set custom cursor
-    uint8_t cursor_pixels[16 * 16 * 4];
-    std::memset(cursor_pixels, 0xff, sizeof(cursor_pixels));
-
-    GLFWimage image;
-    image.width = 16;
-    image.height = 16;
-    image.pixels = cursor_pixels;
-
-    GLFWcursor *cursor = glfwCreateCursor(&image, 0, 0);
-    // Don't really need to check if the cursor is NULL,
-    // because if it is, then the cursor will be set to default
-    glfwSetCursor(glob->window.glfw_win, cursor);
     return 0;
 }
 
@@ -1333,12 +1329,7 @@ void level2_update() {
                                &p->crash_position.y)) {
             // NOTE: Plane colliding with an obstacle
 
-            if (obstacles_number) free(obstacles);
-            if (boosts_number) free(boosts);
-            int preparation_result = menu_prepare(&glob->current_level);
-            if (preparation_result == 0) {
-                glob->state.current_case = PR::MENU;
-            }
+            CHANGE_CASE_TO(PR::MENU, menu_prepare);
 
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
@@ -1349,12 +1340,7 @@ void level2_update() {
                                &rid->crash_position.y)) {
             // NOTE: Rider colliding with an obstacle
 
-            if (obstacles_number) free(obstacles);
-            if (boosts_number) free(boosts);
-            int preparation_result = menu_prepare(&glob->current_level);
-            if (preparation_result == 0) {
-                glob->state.current_case = PR::MENU;
-            }
+            CHANGE_CASE_TO(PR::MENU, menu_prepare);
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;

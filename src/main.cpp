@@ -138,6 +138,35 @@ int main() {
 }
 
 void glob_init(void) {
+    // NOTE: Set custom cursor
+    uint8_t cursor_pixels[16 * 16 * 4];
+    for(size_t row = 0; row < 16; ++row) {
+        for(size_t col = 0; col < 16; ++col) {
+            size_t pixel = (row*16+col) * 4;
+            if (row + col < 16) {
+                cursor_pixels[pixel + 0] = 0x33;
+                cursor_pixels[pixel + 1] = 0x33;
+                cursor_pixels[pixel + 2] = 0x33;
+                cursor_pixels[pixel + 3] = 0xff;
+            } else {
+                cursor_pixels[pixel + 0] = 0x00;
+                cursor_pixels[pixel + 1] = 0x00;
+                cursor_pixels[pixel + 2] = 0x00;
+                cursor_pixels[pixel + 3] = 0x00;
+            }
+        }
+    }
+
+    GLFWimage image;
+    image.width = 16;
+    image.height = 16;
+    image.pixels = cursor_pixels;
+    GLFWcursor *cursor = glfwCreateCursor(&image, 0, 0);
+    // Don't really need to check if the cursor is NULL,
+    // because if it is, then the cursor will be set to default
+    glfwSetCursor(glob->window.glfw_win, cursor);
+
+
     glob->state.current_case = PR::MENU;
     menu_prepare(&glob->current_level);
 
