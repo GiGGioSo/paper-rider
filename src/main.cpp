@@ -38,8 +38,8 @@ int main() {
 
     glob = (PR*) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
-    glob->window.w = 1280;
-    glob->window.h = 720;
+    glob->window.w = (uint32_t) (SCREEN_WIDTH_PROPORTION * 3.5f);
+    glob->window.h = (uint32_t) (SCREEN_HEIGHT_PROPORTION * 3.5f);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -95,6 +95,9 @@ int main() {
 
             // TODO: Debug flag
             std::cout << "FPS: " << fps_to_display << std::endl;
+            /*std::cout << "Current case: "
+                      << get_case_name(glob->state.current_case)
+                      << std::endl;*/
         }
 
         glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
@@ -105,6 +108,7 @@ int main() {
         if (glob->input.exit.clicked) {
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
         }
+
 
         switch (glob->state.current_case) {
             case PR::MENU:

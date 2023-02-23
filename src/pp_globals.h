@@ -9,6 +9,9 @@
 #include "pp_input.h"
 #include "pp_rect.h"
 
+#define SCREEN_WIDTH_PROPORTION 320
+#define SCREEN_HEIGHT_PROPORTION 240
+
 #define ARRAY_LENGTH(arr) ((int)(sizeof(arr) / sizeof(arr[0])))
 
 struct PR {
@@ -135,8 +138,8 @@ struct PR {
     GameState state;
 
     struct WinInfo {
-        unsigned int w;
-        unsigned int h;
+        uint32_t w;
+        uint32_t h;
         const char* title;
         GLFWwindow* glfw_win;
     };

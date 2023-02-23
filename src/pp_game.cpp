@@ -34,6 +34,10 @@
             glob->current_level = temp_level;\
             glob->state.current_case = new_case;\
             return;\
+        } else {\
+            std::cout << "[ERROR] Could not prepare case: "\
+                      << get_case_name(new_case)\
+                      << std::endl;\
         }\
     } while(0)
 
@@ -82,17 +86,22 @@ int load_map_from_file(const char *file_path,
                        PR::Obstacle **obstacles,
                        size_t *number_of_obstacles,
                        PR::BoostPad **boosts,
-                       size_t *number_of_boosts) {
+                       size_t *number_of_boosts,
+                       float width, float height) {
+
+    // NOTE: The screen resolution
+    width = width / SCREEN_WIDTH_PROPORTION;
+    height = height / SCREEN_HEIGHT_PROPORTION;
     
     int result = 0;
     FILE *map_file;
 
     {
         map_file = std::fopen(file_path, "r");
-        if (map_file == NULL) return_defer(errno);
+        if (map_file == NULL) return_defer(1);
 
         std::fscanf(map_file, " %zu", number_of_obstacles);
-        if (std::ferror(map_file)) return_defer(errno);
+        if (std::ferror(map_file)) return_defer(1);
 
         std::cout << "[LOADING] " << *number_of_obstacles
                   << " obstacles from the file " << file_path
@@ -113,31 +122,31 @@ int load_map_from_file(const char *file_path,
                         &collide_plane, &collide_rider, &triangle,
                         &x, &y, &w, &h, &r);
 
-            if (std::ferror(map_file)) return_defer(errno);
+            if (std::ferror(map_file)) return_defer(1);
             // TODO: You cannot check feof on the obstacles
             //       because after them there are the boosts
             if (std::feof(map_file)) {
                 *number_of_obstacles = obstacle_index;
                 std::cout << "[WARNING] Found only " << obstacle_index
                           << " obstacles in the map file" << std::endl;
-                return_defer(errno);
+                return_defer(1);
             }
 
             PR::Obstacle *obs = *obstacles + obstacle_index;
-            obs->body.pos.x = x;
-            obs->body.pos.y = y;
-            obs->body.dim.x = w;
-            obs->body.dim.y = h;
+            obs->body.pos.x = x * width;
+            obs->body.pos.y = y * height;
+            obs->body.dim.x = w * width;
+            obs->body.dim.y = h * height;
             obs->body.angle = r;
             obs->body.triangle = triangle;
 
             obs->collide_plane = collide_plane;
             obs->collide_rider = collide_rider;
 
-            std::cout << "x: " << x
-                      << " y: " << y
-                      << " w: " << w
-                      << " h: " << h
+            std::cout << "x: " << x * width
+                      << " y: " << y * height
+                      << " w: " << w * width
+                      << " h: " << h * height
                       << " r: " << r
                       << std::endl;
 
@@ -145,7 +154,7 @@ int load_map_from_file(const char *file_path,
 
         // NOTE: Loading the boosts from memory
         std::fscanf(map_file, " %zu", number_of_boosts);
-        if (std::ferror(map_file)) return_defer(errno);
+        if (std::ferror(map_file)) return_defer(1);
 
         std::cout << "[LOADING] " << *number_of_boosts
                   << " boost pads from file " << file_path
@@ -165,28 +174,28 @@ int load_map_from_file(const char *file_path,
                         " %i %f %f %f %f %f %f %f",
                         &triangle, &x, &y, &w, &h, &r, &ba, &bp);
 
-            if (std::ferror(map_file)) return_defer(errno);
+            if (std::ferror(map_file)) return_defer(1);
             if (std::feof(map_file)) {
                 *number_of_boosts = boost_index;
                 std::cout << "[WARNING] Found only " << boost_index
                           << " boosts in the map file" << std::endl;
-                return_defer(errno);
+                break;
             }
 
             PR::BoostPad *pad = *boosts + boost_index;
-            pad->body.pos.x = x;
-            pad->body.pos.y = y;
-            pad->body.dim.x = w;
-            pad->body.dim.y = h;
+            pad->body.pos.x = x * width;
+            pad->body.pos.y = y * height;
+            pad->body.dim.x = w * width;
+            pad->body.dim.y = h * height;
             pad->body.angle = r;
             pad->body.triangle = triangle;
             pad->boost_angle = ba;
             pad->boost_power = bp;
 
-            std::cout << "x: " << x
-                      << " y: " << y
-                      << " w: " << w
-                      << " h: " << h
+            std::cout << "x: " << x * width
+                      << " y: " << y * height
+                      << " w: " << w * width
+                      << " h: " << h * height
                       << " r: " << r
                       << " ba: " << ba
                       << " bp: " << bp
@@ -1083,14 +1092,16 @@ void level1_draw() {
 }
 
 int level2_prepare(PR::Level *level) {
+    PR::WinInfo *win = &glob->window;
+
     int loading_result = load_map_from_file("level2.prmap",
                                             &level->obstacles,
                                             &level->obstacles_number,
                                             &level->boosts,
-                                            &level->boosts_number);
+                                            &level->boosts_number,
+                                            win->w, win->h);
     if (loading_result != 0) return loading_result;
 
-    PR::WinInfo *win = &glob->window;
 
     glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
@@ -1160,6 +1171,8 @@ int level2_prepare(PR::Level *level) {
 
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
+
+    std::cout << "level 2 prepared" << std::endl;
 
     return 0;
 }

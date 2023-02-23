@@ -31,6 +31,9 @@ The map file consists of a list of obstacles and a list of boost pads, in this o
 
 Before every list, the number of elements of that list has to be specified.
 
+**ATTENTION**: Values such as `x`, `y`, `width`, `height` have to be used as if the window width and screen height were respectively `320` and `240`.
+When the map is loaded, these values will get mapped to the actual width andheight of the window.
+
 To describe an obstacle these fields have to be present:
 - `collide_plane` (int): `0` if the obstacle does not collide with the plane, any other number otherwise.
 - `collide_rider` (int): `0` if the obstacle does not collide with the rider, any other number otherwise.
@@ -57,13 +60,13 @@ To describe a boost pad these fiels have to be present:
 Here's an exaple of a map file:
 ```
 4
-1 0 1 20.5 30  40  250 0
-1 1 0 550  40  300 150 20
-0 1 0 10   550 200 150 -20
-0 0 1 650  450 220 100 0
+1 0 1 5.125 7.5   10 62.5 0
+1 1 0 140   10    75 40   20
+0 1 0 3     140   50 40   -20
+0 0 1 162.5 112.5 55 25   0
 2
-0 200 125 250 150 0  0  5
-1 250 525 350 150 15 15 10
+0 50   30  62.5 40 0  0  5
+1 62.5 130 85   40 15 15 10
 ```
 And this is the result:
 ![Map example screenshot](./screenshots/map_result_example.png)
@@ -81,8 +84,5 @@ Rider jumping from the plane:
 ## Features to implement
 - Sound system
 - Improve the UI
-- Make the map file be independent from the resolution
-
-**Maybe**:
 - Map editor
-- Power-ups
+- Power-ups/Portals

@@ -62,7 +62,6 @@ float horizontal_drag_coefficient(float angle) {
 
 inline
 Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
-
     Rect res;
 
     res.pos = r.pos - cam->pos + glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
@@ -85,7 +84,21 @@ TexCoords texcoords_in_texture_space(float x, float y,
     res.th = h / tex->height;
 
     return res;
+}
 
+inline
+const char *get_case_name(PR::GameCase c) {
+    switch (c) {
+        case PR::MENU:
+            return "MENU";
+        case PR::LEVEL1:
+            return "LEVEL 1";
+        case PR::LEVEL2:
+            return "LEVEL 2";
+        default:
+            return "UNKNOWN";
+    }
+    return "";
 }
 
 
