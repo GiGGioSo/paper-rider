@@ -75,14 +75,26 @@ Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
 inline
 TexCoords texcoords_in_texture_space(float x, float y,
                                      float w, float h,
-                                     Texture *tex) {
+                                     Texture *tex, bool inverse) {
     TexCoords res;
 
     res.tx = x / tex->width;
-    res.ty = 1.f - (y + h) / tex->height;
     res.tw = w / tex->width;
-    res.th = h / tex->height;
+    if (inverse) {
+        res.th = -(h / tex->height);
+        res.ty = (1.f - (y + h) / tex->height) - res.th;
+    } else {
+        res.ty = 1.f - (y + h) / tex->height;
+        res.th = (h / tex->height);
+    }
 
+    /*std::cout << "--------------------"
+              << "\ntx: " << res.tx
+              << "\ntw: " << res.tw
+              << "\nty: " << res.ty
+              << "\nth: " << res.th
+              << std::endl;*/
+    
     return res;
 }
 

@@ -360,6 +360,14 @@ void menu_draw(void) {
     return;
 }
 
+struct Portal {
+    Rect body;
+    bool enable_effect;
+};
+
+Portal inverse_portal;
+Portal reverse_portal;
+
 int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
 
@@ -392,8 +400,23 @@ int level1_prepare(PR::Level *level) {
     p->alar_surface = 0.12f; // m squared
     p->current_animation = PR::Plane::IDLE_ACC;
     p->animation_countdown = 0.f;
+    p->inverse = false;
 
+    inverse_portal.body.pos.x = 400.f;
+    inverse_portal.body.pos.y = 300.f;
+    inverse_portal.body.dim.x = 70.f;
+    inverse_portal.body.dim.y = 400.f;
+    inverse_portal.body.angle = 0.f;
+    inverse_portal.body.triangle = false;
+    inverse_portal.enable_effect = true;
 
+    reverse_portal.body.pos.x = 4300.f;
+    reverse_portal.body.pos.y = 300.f;
+    reverse_portal.body.dim.x = 70.f;
+    reverse_portal.body.dim.y = 400.f;
+    reverse_portal.body.angle = 0.f;
+    reverse_portal.body.triangle = false;
+    reverse_portal.enable_effect = false;
 
     PR::Rider *rid = &level->rider;
     rid->crashed = false;
@@ -401,8 +424,9 @@ int level1_prepare(PR::Level *level) {
     rid->crash_position.y = 0.f;
     rid->body.dim.x = 30.f;
     rid->body.dim.y = 50.f;
-    rid->body.angle = p->render_zone.angle;
     rid->body.triangle = false;
+    //move_rider_to_plane(rid, p);
+    rid->body.angle = p->render_zone.angle;
     rid->body.pos.x =
         p->render_zone.pos.x +
         (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
@@ -428,6 +452,7 @@ int level1_prepare(PR::Level *level) {
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
     rid->input_max_accelleration = 5000.f;
+    rid->inverse = false;
 
     PR::Camera *cam = &level->camera;
     cam->pos.x = p->body.pos.x;
@@ -686,7 +711,7 @@ void level1_update() {
         else p->acc *= 1.f/p->mass;
 
         // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-        p->acc.y += GRAVITY;
+        p->acc.y += p->inverse ? -GRAVITY : GRAVITY;
 
         // NOTE: Motion of the plane
         p->vel += p->acc * dt;
@@ -855,6 +880,42 @@ void level1_update() {
         }
     }
 
+    // NOTE: The portal can be activated only by the rider.
+    //       If the rider is attached, then, by extensions, also
+    //          the plane will activate the portal.
+    //       Even if the rider is not attached, the effect is also
+    //          applied to the plane.
+    if ((!rid->crashed &&
+            p->inverse != inverse_portal.enable_effect &&
+            rid->inverse != inverse_portal.enable_effect) &&
+        (rect_are_colliding(&rid->body, &inverse_portal.body, NULL, NULL) ||
+            (rid->attached && rect_are_colliding(&p->body,
+                                                 &inverse_portal.body,
+                                                 NULL, NULL)))) {
+        if (!p->crashed) {
+            p->inverse = inverse_portal.enable_effect;
+            p->body.pos.y += p->body.dim.y;
+            p->body.dim.y = -p->body.dim.y;
+        }
+        rid->inverse = inverse_portal.enable_effect;
+        rid->body.dim.y = -rid->body.dim.y;
+    }
+    if ((!rid->crashed &&
+            p->inverse != reverse_portal.enable_effect &&
+            rid->inverse != reverse_portal.enable_effect) &&
+        (rect_are_colliding(&rid->body, &reverse_portal.body, NULL, NULL) ||
+            (rid->attached && rect_are_colliding(&p->body,
+                                                 &reverse_portal.body,
+                                                 NULL, NULL)))) {
+        if (!p->crashed) {
+            p->inverse = reverse_portal.enable_effect;
+            p->body.pos.y += p->body.dim.y;
+            p->body.dim.y = -p->body.dim.y;
+        }
+        rid->inverse = reverse_portal.enable_effect;
+        rid->body.dim.y = -rid->body.dim.y;
+    }
+
     // NOTE: Checking collision with obstacles
     for (int obstacle_index = 0;
          obstacle_index < obstacles_number;
@@ -919,9 +980,9 @@ void level1_update() {
     }
 
     // NOTE: Update the `render_zone`s based on the `body`s
-    /*p->render_zone.pos = p->body.pos +
-                         (p->body.dim - p->render_zone.dim) * 0.5f;*/
-    p->render_zone.pos = p->body.pos;
+    p->render_zone.pos.x = p->body.pos.x;
+    p->render_zone.pos.y = p->inverse ? p->body.pos.y+p->body.dim.y :
+                                        p->body.pos.y;
     p->render_zone.angle = p->body.angle;
 
     rid->render_zone.pos = rid->body.pos +
@@ -975,6 +1036,14 @@ void level1_draw() {
     PR::WinInfo *win = &glob->window;
     float dt = glob->state.delta_time;
 
+    // TESTING: Rendering the portal
+    renderer_add_queue_uni(rect_in_camera_space(inverse_portal.body, cam),
+                           glm::vec4(0.f, 0.f, 0.f, 1.f),
+                           false);
+    renderer_add_queue_uni(rect_in_camera_space(reverse_portal.body, cam),
+                           glm::vec4(0.f, 0.f, 0.f, 1.f),
+                           false);
+
     // NOTE: Rendering the boosts
     for(size_t boost_index = 0;
         boost_index < boosts_number;
@@ -1008,7 +1077,6 @@ void level1_draw() {
                               get_obstacle_color(obs),
                               false);
     }
-
 
     // Set the time_between_particles for the boost based on the velocity
     glob->current_level.particle_systems[0].time_between_particles =
@@ -1052,9 +1120,9 @@ void level1_draw() {
     /* renderer_add_queue_uni(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the plane
-    /*renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
+    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                          false);*/
+                          false);
 
     /*
     glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
@@ -1079,16 +1147,17 @@ void level1_draw() {
                           glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
                           false);
 
-    renderer_draw_uni(glob->rend_res.shaders[0]);
 
     // NOTE: Rendering plane texture
     renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
                               texcoords_in_texture_space(
-				                      p->current_animation * 32.f, 0.f,
-                                      32.f, 8.f,
-                                      &glob->rend_res.global_sprite));
+				                    p->current_animation * 32.f, 0.f,
+                                    32.f, 8.f,
+                                    &glob->rend_res.global_sprite, p->inverse));
 
-    renderer_draw_tex(glob->rend_res.shaders[1], &glob->rend_res.global_sprite);
+    renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_tex(glob->rend_res.shaders[1],
+                      &glob->rend_res.global_sprite);
 }
 
 int level2_prepare(PR::Level *level) {
@@ -1509,9 +1578,10 @@ void level2_draw() {
 
     // NOTE: Rendering plane texture
     renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                              texcoords_in_texture_space(p->current_animation * 32.f, 0.f,
-                                                         32.f, 8.f,
-                                                         &glob->rend_res.global_sprite));
+                              texcoords_in_texture_space(
+                                  p->current_animation * 32.f, 0.f,
+                                  32.f, 8.f,
+                                  &glob->rend_res.global_sprite, false));
 
     renderer_draw_tex(glob->rend_res.shaders[1], &glob->rend_res.global_sprite);
 }

@@ -21,6 +21,9 @@ struct PR {
 
         Rect render_zone;
 
+        // portal effect
+        bool inverse;
+
         bool crashed;
         glm::vec2 crash_position;
 
@@ -43,6 +46,9 @@ struct PR {
         Rect render_zone;
 
         glm::vec2 vel;
+
+        // portal effect
+        bool inverse;
 
         bool crashed;
         glm::vec2 crash_position;
