@@ -78,10 +78,14 @@ bool rect_contains_point(const Rect *rec, float px, float py, bool centered) {
 }
 
 bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
+    // NOTE: check if the objects are very distant,
+    //       in that case don't check the collision
     if (glm::abs(r1->pos.x - r2->pos.x) >
-            r1->dim.x + r1->dim.y + r2->dim.x + r2->dim.y
+            glm::abs(r1->dim.x) + glm::abs(r1->dim.y) +
+            glm::abs(r2->dim.x) + glm::abs(r2->dim.y)
      || glm::abs(r1->pos.y - r2->pos.y) >
-            r1->dim.x + r1->dim.y + r2->dim.x + r2->dim.y
+            glm::abs(r1->dim.x) + glm::abs(r1->dim.y) +
+            glm::abs(r2->dim.x) + glm::abs(r2->dim.y)
     ) return false;
 
     float center_x1 = r1->pos.x + r1->dim.x * 0.5f;
@@ -118,6 +122,13 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
     float y3 = center_y1 +
                 (r1->pos.x + r1->dim.x - center_x1) * sin_r1 +
                 (r1->pos.y + r1->dim.y - center_y1) * cos_r1;
+
+    //std::cout << "----------------------"
+    //          << "\nx0: " << x0 << ", y0: " << y0
+    //          << "\nx1: " << x1 << ", y1: " << y1
+    //          << "\nx2: " << x2 << ", y2: " << y2
+    //          << "\nx3: " << x3 << ", y3: " << y3
+    //          << std::endl;
 
 
     float center_x2 = r2->pos.x + r2->dim.x * 0.5f;

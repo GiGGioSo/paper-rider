@@ -747,7 +747,8 @@ void level1_update() {
                     rid->attached = false;
                     rid->second_jump = true;
                     rid->base_velocity = p->vel.x;
-                    rid->vel.y = p->vel.y*0.5f - 500.f;
+                    rid->vel.y = rid->inverse ? p->vel.y*0.5f + 500.f :
+                                                p->vel.y*0.5f - 500.f;
                     rid->body.angle = 0.f;
                     rid->jump_time_elapsed = 0.f;
                 }
@@ -777,14 +778,18 @@ void level1_update() {
                                       rid->air_friction_acc * dt;
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
-                rid->vel.y += GRAVITY * 1.5f * dt;
+                rid->vel.y += rid->inverse ? -GRAVITY * 1.5f * dt :
+                                             GRAVITY * 1.5f * dt;
 
                 // NOTE: Rider double jump if available
                 if(rid->second_jump && input->jump.clicked) {
-                    if (rid->vel.y < 0) {
-                        rid->vel.y -= 300.f;
+                    if ((!rid->inverse && rid->vel.y < 0) ||
+                         (rid->inverse && rid->vel.y > 0)) {
+                        rid->vel.y -= rid->inverse ? -300.f:
+                                                     300.f;
                     } else {
-                        rid->vel.y = -300.f;
+                        rid->vel.y = rid->inverse ? 300.f:
+                                                    -300.f;
                     }
                     rid->second_jump = false;
                 }
@@ -849,11 +854,19 @@ void level1_update() {
                                       rid->air_friction_acc * dt;
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
-                rid->vel.y += GRAVITY * 1.5f * dt;
+                rid->vel.y += rid->inverse ? -GRAVITY * 1.5f * dt :
+                                             GRAVITY * 1.5f * dt;
 
                 // NOTE: Rider double jump if available
                 if(rid->second_jump && input->jump.clicked) {
-                    rid->vel.y -= 300.f;
+                    if ((!rid->inverse && rid->vel.y < 0) ||
+                         (rid->inverse && rid->vel.y > 0)) {
+                        rid->vel.y -= rid->inverse ? -300.f:
+                                                     300.f;
+                    } else {
+                        rid->vel.y = rid->inverse ? 300.f:
+                                                    -300.f;
+                    }
                     rid->second_jump = false;
                 }
 
