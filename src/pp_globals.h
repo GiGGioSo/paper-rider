@@ -66,6 +66,15 @@ struct PR {
 
         bool second_jump;
     };
+
+    glm::vec4 colors[4];
+
+    enum ObstacleColorIndex {
+        RED = 0,
+        WHITE = 1,
+        BLUE = 2,
+        GRAY = 3,
+    };
     struct Obstacle {
         Rect body;
         bool collide_plane;
@@ -113,11 +122,16 @@ struct PR {
 
         ParticleSystem particle_systems[3];
 
+        ObstacleColorIndex current_red;
+        ObstacleColorIndex current_white;
+        ObstacleColorIndex current_blue;
+        ObstacleColorIndex current_gray;
+
         size_t obstacles_number;
         Obstacle *obstacles;
         size_t boosts_number;
         BoostPad *boosts;
-        // TODO: Coins?
+        // TODO: Portals
     };
     Level current_level;
 

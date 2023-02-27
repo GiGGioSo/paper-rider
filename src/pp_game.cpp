@@ -1,6 +1,6 @@
 #include <cassert>
 #include <cstring>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <cstdio>
 #include <cerrno>
@@ -212,33 +212,18 @@ int load_map_from_file(const char *file_path,
 }
 
 glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
-    glm::vec4 col;
 
     if (obs->collide_rider && obs->collide_plane) {
-        col.r = 0.8f;
-        col.g = 0.3f;
-        col.b = 0.3f;
-        col.a = 1.0f;
+        return glob->colors[glob->current_level.current_red];
     } else
     if (obs->collide_rider) {
-        col.r = 0.8f;
-        col.g = 0.8f;
-        col.b = 0.8f;
-        col.a = 1.0f;
+        return glob->colors[glob->current_level.current_white];
     } else
     if (obs->collide_plane) {
-        col.r = 0.3f;
-        col.g = 0.3f;
-        col.b = 0.8f;
-        col.a = 1.0f;
+        return glob->colors[glob->current_level.current_blue];
     } else {
-        col.r = 0.4f;
-        col.g = 0.4f;
-        col.b = 0.4f;
-        col.a = 1.0f;
+        return glob->colors[glob->current_level.current_gray];
     }
-
-    return col;
 }
 
 struct Button {
@@ -468,6 +453,11 @@ int level1_prepare(PR::Level *level) {
 
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
+
+    level->current_red = PR::RED;
+    level->current_white = PR::WHITE;
+    level->current_blue = PR::BLUE;
+    level->current_gray = PR::GRAY;
 
     level->obstacles_number = 50;
     if (level->obstacles_number) {

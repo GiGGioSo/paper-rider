@@ -217,6 +217,11 @@ void glob_init(void) {
     std::cout << error << std::endl;
 
     renderer_init(&glob->renderer);
+
+    glob->colors[0] = glm::vec4(0.8f, 0.3f, 0.3f, 1.0f);
+    glob->colors[1] = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    glob->colors[2] = glm::vec4(0.3f, 0.3f, 0.8f, 1.0f);
+    glob->colors[3] = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 }
 
 void glob_free(void) {
