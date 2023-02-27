@@ -6,6 +6,7 @@
 #include "pp_globals.h"
 #include "pp_shaderer.h"
 
+#include <cstring>
 #include <iostream>
 #include <math.h>
 
@@ -22,7 +23,6 @@
 
 // General setup
 void renderer_init(Renderer* renderer) {
-
     // NOTE: unicolor rendering initialization
     glGenVertexArrays(1, &renderer->uni_vao);
     glGenBuffers(1, &renderer->uni_vbo);

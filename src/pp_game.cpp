@@ -360,8 +360,13 @@ void menu_draw(void) {
     return;
 }
 
+enum PortalType {
+    INVERSE,
+    SHUFFLE_COLORS,
+};
 struct Portal {
     Rect body;
+    PortalType type;
     bool enable_effect;
 };
 
@@ -408,6 +413,7 @@ int level1_prepare(PR::Level *level) {
     inverse_portal.body.dim.y = 400.f;
     inverse_portal.body.angle = 0.f;
     inverse_portal.body.triangle = false;
+    inverse_portal.type = INVERSE;
     inverse_portal.enable_effect = true;
 
     reverse_portal.body.pos.x = 4300.f;
@@ -416,6 +422,7 @@ int level1_prepare(PR::Level *level) {
     reverse_portal.body.dim.y = 400.f;
     reverse_portal.body.angle = 0.f;
     reverse_portal.body.triangle = false;
+    inverse_portal.type = INVERSE;
     reverse_portal.enable_effect = false;
 
     PR::Rider *rid = &level->rider;
@@ -733,7 +740,9 @@ void level1_update() {
                 move_rider_to_plane(rid, p);
                 // NOTE: Changing plane angle based on input
                 if (input->left_right) {
-                    p->body.angle -= 150.f * input->left_right * dt;
+                    p->body.angle -= p->inverse ?
+                                     -150.f * input->left_right * dt :
+                                     150.f * input->left_right * dt;
                 }
                 // NOTE: Limiting the angle of the plane
                 if (p->body.angle > 360.f) {
@@ -758,11 +767,16 @@ void level1_update() {
 
                 // NOTE: Modify accelleration based on input
                 if (input->left_right) {
-                    rid->input_velocity += rid->input_max_accelleration *
-                                           input->left_right * dt;
+                    rid->input_velocity +=
+                        rid->inverse ?
+                        -rid->input_max_accelleration *
+                            input->left_right * dt :
+                        rid->input_max_accelleration *
+                            input->left_right * dt;
                 } else {
-                    rid->input_velocity += rid->input_max_accelleration *
-                                           -glm::sign(rid->input_velocity) * dt;
+                    rid->input_velocity +=
+                        rid->input_max_accelleration *
+                            -glm::sign(rid->input_velocity) * dt;
                 }
                 // NOTE: Base speed is the speed of the plane at the moment of the jump,
                 //          which decreases slowly but constantly overtime
@@ -834,11 +848,16 @@ void level1_update() {
 
                 // NOTE: Modify accelleration based on input
                 if (input->left_right) {
-                    rid->input_velocity += rid->input_max_accelleration *
-                                           input->left_right * dt;
+                    rid->input_velocity +=
+                        rid->inverse ?
+                        -rid->input_max_accelleration *
+                            input->left_right * dt :
+                        rid->input_max_accelleration *
+                            input->left_right * dt;
                 } else {
-                    rid->input_velocity += rid->input_max_accelleration *
-                                           -glm::sign(rid->input_velocity) * dt;
+                    rid->input_velocity +=
+                        rid->input_max_accelleration *
+                            -glm::sign(rid->input_velocity) * dt;
                 }
                 // NOTE: Base speed is the speed of the plane at the moment of the jump,
                 //          which decreases slowly but constantly overtime
