@@ -63,6 +63,10 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle);
 
 void free_level(PR::Level *level) {
+    if (level->portals) {
+        std::free(level->portals);
+        level->portals = NULL;
+    }
     if (level->obstacles) {
         std::free(level->obstacles);
         level->obstacles = NULL;
@@ -212,7 +216,6 @@ int load_map_from_file(const char *file_path,
 }
 
 glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
-
     if (obs->collide_rider && obs->collide_plane) {
         return glob->colors[glob->current_level.current_red];
     } else
@@ -223,6 +226,21 @@ glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
         return glob->colors[glob->current_level.current_blue];
     } else {
         return glob->colors[glob->current_level.current_gray];
+    }
+}
+
+glm::vec4 get_portal_color(PR::Portal *portal) {
+    switch(portal->type) {
+        case PR::INVERSE:
+        {
+            return glm::vec4(0.f, 0.f, 0.f, 1.f);
+            break;
+        }
+        case PR::SHUFFLE_COLORS:
+        {
+            return glm::vec4(1.f);
+            break;
+        }
     }
 }
 
@@ -262,6 +280,7 @@ int menu_prepare(PR::Level *level) {
     button_lvl2.from_center = true;
     button_lvl2.text = "LEVEL 2";
 
+    level->portals = NULL;
     level->obstacles = NULL;
     level->boosts = NULL;
     for(size_t ps_index = 0;
@@ -345,18 +364,6 @@ void menu_draw(void) {
     return;
 }
 
-enum PortalType {
-    INVERSE,
-    SHUFFLE_COLORS,
-};
-struct Portal {
-    Rect body;
-    PortalType type;
-    bool enable_effect;
-};
-
-Portal inverse_portal;
-Portal reverse_portal;
 
 int level1_prepare(PR::Level *level) {
     PR::WinInfo *win = &glob->window;
@@ -392,23 +399,6 @@ int level1_prepare(PR::Level *level) {
     p->animation_countdown = 0.f;
     p->inverse = false;
 
-    inverse_portal.body.pos.x = 400.f;
-    inverse_portal.body.pos.y = 300.f;
-    inverse_portal.body.dim.x = 70.f;
-    inverse_portal.body.dim.y = 400.f;
-    inverse_portal.body.angle = 0.f;
-    inverse_portal.body.triangle = false;
-    inverse_portal.type = INVERSE;
-    inverse_portal.enable_effect = true;
-
-    reverse_portal.body.pos.x = 4300.f;
-    reverse_portal.body.pos.y = 300.f;
-    reverse_portal.body.dim.x = 70.f;
-    reverse_portal.body.dim.y = 400.f;
-    reverse_portal.body.angle = 0.f;
-    reverse_portal.body.triangle = false;
-    inverse_portal.type = INVERSE;
-    reverse_portal.enable_effect = false;
 
     PR::Rider *rid = &level->rider;
     rid->crashed = false;
@@ -453,6 +443,39 @@ int level1_prepare(PR::Level *level) {
 
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
+
+    level->portals_number = 2;
+    if (level->portals_number) {
+        level->portals =
+            (PR::Portal *) std::malloc(sizeof(PR::Portal) *
+                                       level->portals_number);
+        if (level->portals == NULL) {
+            std::cout << "Buy more RAM!" << std::endl;
+            return 1;
+        }
+    }
+
+    level->colors_shuffled = false;
+
+    PR::Portal *inverse_portal = level->portals;
+    inverse_portal->body.pos.x = 400.f;
+    inverse_portal->body.pos.y = 300.f;
+    inverse_portal->body.dim.x = 70.f;
+    inverse_portal->body.dim.y = 400.f;
+    inverse_portal->body.angle = 0.f;
+    inverse_portal->body.triangle = false;
+    inverse_portal->type = PR::SHUFFLE_COLORS;
+    inverse_portal->enable_effect = true;
+
+    PR::Portal *reverse_portal = level->portals + 1;
+    reverse_portal->body.pos.x = 4300.f;
+    reverse_portal->body.pos.y = 300.f;
+    reverse_portal->body.dim.x = 70.f;
+    reverse_portal->body.dim.y = 400.f;
+    reverse_portal->body.angle = 0.f;
+    reverse_portal->body.triangle = false;
+    reverse_portal->type = PR::SHUFFLE_COLORS;
+    reverse_portal->enable_effect = false;
 
     level->current_red = PR::RED;
     level->current_white = PR::WHITE;
@@ -601,6 +624,10 @@ void level1_update() {
     PR::Obstacle *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
+    size_t portals_number = glob->current_level.portals_number;
+    PR::Portal *portals = glob->current_level.portals;
+
+    PR::Level *level = &glob->current_level;
 
     PR::ParticleSystem *boost_ps =
         &glob->current_level.particle_systems[0];
@@ -901,41 +928,60 @@ void level1_update() {
             }
         }
     }
-
     // NOTE: The portal can be activated only by the rider.
     //       If the rider is attached, then, by extensions, also
     //          the plane will activate the portal.
     //       Even if the rider is not attached, the effect is also
     //          applied to the plane.
-    if ((!rid->crashed &&
-            p->inverse != inverse_portal.enable_effect &&
-            rid->inverse != inverse_portal.enable_effect) &&
-        (rect_are_colliding(&rid->body, &inverse_portal.body, NULL, NULL) ||
-            (rid->attached && rect_are_colliding(&p->body,
-                                                 &inverse_portal.body,
+    for(size_t portal_index = 0;
+        portal_index < portals_number;
+        ++portal_index) {
+
+        PR::Portal *portal = portals + portal_index;
+
+        if (!rid->crashed &&
+            (rect_are_colliding(&rid->body, &portal->body, NULL, NULL) ||
+             (rid->attached && rect_are_colliding(&p->body,
+                                                 &portal->body,
                                                  NULL, NULL)))) {
-        if (!p->crashed) {
-            p->inverse = inverse_portal.enable_effect;
-            p->body.pos.y += p->body.dim.y;
-            p->body.dim.y = -p->body.dim.y;
+            switch(portal->type) {
+                case PR::INVERSE:
+                {
+                    // NOTE: Skip if the plane/rider already has the effect
+                    if (p->inverse == portal->enable_effect ||
+                        rid->inverse == portal->enable_effect) break;
+
+                    if (!p->crashed) {
+                        p->inverse = portal->enable_effect;
+                        p->body.pos.y += p->body.dim.y;
+                        p->body.dim.y = -p->body.dim.y;
+                    }
+                    rid->inverse = portal->enable_effect;
+                    rid->body.dim.y = -rid->body.dim.y;
+                    break;
+                }
+                case PR::SHUFFLE_COLORS:
+                {
+                    if (level->colors_shuffled == portal->enable_effect) break;
+
+                    level->colors_shuffled = portal->enable_effect;
+
+                    if (portal->enable_effect) {
+                        level->current_red = PR::WHITE;
+                        level->current_blue = PR::RED;
+                        level->current_gray = PR::BLUE;
+                        level->current_white = PR::GRAY;
+                    } else {
+                        level->current_red = PR::RED;
+                        level->current_blue = PR::BLUE;
+                        level->current_gray = PR::GRAY;
+                        level->current_white = PR::WHITE;
+                    }
+
+                    break;
+                }
+            }
         }
-        rid->inverse = inverse_portal.enable_effect;
-        rid->body.dim.y = -rid->body.dim.y;
-    }
-    if ((!rid->crashed &&
-            p->inverse != reverse_portal.enable_effect &&
-            rid->inverse != reverse_portal.enable_effect) &&
-        (rect_are_colliding(&rid->body, &reverse_portal.body, NULL, NULL) ||
-            (rid->attached && rect_are_colliding(&p->body,
-                                                 &reverse_portal.body,
-                                                 NULL, NULL)))) {
-        if (!p->crashed) {
-            p->inverse = reverse_portal.enable_effect;
-            p->body.pos.y += p->body.dim.y;
-            p->body.dim.y = -p->body.dim.y;
-        }
-        rid->inverse = reverse_portal.enable_effect;
-        rid->body.dim.y = -rid->body.dim.y;
     }
 
     // NOTE: Checking collision with obstacles
@@ -981,7 +1027,6 @@ void level1_update() {
             std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
-
 
     // NOTE: Loop over window edged pacman style,
     //       but only on the top and bottom
@@ -1053,18 +1098,72 @@ void level1_draw() {
     PR::Obstacle *obstacles = glob->current_level.obstacles;
     size_t boosts_number = glob->current_level.boosts_number;
     PR::BoostPad *boosts = glob->current_level.boosts;
+    size_t portals_number = glob->current_level.portals_number;
+    PR::Portal *portals = glob->current_level.portals;
 
     // Global stuff
     PR::WinInfo *win = &glob->window;
     float dt = glob->state.delta_time;
 
-    // TESTING: Rendering the portal
-    renderer_add_queue_uni(rect_in_camera_space(inverse_portal.body, cam),
-                           glm::vec4(0.f, 0.f, 0.f, 1.f),
-                           false);
-    renderer_add_queue_uni(rect_in_camera_space(reverse_portal.body, cam),
-                           glm::vec4(0.f, 0.f, 0.f, 1.f),
-                           false);
+    // TESTING: Rendering the portals
+    for(size_t portal_index = 0;
+        portal_index < portals_number;
+        ++portal_index) {
+
+        PR::Portal *portal = portals + portal_index;
+
+        if (portal->type == PR::SHUFFLE_COLORS) {
+
+            Rect b = portal->body;
+
+            Rect q1;
+            q1.angle = 0.f;
+            q1.triangle = false;
+            q1.pos = b.pos;
+            q1.dim = b.dim * 0.5f;
+            renderer_add_queue_uni(
+                rect_in_camera_space(q1, cam),
+                glob->colors[glob->current_level.current_gray],
+                false);
+
+            Rect q2;
+            q2.angle = 0.f;
+            q2.triangle = false;
+            q2.pos.x = b.pos.x + b.dim.x*0.5f;
+            q2.pos.y = b.pos.y;
+            q2.dim = b.dim * 0.5f;
+            renderer_add_queue_uni(
+                rect_in_camera_space(q2, cam),
+                glob->colors[glob->current_level.current_white],
+                false);
+
+            Rect q3;
+            q3.angle = 0.f;
+            q3.triangle = false;
+            q3.pos.x = b.pos.x;
+            q3.pos.y = b.pos.y + b.dim.y*0.5f;
+            q3.dim = b.dim * 0.5f;
+            renderer_add_queue_uni(
+                rect_in_camera_space(q3, cam),
+                glob->colors[glob->current_level.current_blue],
+                false);
+
+            Rect q4;
+            q4.angle = 0.f;
+            q4.triangle = false;
+            q4.pos.x = b.pos.x + b.dim.x*0.5f;
+            q4.pos.y = b.pos.y + b.dim.y*0.5f;
+            q4.dim = b.dim * 0.5f;
+            renderer_add_queue_uni(
+                rect_in_camera_space(q4, cam),
+                glob->colors[glob->current_level.current_red],
+                false);
+        } else {
+            renderer_add_queue_uni(rect_in_camera_space(portal->body, cam),
+                                   get_portal_color(portal),
+                                   false);
+        }
+    }
 
     // NOTE: Rendering the boosts
     for(size_t boost_index = 0;

@@ -85,6 +85,15 @@ struct PR {
         float boost_angle;
         float boost_power;
     };
+    enum PortalType {
+        INVERSE,
+        SHUFFLE_COLORS,
+    };
+    struct Portal {
+        Rect body;
+        PortalType type;
+        bool enable_effect;
+    };
     struct Camera {
         glm::vec2 pos;
 
@@ -122,6 +131,7 @@ struct PR {
 
         ParticleSystem particle_systems[3];
 
+        bool colors_shuffled;
         ObstacleColorIndex current_red;
         ObstacleColorIndex current_white;
         ObstacleColorIndex current_blue;
@@ -131,7 +141,8 @@ struct PR {
         Obstacle *obstacles;
         size_t boosts_number;
         BoostPad *boosts;
-        // TODO: Portals
+        size_t portals_number;
+        Portal *portals;
     };
     Level current_level;
 

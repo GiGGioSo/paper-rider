@@ -214,7 +214,11 @@ void glob_init(void) {
     f1->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
                                                    f1->num_chars);
     int error = renderer_create_font_atlas(f1);
-    std::cout << error << std::endl;
+    if (error) {
+        std::cout << "[ERROR] Could not create font atlas "
+                  << error
+                  << std::endl;
+    }
 
     renderer_init(&glob->renderer);
 
