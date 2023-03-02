@@ -12,6 +12,12 @@
 #include "pp_rect.h"
 
 // TODO:
+// - End of a level, like geometry dash
+// - Load map files from the current working directory in runtime
+// - Put the levels menu in a grid so you can add as many as you like
+// - Compact both levels into a single level update (maybe)
+
+// TODO:
 //  - Find textures
 //  - UI
 //  - Make changing angle more or less difficult
