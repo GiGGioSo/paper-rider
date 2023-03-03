@@ -475,7 +475,6 @@ void menu_draw(void) {
 
 int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     PR::WinInfo *win = &glob->window;
-    glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     // Have to set to NULL if I don't use it
     menu->custom_buttons_number = 0;
@@ -741,6 +740,9 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
                                  particle_index;
         (rider_crash_ps->create_particle)(rider_crash_ps, particle);
     }
+
+    // NOTE: Hide the cursor only if it succeded in doing everything else
+    glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     return 0;
 }
 
