@@ -1,6 +1,9 @@
 # Paper Rider
 Paper Rider is a simple sidescroller game.
 
+## WARNING
+**This readme, as of now, is pretty outdated. It'll be updated when I reach a stable point in the development.**
+
 ## Mechanics
 The main goal is to reach the end of the level by piloting a paper plane through various obstacles.
 
