@@ -117,16 +117,10 @@ int main() {
                 menu_draw();
                 break;
             }
-            case PR::LEVEL1:
+            case PR::LEVEL:
             {
-                level1_update();
-                level1_draw();
-                break;
-            }
-            case PR::LEVEL2:
-            {
-                level2_update();
-                level2_draw();
+                level_update();
+                level_draw();
                 break;
             }
         }
@@ -172,7 +166,7 @@ void glob_init(void) {
 
 
     glob->state.current_case = PR::MENU;
-    menu_prepare(&glob->current_level);
+    menu_prepare(&glob->current_menu, &glob->current_level, "");
 
     PR::WinInfo* win = &glob->window;
 

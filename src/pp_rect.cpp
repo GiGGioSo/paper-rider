@@ -41,26 +41,26 @@ bool lines_are_colliding(float x0, float y0,
     return false; // No collision
 }
 
-bool rect_contains_point(const Rect *rec, float px, float py, bool centered) {
+bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
     // NOTE: Check if rec contains the point
     float center_x, center_y;
     float x, y, w, h;
     if (centered) {
-        center_x = rec->pos.x;
-        center_y = rec->pos.y;
-        x = rec->pos.x - rec->dim.x * 0.5f;
-        y = rec->pos.y - rec->dim.y * 0.5f;
+        center_x = rec.pos.x;
+        center_y = rec.pos.y;
+        x = rec.pos.x - rec.dim.x * 0.5f;
+        y = rec.pos.y - rec.dim.y * 0.5f;
     } else {
-        center_x = rec->pos.x + rec->dim.x * 0.5f;
-        center_y = rec->pos.y + rec->dim.y * 0.5f;
-        x = rec->pos.x;
-        y = rec->pos.y;
+        center_x = rec.pos.x + rec.dim.x * 0.5f;
+        center_y = rec.pos.y + rec.dim.y * 0.5f;
+        x = rec.pos.x;
+        y = rec.pos.y;
     }
-    w = rec->dim.x;
-    h = rec->dim.y;
-    float cosine = cos(glm::radians(rec->angle));
-    float sine = sin(glm::radians(rec->angle));
-    if (!rec->triangle) {
+    w = rec.dim.x;
+    h = rec.dim.y;
+    float cosine = cos(glm::radians(rec.angle));
+    float sine = sin(glm::radians(rec.angle));
+    if (!rec.triangle) {
         float rx = center_x +
                 (px - center_x) * cosine -
                 (py - center_y) * sine;
@@ -380,9 +380,9 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
         }
     }
 
-    if (rect_contains_point(r2, x0, y0, false)) return true;
+    if (rect_contains_point(*r2, x0, y0, false)) return true;
 
-    if (rect_contains_point(r1, s0, t0, false)) return true;
+    if (rect_contains_point(*r1, s0, t0, false)) return true;
 
     return false;
 }

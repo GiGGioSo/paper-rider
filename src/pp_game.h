@@ -4,17 +4,13 @@
 #include "../include/glm/trigonometric.hpp"
 #include "pp_globals.h"
 
-int menu_prepare(PR::Level *level);
+int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path);
 void menu_update(void);
 void menu_draw(void);
 
-int level1_prepare(PR::Level *level);
-void level1_update(void);
-void level1_draw(void);
-
-int level2_prepare(PR::Level *level);
-void level2_update(void);
-void level2_draw(void);
+int level_prepare(PR::Menu *menu, PR::Level *leve, const char* mapfile_path);
+void level_update(void);
+void level_draw(void);
 
 #define POW2(x) (x * x)
 
@@ -103,10 +99,8 @@ const char *get_case_name(PR::GameCase c) {
     switch (c) {
         case PR::MENU:
             return "MENU";
-        case PR::LEVEL1:
-            return "LEVEL 1";
-        case PR::LEVEL2:
-            return "LEVEL 2";
+        case PR::LEVEL:
+            return "LEVEL";
         default:
             return "UNKNOWN";
     }

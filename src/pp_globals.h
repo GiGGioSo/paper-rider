@@ -121,6 +121,26 @@ struct PR {
         float time_between_particles;
         float time_elapsed;
     };
+    struct LevelButton {
+        Rect body;
+        glm::vec4 col;
+        bool from_center;
+        char *text;
+
+        const char *mapfile_path;
+    };
+
+    #define CAMPAIGN_LEVELS_NUMBER 12
+    struct Menu {
+        Camera camera;
+        float camera_goal_position;
+
+        LevelButton campaign_buttons[CAMPAIGN_LEVELS_NUMBER];
+
+        size_t custom_buttons_number;
+        LevelButton *custom_buttons;
+    };
+    Menu current_menu;
 
     struct Level {
         Plane plane;
@@ -128,6 +148,8 @@ struct PR {
 
         Atmosphere air;
         Rider rider;
+
+        float goal_line;
 
         ParticleSystem particle_systems[3];
 
@@ -159,8 +181,7 @@ struct PR {
 
     enum GameCase {
         MENU = 0,
-        LEVEL1 = 1,
-        LEVEL2 = 2,
+        LEVEL = 1,
     };
     struct GameState {
         float delta_time;

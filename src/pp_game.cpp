@@ -32,12 +32,16 @@
 #define RIDER_VELOCITY_Y_LIMIT (600.f)
 #define RIDER_INPUT_VELOCITY_LIMIT (550.f)
 
-#define CHANGE_CASE_TO(new_case, prepare_func)  do {\
-        PR::Level temp_level = glob->current_level;\
-        int preparation_result = (prepare_func)(&temp_level);\
+#define CAMERA_MAX_VELOCITY (1500.f)
+
+#define CHANGE_CASE_TO(new_case, prepare_func, map_path)  do {\
+        PR::Level t_level = glob->current_level;\
+        PR::Menu t_menu = glob->current_menu;\
+        int preparation_result = (prepare_func)(&t_menu, &t_level, map_path);\
         if (preparation_result == 0) {\
-            free_level(&glob->current_level);\
-            glob->current_level = temp_level;\
+            free_menu_level(&glob->current_menu, &glob->current_level);\
+            glob->current_level = t_level;\
+            glob->current_menu = t_menu;\
             glob->state.current_case = new_case;\
             return;\
         } else {\
@@ -68,7 +72,14 @@ void create_particle_rider_crash(PR::ParticleSystem *ps,
 void update_particle_rider_crash(PR::ParticleSystem *ps,
                                  PR::Particle *particle);
 
-void free_level(PR::Level *level) {
+void free_menu_level(PR::Menu *menu, PR::Level *level) {
+    // Menu freeing
+    if (menu->custom_buttons) {
+        std::free(menu->custom_buttons);
+        menu->custom_buttons = NULL;
+    }
+
+    // Level freeing
     if (level->portals) {
         std::free(level->portals);
         level->portals = NULL;
@@ -250,42 +261,83 @@ glm::vec4 get_portal_color(PR::Portal *portal) {
     }
 }
 
-struct Button {
-    Rect body;
-    glm::vec4 col;
-    bool from_center;
-    const char *text;
+const char *campaign_levels_filepath[2] = {
+    "",
+    "level2.prmap"
 };
 
-Button button_lvl1;
-Button button_lvl2;
-
-int menu_prepare(PR::Level *level) {
+int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     PR::WinInfo *win = &glob->window;
+    // NOTE: I want to put 3 buttons on each row
+    //       I want to have 4 rows of buttons on the screen,
+    //        with some space on top (1/5) to change category (campaign/custom)
+    for(size_t levelbutton_index = 0;
+        levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
+        ++levelbutton_index) {
+
+        size_t row = levelbutton_index / 3;
+        size_t col = levelbutton_index % 3;
+
+        PR::LevelButton *button =
+            &menu->campaign_buttons[levelbutton_index];
+
+        button->body.pos.x = (col * 2.f + 1.f) / 6.f * win->w;
+        button->body.pos.y = (row * 2.f + 3.f) / 10.f * win->h;
+        button->body.dim.x = win->w / 4.f;
+        button->body.dim.y = win->h / 8.f;
+        button->body.angle = 0.f;
+        button->body.triangle = false;
+
+        button->col.r = 0.8f;
+        button->col.g = 0.2f;
+        button->col.b = 0.5f;
+        button->col.a = 1.0f;
+
+        button->from_center = true;
+
+        button->text = (char *) std::malloc(11 * sizeof(char));
+        std::sprintf(button->text, "LEVEL %zu", levelbutton_index+1);
+        if (levelbutton_index < ARRAY_LENGTH(campaign_levels_filepath)) {
+            button->mapfile_path = campaign_levels_filepath[levelbutton_index];
+        } else {
+            button->mapfile_path = "";
+        }
+    }
+
+    // NOTE: Custom levels buttons
+    menu->custom_buttons_number = 0;
+    menu->custom_buttons = NULL;
+
+    PR::Camera *cam = &menu->camera;
+    cam->pos.x = win->w * 0.5f;
+    cam->pos.y = win->h * 0.5f;
+    cam->speed_multiplier = 6.f;
+    menu->camera_goal_position = cam->pos.y;
 
     // NOTE: Buttons
-    button_lvl1.body.pos.x = win->w * 0.5f - 200.f;
-    button_lvl1.body.pos.y = win->h * 0.5f;
-    button_lvl1.body.dim.x = 300.f;
-    button_lvl1.body.dim.y = 100.f;
-    button_lvl1.col.r = 0.8f;
-    button_lvl1.col.g = 0.2f;
-    button_lvl1.col.b = 0.5f;
-    button_lvl1.col.a = 1.0f;
-    button_lvl1.from_center = true;
-    button_lvl1.text = "LEVEL 1";
+    //button_lvl1.body.pos.x = win->w * 0.5f - 200.f;
+    //button_lvl1.body.pos.y = win->h * 0.5f;
+    //button_lvl1.body.dim.x = 300.f;
+    //button_lvl1.body.dim.y = 100.f;
+    //button_lvl1.col.r = 0.8f;
+    //button_lvl1.col.g = 0.2f;
+    //button_lvl1.col.b = 0.5f;
+    //button_lvl1.col.a = 1.0f;
+    //button_lvl1.from_center = true;
+    //button_lvl1.text = "LEVEL 1";
 
-    button_lvl2.body.pos.x = win->w * 0.5f + 200.f;
-    button_lvl2.body.pos.y = win->h * 0.5f;
-    button_lvl2.body.dim.x = 300.f;
-    button_lvl2.body.dim.y = 100.f;
-    button_lvl2.col.r = 0.2f;
-    button_lvl2.col.g = 0.5f;
-    button_lvl2.col.b = 0.8f;
-    button_lvl2.col.a = 1.0f;
-    button_lvl2.from_center = true;
-    button_lvl2.text = "LEVEL 2";
+    //button_lvl2.body.pos.x = win->w * 0.5f + 200.f;
+    //button_lvl2.body.pos.y = win->h * 0.5f;
+    //button_lvl2.body.dim.x = 300.f;
+    //button_lvl2.body.dim.y = 100.f;
+    //button_lvl2.col.r = 0.2f;
+    //button_lvl2.col.g = 0.5f;
+    //button_lvl2.col.b = 0.8f;
+    //button_lvl2.col.a = 1.0f;
+    //button_lvl2.from_center = true;
+    //button_lvl2.text = "LEVEL 2";
 
+    // NOTE: Have to set to null what is not used
     level->portals = NULL;
     level->obstacles = NULL;
     level->boosts = NULL;
@@ -303,66 +355,117 @@ int menu_prepare(PR::Level *level) {
 
 void menu_update() {
     InputController *input = &glob->input;
+    PR::WinInfo *win = &glob->window;
+    PR::Camera *cam = &glob->current_menu.camera;
+    PR::Menu *menu = &glob->current_menu;
+
+    // NOTE: Consider the cursor only if it's inside the window
+    if (0 < input->mouseX && input->mouseX < win->w &&
+        0 < input->mouseY && input->mouseY < win->h) {
+
+        // NOTE: 0.2f is an arbitrary amount
+        if (menu->camera_goal_position > win->h*0.5f &&
+            input->mouseY < win->h * 0.2f) {
+            float cam_velocity = (1.f - (input->mouseY / (win->h*0.20))) *
+                                 CAMERA_MAX_VELOCITY;
+            menu->camera_goal_position -=
+                cam_velocity * glob->state.delta_time;
+        }
+
+        // NOTE: 15 because there can be 15 buttons in the screen together
+        //       +2 because i do:
+        //          +3 to count for the empty row left at the top
+        //          -1 so that when a row is exactly filled at the end
+        //              it doesn't count that as another row
+        size_t rows_in_screen = (((CAMPAIGN_LEVELS_NUMBER+2) % 15) / 3) + 1;
+        float screens_of_buttons = ((CAMPAIGN_LEVELS_NUMBER+2) / 15) +
+                                    rows_in_screen / 5.f;
+
+        if (menu->camera_goal_position < win->h*screens_of_buttons &&
+            input->mouseY > win->h * 0.8f) {
+            float cam_velocity =
+                ((input->mouseY - win->h*0.8f) / (win->h*0.20)) *
+                CAMERA_MAX_VELOCITY;
+            menu->camera_goal_position +=
+                cam_velocity * glob->state.delta_time;
+        }
+    }
+
+    cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
+         glob->state.delta_time * cam->speed_multiplier);
+
     if (input->level1.clicked) {
-        CHANGE_CASE_TO(PR::LEVEL1, level1_prepare);
+        CHANGE_CASE_TO(PR::LEVEL, level_prepare, "");
     } else
     if (input->level2.clicked) {
-        CHANGE_CASE_TO(PR::LEVEL2, level2_prepare);
+        CHANGE_CASE_TO(PR::LEVEL, level_prepare, "level2.prmap");
     }
 
-    if (rect_contains_point(&button_lvl1.body,
-                            input->mouseX, input->mouseY,
-                            button_lvl1.from_center)) {
-        button_lvl1.col.r = 0.6f;
-        button_lvl1.col.g = 0.0f;
-        button_lvl1.col.b = 0.3f;
-        button_lvl1.col.a = 1.0f;
-        if (input->mouse_left.clicked) {
-            CHANGE_CASE_TO(PR::LEVEL1, level1_prepare);
+    for(size_t levelbutton_index = 0;
+        levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
+        ++levelbutton_index) {
+
+        PR::LevelButton *button =
+            &menu->campaign_buttons[levelbutton_index];
+
+        if (rect_contains_point(rect_in_camera_space(button->body, cam),
+                                input->mouseX, input->mouseY,
+                                button->from_center)) {
+            
+            button->col.r = 0.6f;
+            button->col.g = 0.0f;
+            button->col.b = 0.3f;
+            button->col.a = 1.0f;
+            if (input->mouse_left.clicked) {
+                CHANGE_CASE_TO(PR::LEVEL, level_prepare, button->mapfile_path);
+            }
+        } else {
+            button->col.r = 0.8f;
+            button->col.g = 0.2f;
+            button->col.b = 0.5f;
+            button->col.a = 1.0f;
         }
-    } else {
-        button_lvl1.col.r = 0.8f;
-        button_lvl1.col.g = 0.2f;
-        button_lvl1.col.b = 0.5f;
-        button_lvl1.col.a = 1.0f;
     }
-
-    if (rect_contains_point(&button_lvl2.body,
-                            input->mouseX, input->mouseY,
-                            button_lvl2.from_center)) {
-        button_lvl2.col.r = 0.0f;
-        button_lvl2.col.g = 0.3f;
-        button_lvl2.col.b = 0.6f;
-        button_lvl2.col.a = 1.0f;
-        if (input->mouse_left.clicked) {
-            CHANGE_CASE_TO(PR::LEVEL2, level2_prepare);
-        }
-    } else {
-        button_lvl2.col.r = 0.2f;
-        button_lvl2.col.g = 0.5f;
-        button_lvl2.col.b = 0.8f;
-        button_lvl2.col.a = 1.0f;
-    }
-
 
     return; 
 }
 
 void menu_draw(void) {
     if (glob->state.current_case != PR::MENU) return;
-    renderer_add_queue_uni(button_lvl1.body,
-                          button_lvl1.col,
-                          button_lvl1.from_center);
-    renderer_add_queue_uni(button_lvl2.body,
-                          button_lvl2.col,
-                          button_lvl2.from_center);
 
-    renderer_add_queue_text(button_lvl1.body.pos.x, button_lvl1.body.pos.y,
-                            button_lvl1.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
-    renderer_add_queue_text(button_lvl2.body.pos.x, button_lvl2.body.pos.y,
-                            button_lvl2.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
+    PR::Menu *menu = &glob->current_menu;
+    PR::Camera *cam = &glob->current_menu.camera;
+
+    for(size_t levelbutton_index = 0;
+        levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
+        ++levelbutton_index) {
+
+        PR::LevelButton *button = &menu->campaign_buttons[levelbutton_index];
+
+        Rect button_rend_rect = rect_in_camera_space(button->body, cam);
+
+        renderer_add_queue_uni(button_rend_rect,
+                               button->col,
+                               button->from_center);
+        renderer_add_queue_text(button_rend_rect.pos.x,
+                                button_rend_rect.pos.y,
+                                button->text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+    }
+
+    //renderer_add_queue_uni(button_lvl1.body,
+    //                      button_lvl1.col,
+    //                      button_lvl1.from_center);
+    //renderer_add_queue_uni(button_lvl2.body,
+    //                      button_lvl2.col,
+    //                      button_lvl2.from_center);
+
+    //renderer_add_queue_text(button_lvl1.body.pos.x, button_lvl1.body.pos.y,
+    //                        button_lvl1.text, glm::vec4(1.0f),
+    //                        &glob->rend_res.fonts[0], true);
+    //renderer_add_queue_text(button_lvl2.body.pos.x, button_lvl2.body.pos.y,
+    //                        button_lvl2.text, glm::vec4(1.0f),
+    //                        &glob->rend_res.fonts[0], true);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -370,11 +473,15 @@ void menu_draw(void) {
     return;
 }
 
-
-int level1_prepare(PR::Level *level) {
+int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     PR::WinInfo *win = &glob->window;
-
     glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+    // Have to set to NULL if I don't use it
+    menu->custom_buttons_number = 0;
+    menu->custom_buttons = NULL;
+
+    level->goal_line = 1000.f;
 
     PR::Plane *p = &level->plane;
     p->crashed = false;
@@ -450,96 +557,112 @@ int level1_prepare(PR::Level *level) {
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
 
-    level->portals_number = 2;
-    if (level->portals_number) {
-        level->portals =
-            (PR::Portal *) std::malloc(sizeof(PR::Portal) *
-                                       level->portals_number);
-        if (level->portals == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
-            return 1;
-        }
-    }
-
     level->colors_shuffled = false;
-
-    PR::Portal *inverse_portal = level->portals;
-    inverse_portal->body.pos.x = 400.f;
-    inverse_portal->body.pos.y = 300.f;
-    inverse_portal->body.dim.x = 70.f;
-    inverse_portal->body.dim.y = 400.f;
-    inverse_portal->body.angle = 0.f;
-    inverse_portal->body.triangle = false;
-    inverse_portal->type = PR::SHUFFLE_COLORS;
-    inverse_portal->enable_effect = true;
-
-    PR::Portal *reverse_portal = level->portals + 1;
-    reverse_portal->body.pos.x = 4300.f;
-    reverse_portal->body.pos.y = 300.f;
-    reverse_portal->body.dim.x = 70.f;
-    reverse_portal->body.dim.y = 400.f;
-    reverse_portal->body.angle = 0.f;
-    reverse_portal->body.triangle = false;
-    reverse_portal->type = PR::SHUFFLE_COLORS;
-    reverse_portal->enable_effect = false;
-
     level->current_red = PR::RED;
     level->current_white = PR::WHITE;
     level->current_blue = PR::BLUE;
     level->current_gray = PR::GRAY;
 
-    level->obstacles_number = 50;
-    if (level->obstacles_number) {
-        level->obstacles =
-            (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
-                                         level->obstacles_number);
-        if (level->obstacles == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
-            return 1;
+    if (std::strcmp(mapfile_path, "")) {
+
+        // TODO: include this in the mapfile
+        level->portals_number = 0;
+
+        int loading_result = load_map_from_file(mapfile_path,
+                                                &level->obstacles,
+                                                &level->obstacles_number,
+                                                &level->boosts,
+                                                &level->boosts_number,
+                                                win->w, win->h);
+        if (loading_result != 0) return loading_result;
+    } else {
+
+        level->portals_number = 2;
+
+        if (level->portals_number) {
+            level->portals =
+                (PR::Portal *) std::malloc(sizeof(PR::Portal) *
+                                           level->portals_number);
+            if (level->portals == NULL) {
+                std::cout << "Buy more RAM!" << std::endl;
+                return 1;
+            }
         }
-    }
-    for(size_t obstacle_index = 0;
-        obstacle_index < level->obstacles_number;
-        ++obstacle_index) {
 
-        PR::Obstacle *obs = level->obstacles + obstacle_index;
 
-        obs->body.pos.x = win->w * 0.8f * obstacle_index;
-        obs->body.pos.y = win->h * 0.4f;
+        PR::Portal *inverse_portal = level->portals;
+        inverse_portal->body.pos.x = 400.f;
+        inverse_portal->body.pos.y = 300.f;
+        inverse_portal->body.dim.x = 70.f;
+        inverse_portal->body.dim.y = 400.f;
+        inverse_portal->body.angle = 0.f;
+        inverse_portal->body.triangle = false;
+        inverse_portal->type = PR::SHUFFLE_COLORS;
+        inverse_portal->enable_effect = true;
 
-        obs->body.dim.x = win->w * 0.1f;
-        obs->body.dim.y = win->h * 0.3f;
+        PR::Portal *reverse_portal = level->portals + 1;
+        reverse_portal->body.pos.x = 4300.f;
+        reverse_portal->body.pos.y = 300.f;
+        reverse_portal->body.dim.x = 70.f;
+        reverse_portal->body.dim.y = 400.f;
+        reverse_portal->body.angle = 0.f;
+        reverse_portal->body.triangle = false;
+        reverse_portal->type = PR::SHUFFLE_COLORS;
+        reverse_portal->enable_effect = false;
 
-        obs->body.angle = 0.0f;
-        obs->body.triangle = false;
-
-        obs->collide_plane = (obstacle_index % 2);
-        obs->collide_rider = !(obstacle_index % 2);
-    }
-
-    level->boosts_number = 2;
-    if (level->boosts_number) {
-        level->boosts =
-            (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
-                                    level->boosts_number);
-        if (level->boosts == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
-            return 1;
+        level->obstacles_number = 50;
+        if (level->obstacles_number) {
+            level->obstacles =
+                (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
+                                             level->obstacles_number);
+            if (level->obstacles == NULL) {
+                std::cout << "Buy more RAM!" << std::endl;
+                return 1;
+            }
         }
-    }
-    for (size_t boost_index = 0;
-         boost_index < level->boosts_number;
-         ++boost_index) {
-        PR::BoostPad *pad = level->boosts + boost_index;
+        for(size_t obstacle_index = 0;
+            obstacle_index < level->obstacles_number;
+            ++obstacle_index) {
 
-        pad->body.pos.x = (boost_index + 1) * 1100.f;
-        pad->body.pos.y = 300.f;
-        pad->body.dim.x = 700.f;
-        pad->body.dim.y = 200.f;
-        pad->body.angle = 40.f;
-        pad->body.triangle = false;
-        pad->boost_angle = pad->body.angle;
-        pad->boost_power = 20.f;
+            PR::Obstacle *obs = level->obstacles + obstacle_index;
+
+            obs->body.pos.x = win->w * 0.8f * obstacle_index;
+            obs->body.pos.y = win->h * 0.4f;
+
+            obs->body.dim.x = win->w * 0.1f;
+            obs->body.dim.y = win->h * 0.3f;
+
+            obs->body.angle = 0.0f;
+            obs->body.triangle = false;
+
+            obs->collide_plane = (obstacle_index % 2);
+            obs->collide_rider = !(obstacle_index % 2);
+        }
+
+        level->boosts_number = 2;
+        if (level->boosts_number) {
+            level->boosts =
+                (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
+                                        level->boosts_number);
+            if (level->boosts == NULL) {
+                std::cout << "Buy more RAM!" << std::endl;
+                return 1;
+            }
+        }
+        for (size_t boost_index = 0;
+             boost_index < level->boosts_number;
+             ++boost_index) {
+            PR::BoostPad *pad = level->boosts + boost_index;
+
+            pad->body.pos.x = (boost_index + 1) * 1100.f;
+            pad->body.pos.y = 300.f;
+            pad->body.dim.x = 700.f;
+            pad->body.dim.y = 200.f;
+            pad->body.angle = 40.f;
+            pad->body.triangle = false;
+            pad->boost_angle = pad->body.angle;
+            pad->boost_power = 20.f;
+        }
     }
 
 
@@ -621,7 +744,7 @@ int level1_prepare(PR::Level *level) {
     return 0;
 }
 
-void level1_update() {
+void level_update() {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -650,7 +773,7 @@ void level1_update() {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu.clicked) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare);
+        CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
     }
 
     #if 0
@@ -934,6 +1057,13 @@ void level1_update() {
             }
         }
     }
+
+
+    if (!p->crashed &&
+        p->body.pos.x + p->body.dim.x*0.5f > level->goal_line) {
+        CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
+    }
+
     // NOTE: The portal can be activated only by the rider.
     //       If the rider is attached, then, by extensions, also
     //          the plane will activate the portal.
@@ -1094,8 +1224,8 @@ void level1_update() {
     }
 }
 
-void level1_draw() {
-    if (glob->state.current_case != PR::LEVEL1) return;
+void level_draw() {
+    if (glob->state.current_case != PR::LEVEL) return;
 
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -1107,9 +1237,15 @@ void level1_draw() {
     size_t portals_number = glob->current_level.portals_number;
     PR::Portal *portals = glob->current_level.portals;
 
+    PR::Level *level = &glob->current_level;
+
     // Global stuff
     PR::WinInfo *win = &glob->window;
     float dt = glob->state.delta_time;
+
+    renderer_add_queue_uni(level->goal_line - cam->pos.x + win->w*0.5f, 0.f,
+                           30.f, win->h,
+                           0.f, glm::vec4(1.0f,1.0f,1.0f,1.0f), false, false);
 
     // TESTING: Rendering the portals
     for(size_t portal_index = 0;
@@ -1287,10 +1423,11 @@ void level1_draw() {
                       &glob->rend_res.global_sprite);
 }
 
-int level2_prepare(PR::Level *level) {
+// TODO: Delete when you are sure this is not needed
+int level2_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     PR::WinInfo *win = &glob->window;
 
-    int loading_result = load_map_from_file("level2.prmap",
+    int loading_result = load_map_from_file(mapfile_path,
                                             &level->obstacles,
                                             &level->obstacles_number,
                                             &level->boosts,
@@ -1299,10 +1436,14 @@ int level2_prepare(PR::Level *level) {
     if (loading_result != 0) return loading_result;
 
 
+    level->current_red = PR::RED;
+    level->current_white = PR::WHITE;
+    level->current_blue = PR::BLUE;
+    level->current_gray = PR::GRAY;
+
     glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     PR::Plane *p = &level->plane;
-
     p->crashed = false;
     p->crash_position.x = 0.f;
     p->crash_position.y = 0.f;
@@ -1368,11 +1509,9 @@ int level2_prepare(PR::Level *level) {
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
 
-    std::cout << "level 2 prepared" << std::endl;
-
     return 0;
 }
-
+// TODO: Delete when you are sure this is not needed
 void level2_update() {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
@@ -1391,7 +1530,7 @@ void level2_update() {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu.clicked) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare);
+        CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
     }
 
     // NOTE: Reset the accelleration for it to be recalculated
@@ -1538,7 +1677,7 @@ void level2_update() {
                                &p->crash_position.y)) {
             // NOTE: Plane colliding with an obstacle
 
-            CHANGE_CASE_TO(PR::MENU, menu_prepare);
+            CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
 
             // TODO: Debug flag
             std::cout << "Plane collided with " << obstacle_index << std::endl;
@@ -1549,7 +1688,7 @@ void level2_update() {
                                &rid->crash_position.y)) {
             // NOTE: Rider colliding with an obstacle
 
-            CHANGE_CASE_TO(PR::MENU, menu_prepare);
+            CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
 
             // TODO: Debug flag
             std::cout << "Rider collided with " << obstacle_index << std::endl;
@@ -1619,9 +1758,9 @@ void level2_update() {
         p->animation_countdown -= dt;
     }
 }
-
+// TODO: Delete when you are sure this is not needed
 void level2_draw() {
-    if (glob->state.current_case != PR::LEVEL2) return;
+    if (glob->state.current_case != PR::LEVEL) return;
 
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
