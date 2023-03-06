@@ -86,8 +86,8 @@ struct PR {
         float boost_power;
     };
     enum PortalType {
-        INVERSE,
-        SHUFFLE_COLORS,
+        INVERSE = 0,
+        SHUFFLE_COLORS = 1,
     };
     struct Portal {
         Rect body;

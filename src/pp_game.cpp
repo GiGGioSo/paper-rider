@@ -108,11 +108,15 @@ int load_map_from_file(const char *file_path,
                        size_t *number_of_obstacles,
                        PR::BoostPad **boosts,
                        size_t *number_of_boosts,
-                       float width, float height) {
+                       PR::Portal **portals,
+                       size_t *number_of_portals,
+                       float *start_x, float *start_y,
+                       float *goal_line,
+                       const float width, const float height) {
 
     // NOTE: The screen resolution
-    width = width / SCREEN_WIDTH_PROPORTION;
-    height = height / SCREEN_HEIGHT_PROPORTION;
+    float proportion_x = width / SCREEN_WIDTH_PROPORTION;
+    float proportion_y = height / SCREEN_HEIGHT_PROPORTION;
     
     int result = 0;
     FILE *map_file;
@@ -130,6 +134,10 @@ int load_map_from_file(const char *file_path,
 
         *obstacles = (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
                                                   *number_of_obstacles);
+        if (*obstacles == NULL) {
+            std::cout << "[ERROR] Buy more RAM!" << std::endl;
+            return_defer(2);
+        }
 
         for (size_t obstacle_index = 0;
              obstacle_index < *number_of_obstacles;
@@ -154,21 +162,24 @@ int load_map_from_file(const char *file_path,
             }
 
             PR::Obstacle *obs = *obstacles + obstacle_index;
-            obs->body.pos.x = x * width;
-            obs->body.pos.y = y * height;
-            obs->body.dim.x = w * width;
-            obs->body.dim.y = h * height;
+            obs->body.pos.x = x * proportion_x;
+            obs->body.pos.y = y * proportion_y;
+            obs->body.dim.x = w * proportion_x;
+            obs->body.dim.y = h * proportion_y;
             obs->body.angle = r;
             obs->body.triangle = triangle;
 
             obs->collide_plane = collide_plane;
             obs->collide_rider = collide_rider;
 
-            std::cout << "x: " << x * width
-                      << " y: " << y * height
-                      << " w: " << w * width
-                      << " h: " << h * height
+            std::cout << "x: " << x * proportion_x
+                      << " y: " << y * proportion_y
+                      << " w: " << w * proportion_x
+                      << " h: " << h * proportion_y
                       << " r: " << r
+                      << " tr: " << triangle
+                      << " cp: " << collide_plane
+                      << " cr: " << collide_rider
                       << std::endl;
 
         }
@@ -181,8 +192,12 @@ int load_map_from_file(const char *file_path,
                   << " boost pads from file " << file_path
                   << std::endl;
 
-        *boosts = (PR::BoostPad *) malloc(sizeof(PR::BoostPad) *
+        *boosts = (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
                                    *number_of_boosts);
+        if (*boosts == NULL) {
+            std::cout << "[ERROR] Buy more RAM!" << std::endl;
+            return_defer(2);
+        }
 
         for(size_t boost_index = 0;
             boost_index < *number_of_boosts;
@@ -204,20 +219,21 @@ int load_map_from_file(const char *file_path,
             }
 
             PR::BoostPad *pad = *boosts + boost_index;
-            pad->body.pos.x = x * width;
-            pad->body.pos.y = y * height;
-            pad->body.dim.x = w * width;
-            pad->body.dim.y = h * height;
+            pad->body.pos.x = x * proportion_x;
+            pad->body.pos.y = y * proportion_y;
+            pad->body.dim.x = w * proportion_x;
+            pad->body.dim.y = h * proportion_y;
             pad->body.angle = r;
             pad->body.triangle = triangle;
             pad->boost_angle = ba;
             pad->boost_power = bp;
 
-            std::cout << "x: " << x * width
-                      << " y: " << y * height
-                      << " w: " << w * width
-                      << " h: " << h * height
+            std::cout << "x: " << x * proportion_x
+                      << " y: " << y * proportion_y
+                      << " w: " << w * proportion_x
+                      << " h: " << h * proportion_y
                       << " r: " << r
+                      << " tr: " << triangle
                       << " ba: " << ba
                       << " bp: " << bp
                       << std::endl;
@@ -225,6 +241,98 @@ int load_map_from_file(const char *file_path,
 
         }
 
+        // NOTE: Loading the portals from memory
+        std::fscanf(map_file, " %zu", number_of_portals);
+        if (std::ferror(map_file)) return_defer(1);
+
+        std::cout << "[LOADING] " << *number_of_portals
+                  << " portals from file " << file_path
+                  << std::endl;
+
+        *portals = (PR::Portal *) std::malloc(sizeof(PR::Portal) *
+                                   *number_of_portals);
+        if (*portals == NULL) {
+            std::cout << "[ERROR] Buy more RAM!" << std::endl;
+            return_defer(2);
+        }
+
+        for(size_t portal_index = 0;
+            portal_index < *number_of_portals;
+            ++portal_index) {
+
+            float x, y, w, h;
+            int type;
+            int enable;
+
+            std::fscanf(map_file,
+                        " %i %i %f %f %f %f",
+                        &type, &enable, &x, &y, &w, &h);
+            if (std::ferror(map_file)) return_defer(1);
+            if (std::feof(map_file)) {
+                *number_of_portals = portal_index;
+                std::cout << "[WARNING] Found only " << portal_index
+                          << " portals in the map file" << std::endl;
+                break;
+            }
+
+            PR::Portal *portal = *portals + portal_index;
+
+            switch(type) {
+                case PR::INVERSE:
+                {
+                    portal->type = PR::INVERSE;
+                    break;
+                }
+                case PR::SHUFFLE_COLORS:
+                {
+                    portal->type = PR::SHUFFLE_COLORS;
+                    break;
+                }
+                default:
+                {
+                    std::cout << "[WARNING] Unknown portal type: "
+                              << type
+                              << ". Assigning the default portal type: 0."
+                              << std::endl;
+                    break;
+                }
+
+            }
+
+            portal->enable_effect = enable;
+            portal->body.pos.x = x * proportion_x;
+            portal->body.pos.y = y * proportion_y;
+            portal->body.dim.x = w * proportion_x;
+            portal->body.dim.y = h * proportion_y;
+            portal->body.angle = 0.f;
+            portal->body.triangle = false;
+
+            std::cout << "x: " << x * proportion_x
+                      << " y: " << y * proportion_y
+                      << " w: " << w * proportion_x
+                      << " h: " << h * proportion_y
+                      << " type: " << type
+                      << " enable: " << enable
+                      << std::endl;
+        }
+
+        std::fscanf(map_file, " %f", goal_line);
+        if (std::ferror(map_file)) return_defer(1);
+        *goal_line = *goal_line * proportion_x;
+        
+        std::cout << "[LOADING] goal_line set at: "
+                  << *goal_line
+                  << std::endl;
+
+        std::fscanf(map_file, " %f %f", start_x, start_y);
+        if (std::ferror(map_file)) return_defer(1);
+        *start_x = *start_x * proportion_x;
+        *start_y = *start_y * proportion_y;
+
+        std::cout << "[LOADING] player start position set to"
+                  << " x: " << *start_x
+                  << " y: " << *start_y
+                  << std::endl;
     }
 
     defer:
@@ -353,7 +461,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     return 0;
 }
 
-void menu_update() {
+void menu_update(void) {
     InputController *input = &glob->input;
     PR::WinInfo *win = &glob->window;
     PR::Camera *cam = &glob->current_menu.camera;
@@ -453,20 +561,6 @@ void menu_draw(void) {
                                 &glob->rend_res.fonts[0], true);
     }
 
-    //renderer_add_queue_uni(button_lvl1.body,
-    //                      button_lvl1.col,
-    //                      button_lvl1.from_center);
-    //renderer_add_queue_uni(button_lvl2.body,
-    //                      button_lvl2.col,
-    //                      button_lvl2.from_center);
-
-    //renderer_add_queue_text(button_lvl1.body.pos.x, button_lvl1.body.pos.y,
-    //                        button_lvl1.text, glm::vec4(1.0f),
-    //                        &glob->rend_res.fonts[0], true);
-    //renderer_add_queue_text(button_lvl2.body.pos.x, button_lvl2.body.pos.y,
-    //                        button_lvl2.text, glm::vec4(1.0f),
-    //                        &glob->rend_res.fonts[0], true);
-
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
@@ -476,80 +570,16 @@ void menu_draw(void) {
 int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     PR::WinInfo *win = &glob->window;
 
+    PR::Plane *p = &level->plane;
+    PR::Rider *rid = &level->rider;
+
     // Have to set to NULL if I don't use it
     menu->custom_buttons_number = 0;
     menu->custom_buttons = NULL;
 
-    level->goal_line = 1000.f;
-
-    PR::Plane *p = &level->plane;
-    p->crashed = false;
-    p->crash_position.x = 0.f;
-    p->crash_position.y = 0.f;
-    p->body.pos.x = 200.0f;
-    p->body.pos.y = 350.0f;
-    p->body.dim.y = 23.f;
-    p->body.dim.x = p->body.dim.y * 3.f;
-    p->body.angle = 0.f;
-    p->body.triangle = true;
-    p->render_zone.dim.y = 25.f;
-    p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-    p->render_zone.pos = p->body.pos;
-    /*p->render_zone.pos = p->body.pos +
-                         (p->body.dim - p->render_zone.dim) * 0.5f;*/
-    p->render_zone.angle = p->body.angle;
-    p->render_zone.triangle = false;
-    p->vel.x = 0.f;
-    p->vel.y = 0.f;
-    p->acc.x = 0.f;
-    p->acc.y = 0.f;
-    p->mass = 0.003f; // kg
-    // TODO: The alar surface should be somewhat proportional
-    //       to the dimension of the actual rectangle
-    p->alar_surface = 0.12f; // m squared
-    p->current_animation = PR::Plane::IDLE_ACC;
-    p->animation_countdown = 0.f;
-    p->inverse = false;
-
-
-    PR::Rider *rid = &level->rider;
-    rid->crashed = false;
-    rid->crash_position.x = 0.f;
-    rid->crash_position.y = 0.f;
-    rid->body.dim.x = 30.f;
-    rid->body.dim.y = 50.f;
-    rid->body.triangle = false;
-    //move_rider_to_plane(rid, p);
-    rid->body.angle = p->render_zone.angle;
-    rid->body.pos.x =
-        p->render_zone.pos.x +
-        (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-            sin(glm::radians(rid->body.angle)) -
-        (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-    rid->body.pos.y =
-        p->render_zone.pos.y +
-        (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-            cos(glm::radians(rid->body.angle)) +
-        (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
-    rid->render_zone.dim = rid->body.dim;
-    rid->render_zone.pos = rid->body.pos +
-                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
-    rid->vel.x = 0.0f;
-    rid->vel.y = 0.0f;
-    rid->body.angle = p->body.angle;
-    rid->attached = true;
-    rid->mass = 0.010f;
-    rid->jump_time_elapsed = 0.f;
-    rid->air_friction_acc = 100.f;
-    rid->base_velocity = 0.f;
-    rid->input_velocity = 0.f;
-    rid->input_max_accelleration = 5000.f;
-    rid->inverse = false;
 
     PR::Camera *cam = &level->camera;
-    cam->pos.x = p->body.pos.x;
+    // cam->pos.x is set afterwards
     cam->pos.y = win->h * 0.5f;
     cam->speed_multiplier = 3.f;
 
@@ -567,14 +597,160 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
         // TODO: include this in the mapfile
         level->portals_number = 0;
 
-        int loading_result = load_map_from_file(mapfile_path,
-                                                &level->obstacles,
-                                                &level->obstacles_number,
-                                                &level->boosts,
-                                                &level->boosts_number,
-                                                win->w, win->h);
+        int loading_result =
+            load_map_from_file(mapfile_path,
+                &level->obstacles,
+                &level->obstacles_number,
+                &level->boosts,
+                &level->boosts_number,
+                &level->portals,
+                &level->portals_number,
+                &p->body.pos.x, &p->body.pos.y,
+                &level->goal_line,
+                win->w, win->h);
         if (loading_result != 0) return loading_result;
+
+        // Hardcoding the fuck out of everything,
+        // except for what is set in the mapfile
+        {
+            cam->pos.x = p->body.pos.x;
+
+            p->crashed = false;
+            p->crash_position.x = 0.f;
+            p->crash_position.y = 0.f;
+            p->body.dim.y = 23.f;
+            p->body.dim.x = p->body.dim.y * 3.f;
+            p->body.angle = 0.f;
+            p->body.triangle = true;
+            p->render_zone.dim.y = 25.f;
+            p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
+            p->render_zone.pos = p->body.pos;
+            /*p->render_zone.pos = p->body.pos +
+                                 (p->body.dim - p->render_zone.dim) * 0.5f;*/
+            p->render_zone.angle = p->body.angle;
+            p->render_zone.triangle = false;
+            p->vel.x = 0.f;
+            p->vel.y = 0.f;
+            p->acc.x = 0.f;
+            p->acc.y = 0.f;
+            p->mass = 0.003f; // kg
+            // TODO: The alar surface should be somewhat proportional
+            //       to the dimension of the actual rectangle
+            p->alar_surface = 0.12f; // m squared
+            p->current_animation = PR::Plane::IDLE_ACC;
+            p->animation_countdown = 0.f;
+            p->inverse = false;
+
+
+            rid->crashed = false;
+            rid->crash_position.x = 0.f;
+            rid->crash_position.y = 0.f;
+            rid->body.dim.x = 30.f;
+            rid->body.dim.y = 50.f;
+            rid->body.triangle = false;
+            //move_rider_to_plane(rid, p);
+            rid->body.angle = p->render_zone.angle;
+            rid->body.pos.x =
+                p->render_zone.pos.x +
+                (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+                    sin(glm::radians(rid->body.angle)) -
+                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+            rid->body.pos.y =
+                p->render_zone.pos.y +
+                (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+                    cos(glm::radians(rid->body.angle)) +
+                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+            rid->render_zone.dim = rid->body.dim;
+            rid->render_zone.pos = rid->body.pos +
+                                   (rid->body.dim - rid->render_zone.dim) * 0.5f;
+            rid->vel.x = 0.0f;
+            rid->vel.y = 0.0f;
+            rid->body.angle = p->body.angle;
+            rid->attached = true;
+            rid->mass = 0.010f;
+            rid->jump_time_elapsed = 0.f;
+            rid->air_friction_acc = 100.f;
+            rid->base_velocity = 0.f;
+            rid->input_velocity = 0.f;
+            rid->input_max_accelleration = 5000.f;
+            rid->inverse = false;
+        }
     } else {
+
+        std::cout << "[WARNING] Loading fallback map information!"
+                  << std::endl;
+
+        // Hardcoding the fuck out of everything
+        {
+            level->goal_line = 1000.f;
+
+            p->crashed = false;
+            p->crash_position.x = 0.f;
+            p->crash_position.y = 0.f;
+            p->body.pos.x = 200.0f;
+            p->body.pos.y = 350.0f;
+            p->body.dim.y = 23.f;
+            p->body.dim.x = p->body.dim.y * 3.f;
+            p->body.angle = 0.f;
+            p->body.triangle = true;
+            p->render_zone.dim.y = 25.f;
+            p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
+            p->render_zone.pos = p->body.pos;
+            /*p->render_zone.pos = p->body.pos +
+                                 (p->body.dim - p->render_zone.dim) * 0.5f;*/
+            p->render_zone.angle = p->body.angle;
+            p->render_zone.triangle = false;
+            p->vel.x = 0.f;
+            p->vel.y = 0.f;
+            p->acc.x = 0.f;
+            p->acc.y = 0.f;
+            p->mass = 0.003f; // kg
+            // TODO: The alar surface should be somewhat proportional
+            //       to the dimension of the actual rectangle
+            p->alar_surface = 0.12f; // m squared
+            p->current_animation = PR::Plane::IDLE_ACC;
+            p->animation_countdown = 0.f;
+            p->inverse = false;
+
+            cam->pos.x = p->body.pos.x;
+
+            rid->crashed = false;
+            rid->crash_position.x = 0.f;
+            rid->crash_position.y = 0.f;
+            rid->body.dim.x = 30.f;
+            rid->body.dim.y = 50.f;
+            rid->body.triangle = false;
+            //move_rider_to_plane(rid, p);
+            rid->body.angle = p->render_zone.angle;
+            rid->body.pos.x =
+                p->render_zone.pos.x +
+                (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+                    sin(glm::radians(rid->body.angle)) -
+                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+            rid->body.pos.y =
+                p->render_zone.pos.y +
+                (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+                    cos(glm::radians(rid->body.angle)) +
+                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+            rid->render_zone.dim = rid->body.dim;
+            rid->render_zone.pos = rid->body.pos +
+                                   (rid->body.dim - rid->render_zone.dim) * 0.5f;
+            rid->vel.x = 0.0f;
+            rid->vel.y = 0.0f;
+            rid->body.angle = p->body.angle;
+            rid->attached = true;
+            rid->mass = 0.010f;
+            rid->jump_time_elapsed = 0.f;
+            rid->air_friction_acc = 100.f;
+            rid->base_velocity = 0.f;
+            rid->input_velocity = 0.f;
+            rid->input_max_accelleration = 5000.f;
+            rid->inverse = false;
+        }
 
         level->portals_number = 2;
 
@@ -746,7 +922,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     return 0;
 }
 
-void level_update() {
+void level_update(void) {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -1226,7 +1402,7 @@ void level_update() {
     }
 }
 
-void level_draw() {
+void level_draw(void) {
     if (glob->state.current_case != PR::LEVEL) return;
 
     PR::Plane *p = &glob->current_level.plane;
@@ -1425,435 +1601,6 @@ void level_draw() {
                       &glob->rend_res.global_sprite);
 }
 
-// TODO: Delete when you are sure this is not needed
-int level2_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
-    PR::WinInfo *win = &glob->window;
-
-    int loading_result = load_map_from_file(mapfile_path,
-                                            &level->obstacles,
-                                            &level->obstacles_number,
-                                            &level->boosts,
-                                            &level->boosts_number,
-                                            win->w, win->h);
-    if (loading_result != 0) return loading_result;
-
-
-    level->current_red = PR::RED;
-    level->current_white = PR::WHITE;
-    level->current_blue = PR::BLUE;
-    level->current_gray = PR::GRAY;
-
-    glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
-    PR::Plane *p = &level->plane;
-    p->crashed = false;
-    p->crash_position.x = 0.f;
-    p->crash_position.y = 0.f;
-    p->body.pos.x = 100.0f;
-    p->body.pos.y = 0.0f;
-    p->body.dim.y = 20.f;
-    p->body.dim.x = p->body.dim.y * 3.f;
-    p->body.angle = 0.f;
-    p->body.triangle = false;
-    p->render_zone.dim.y = 30.f;
-    p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-    p->render_zone.pos = p->body.pos + (p->body.dim - p->render_zone.dim) * 0.5f;
-    p->render_zone.angle = p->body.angle;
-    p->vel.x = 0.f;
-    p->vel.y = 0.f;
-    p->acc.x = 0.f;
-    p->acc.y = 0.f;
-    p->mass = 0.005f; // kg
-    // TODO: The alar surface should be somewhat proportional
-    //       to the dimension of the actual rectangle
-    p->alar_surface = 0.15f; // m squared
-    p->current_animation = PR::Plane::IDLE_ACC;
-    p->animation_countdown = 0.f;
-
-    PR::Rider *rid = &level->rider;
-    rid->body.dim.x = 30.f;
-    rid->body.dim.y = 50.f;
-    rid->body.angle = p->render_zone.angle;
-    rid->body.triangle = false;
-    rid->body.pos.x =
-        p->render_zone.pos.x +
-        (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-            sin(glm::radians(rid->body.angle)) -
-        (p->render_zone.dim.x*0.2f) *
-            cos(glm::radians(rid->body.angle));
-    rid->body.pos.y =
-        p->render_zone.pos.y +
-        (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-            cos(glm::radians(rid->body.angle)) +
-        (p->render_zone.dim.x*0.2f) *
-            sin(glm::radians(rid->body.angle));
-    rid->render_zone.dim = rid->body.dim;
-    rid->render_zone.pos = rid->body.pos +
-                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
-    rid->vel.x = 0.0f;
-    rid->vel.y = 0.0f;
-    rid->body.angle = p->body.angle;
-    rid->attached = true;
-    rid->mass = 0.010f;
-    rid->jump_time_elapsed = 0.f;
-    rid->air_friction_acc = 100.f;
-    rid->base_velocity = 0.f;
-    rid->input_velocity = 0.f;
-    rid->input_max_accelleration = 5000.f;
-
-    PR::Camera *cam = &level->camera;
-    cam->pos.x = p->body.pos.x;
-    cam->pos.y = win->h * 0.5f;
-    cam->speed_multiplier = 3.f;
-
-    PR::Atmosphere *air = &level->air;
-    air->density = 0.015f;
-
-    return 0;
-}
-// TODO: Delete when you are sure this is not needed
-void level2_update() {
-    // Level stuff
-    PR::Plane *p = &glob->current_level.plane;
-    PR::Camera *cam = &glob->current_level.camera;
-    PR::Rider *rid = &glob->current_level.rider;
-    size_t obstacles_number = glob->current_level.obstacles_number;
-    PR::Obstacle *obstacles = glob->current_level.obstacles;
-    size_t boosts_number = glob->current_level.boosts_number;
-    PR::BoostPad *boosts = glob->current_level.boosts;
-
-    // Global stuff
-    PR::WinInfo *win = &glob->window;
-    InputController *input = &glob->input;
-    float dt = glob->state.delta_time;
-
-    assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
-
-    if (input->menu.clicked) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
-    }
-
-    // NOTE: Reset the accelleration for it to be recalculated
-    p->acc *= 0;
-
-    apply_air_resistances(p);
-
-    // NOTE: Checking collision with boost_pads
-    for (size_t boost_index = 0;
-         boost_index < boosts_number;
-         ++boost_index) {
-
-        PR::BoostPad *pad = boosts + boost_index;
-
-        if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
-
-            p->acc.x += pad->boost_power * cos(glm::radians(pad->boost_angle));
-            p->acc.y += pad->boost_power * -sin(glm::radians(pad->boost_angle));
-
-            // std::cout << "BOOOST!!! against " << boost_index << std::endl;
-        }
-    }
-
-    // Propulsion
-    // TODO: Could this be a "powerup" or something?
-    if (input->boost.pressed) {
-        float propulsion = 8.f;
-        p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-        p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
-        /* std::cout << "PROP.x: " << propulsion * cos(glm::radians(p->body.angle)) */
-        /*             << ",  PROP.y: " << propulsion * -sin(glm::radians(p->body.angle)) << "\n"; */
-    }
-
-    // NOTE: The mass is greater if the rider is attached
-    if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
-    else p->acc *= 1.f/p->mass;
-
-    // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-    p->acc.y += GRAVITY;
-
-    // NOTE: Motion of the plane
-    p->vel += p->acc * dt;
-    p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
-
-    if (rid->attached) {
-
-        cam->pos.x = lerp(cam->pos.x, p->render_zone.pos.x+p->render_zone.dim.x*0.5f, dt * cam->speed_multiplier);
-
-        // NOTE: Changing plane angle based on the input
-        if (input->left_right) {
-            p->body.angle += 150.f * -input->left_right * dt;
-        }
-
-        rid->body.angle = p->render_zone.angle;
-        rid->body.pos.x =
-            p->render_zone.pos.x +
-            (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-            (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-                sin(glm::radians(rid->body.angle)) -
-            (p->render_zone.dim.x*0.2f) *
-                cos(glm::radians(rid->body.angle));
-        rid->body.pos.y =
-            p->render_zone.pos.y +
-            (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-            (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-                cos(glm::radians(rid->body.angle)) +
-            (p->render_zone.dim.x*0.2f) *
-                sin(glm::radians(rid->body.angle));
-
-
-        // NOTE: If the rider is attached, make it jump
-        if (input->jump.clicked) {
-            rid->attached = false;
-            rid->base_velocity = p->vel.x;
-            rid->vel.y = p->vel.y - 400.f;
-            rid->body.angle = 0.f;
-            rid->jump_time_elapsed = 0.f;
-        }
-    } else {
-        cam->pos.x = lerp(cam->pos.x,
-                          rid->render_zone.pos.x+rid->render_zone.dim.x*0.5f,
-                          dt * cam->speed_multiplier);
-
-        if (input->left_right) {
-            rid->input_velocity += rid->input_max_accelleration *
-                                   input->left_right * dt;
-        } else {
-            rid->input_velocity += rid->input_max_accelleration *
-                                   -glm::sign(rid->input_velocity) * dt;
-        }
-        // NOTE: Base speed is the speed of the plane at the moment of the jump,
-        //          which decreases slowly but constantly overtime
-        //       Input speed is the speed that results from the player input.
-        //
-        //       This way, by touching nothing you get to keep the plane velocity,
-        //       but you are still able to move left and right in a satisfying way
-        if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
-            rid->input_velocity =
-                glm::sign(rid->input_velocity) * RIDER_INPUT_VELOCITY_LIMIT;
-        }
-        rid->base_velocity -= glm::sign(rid->base_velocity) *
-                              rid->air_friction_acc * dt;
-
-        rid->vel.x = rid->base_velocity + rid->input_velocity;
-        rid->vel.y += GRAVITY * 1.5f * dt;
-
-        if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
-            rid->vel.y = glm::sign(rid->vel.y) *
-                         RIDER_VELOCITY_Y_LIMIT ;
-        }
-
-        rid->body.pos += rid->vel * dt;
-
-        rid->jump_time_elapsed += dt;
-
-        // NOTE: If rider not attached, check if recollided
-        if (rect_are_colliding(&p->body, &rid->body, NULL, NULL) &&
-            rid->jump_time_elapsed > 0.5f) {
-            rid->attached = true;
-            p->vel += (rid->vel - p->vel) * 0.5f;
-            rid->vel *= 0.f;
-        }
-
-    }
-
-    // NOTE: Limiting the angle
-    if (p->body.angle > 360.f) {
-        p->body.angle -= 360.f;
-    }
-    if (p->body.angle < -360) {
-        p->body.angle += 360.f;
-    }
-
-    // NOTE: Checking collision with obstacles
-    for (int obstacle_index = 0;
-         obstacle_index < obstacles_number;
-         obstacle_index++) {
-
-        PR::Obstacle *obs = obstacles + obstacle_index;
-
-        if (!p->crashed && obs->collide_plane &&
-            rect_are_colliding(&p->body, &obs->body,
-                               &p->crash_position.x,
-                               &p->crash_position.y)) {
-            // NOTE: Plane colliding with an obstacle
-
-            CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
-
-            // TODO: Debug flag
-            std::cout << "Plane collided with " << obstacle_index << std::endl;
-        }
-        if (!rid->crashed && obs->collide_rider &&
-            rect_are_colliding(&rid->body, &obs->body,
-                               &rid->crash_position.x,
-                               &rid->crash_position.y)) {
-            // NOTE: Rider colliding with an obstacle
-
-            CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
-
-            // TODO: Debug flag
-            std::cout << "Rider collided with " << obstacle_index << std::endl;
-        }
-    }
-
-    // NOTE: Limit velocities
-    if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
-        p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
-    }
-
-    // NOTE: Loop over window edged pacman style,
-    //       but only on the top and bottom
-    if (p->body.pos.y + p->body.dim.y/2 > win->h) {
-        p->body.pos.y -= win->h;
-    }
-    if (p->body.pos.y + p->body.dim.y/2 < 0) {
-        p->body.pos.y += win->h;
-    }
-
-    if (!rid->attached) {
-        if (rid->body.pos.y + rid->body.dim.y * 0.5f > win->h) {
-            rid->body.pos.y -= win->h;
-        }
-        if (rid->body.pos.y + rid->body.dim.y * 0.5f < 0) {
-            rid->body.pos.y += win->h;
-        }
-    }
-
-    // NOTE: Update the `render_zone`s based on the `body`s
-    p->render_zone.pos = p->body.pos +
-                         (p->body.dim - p->render_zone.dim) * 0.5f;
-    p->render_zone.angle = p->body.angle;
-
-    rid->render_zone.pos = rid->body.pos +
-                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
-    rid->render_zone.angle = rid->body.angle;
-
-    // NOTE: Animation based on the accelleration
-    if (p->animation_countdown < 0) {
-        if (glm::abs(p->acc.y) < 20.f) {
-            p->current_animation = PR::Plane::IDLE_ACC;
-            p->animation_countdown = 0.25f;
-        } else {
-            if (p->current_animation == PR::Plane::UPWARDS_ACC) {
-                p->current_animation =
-                    (p->acc.y > 0) ?
-                    PR::Plane::IDLE_ACC :
-                    PR::Plane::UPWARDS_ACC;
-            } else
-            if (p->current_animation == PR::Plane::IDLE_ACC) {
-                p->current_animation =
-                    (p->acc.y > 0) ?
-                    PR::Plane::DOWNWARDS_ACC :
-                    PR::Plane::UPWARDS_ACC;
-            } else
-            if (p->current_animation == PR::Plane::DOWNWARDS_ACC) {
-                p->current_animation =
-                    (p->acc.y > 0) ?
-                    PR::Plane::DOWNWARDS_ACC :
-                    PR::Plane::IDLE_ACC;
-            }
-
-            p->animation_countdown = 0.25f;
-        }
-    } else {
-        p->animation_countdown -= dt;
-    }
-}
-// TODO: Delete when you are sure this is not needed
-void level2_draw() {
-    if (glob->state.current_case != PR::LEVEL) return;
-
-    PR::Plane *p = &glob->current_level.plane;
-    PR::Camera *cam = &glob->current_level.camera;
-    PR::Rider *rid = &glob->current_level.rider;
-    size_t obstacles_number = glob->current_level.obstacles_number;
-    PR::Obstacle *obstacles = glob->current_level.obstacles;
-    size_t boosts_number = glob->current_level.boosts_number;
-    PR::BoostPad *boosts = glob->current_level.boosts;
-
-    // Global stuff
-    PR::WinInfo *win = &glob->window;
-    // float dt = glob->state.delta_time;
-
-    // High wind zone
-    /* renderer_add_queue_uni(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
-
-    // NOTE: Rendering the boosts
-    for(size_t boost_index = 0;
-        boost_index < boosts_number;
-        ++boost_index) {
-
-        PR::BoostPad *pad = boosts + boost_index;
-
-        Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
-
-        if (pad_in_cam_pos.pos.x < -((float)win->w) ||
-            pad_in_cam_pos.pos.x > win->w * 2.f) continue;
-
-        renderer_add_queue_uni(pad_in_cam_pos,
-                              glm::vec4(0.f, 1.f, 0.f, 1.f),
-                              false);
-    }
-
-    // NOTE: Rendering the obstacles
-    for(size_t obstacle_index = 0;
-        obstacle_index < obstacles_number;
-        obstacle_index++) {
-
-        PR::Obstacle *obs = obstacles + obstacle_index;
-
-        Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
-
-        if (obs_in_cam_pos.pos.x < -((float)win->w) ||
-            obs_in_cam_pos.pos.x > win->w * 2.f) continue;
-
-        renderer_add_queue_uni(obs_in_cam_pos,
-                              get_obstacle_color(obs),
-                              false);
-
-    }
-
-    // NOTE: Rendering the plane
-    /*renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
-                          glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                          false);*/
-
-    // TODO: Implement the boost as an actual thing
-    glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
-    if (glob->input.boost.pressed) {
-        float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
-                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
-                    cos(glm::radians(p->render_zone.angle));
-        float by = p_cam_pos.y + p->render_zone.dim.y*0.5f +
-                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
-                    sin(glm::radians(p->render_zone.angle));
-
-        // NOTE: Rendering the boost of the plane
-        renderer_add_queue_uni(bx, by,
-                              p->render_zone.dim.y, p->render_zone.dim.y,
-                              p->render_zone.angle,
-                              glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
-                              false,
-                              true);
-    }
-
-    renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
-                          glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
-                          false);
-
-    renderer_draw_uni(glob->rend_res.shaders[0]);
-
-    // NOTE: Rendering plane texture
-    renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                              texcoords_in_texture_space(
-                                  p->current_animation * 32.f, 0.f,
-                                  32.f, 8.f,
-                                  &glob->rend_res.global_sprite, false));
-
-    renderer_draw_tex(glob->rend_res.shaders[1], &glob->rend_res.global_sprite);
-}
-
 // Utilities
 
 void apply_air_resistances(PR::Plane* p) {
@@ -1933,9 +1680,11 @@ void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
     float dest_x = center ?
                    rec->pos.x + rec->dim.x*0.5f :
                    rec->pos.x;
-    cam->pos.x = lerp(cam->pos.x,
-                      dest_x,
-                      glob->state.delta_time * cam->speed_multiplier);
+    if (dest_x > cam->pos.x) {
+        cam->pos.x = lerp(cam->pos.x,
+                          dest_x,
+                          glob->state.delta_time * cam->speed_multiplier);
+    }
 }
 
 void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
