@@ -12,14 +12,10 @@
 #include "pp_rect.h"
 
 // TODO:
-// - End of a level, like geometry dash
 // - Load map files from the current working directory in runtime
-// - Put the levels menu in a grid so you can add as many as you like
-// - Compact both levels into a single level update (maybe)
 
-// TODO:
+// TODO(maybe):
 //  - Find textures
-//  - UI
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off (maybe)
 
@@ -74,6 +70,20 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
 
 void free_menu_level(PR::Menu *menu, PR::Level *level) {
     // Menu freeing
+    for(size_t i = 0;
+        i < ARRAY_LENGTH(menu->campaign_buttons);
+        ++i) {
+        if (menu->campaign_buttons[i].text) {
+            std::free(menu->campaign_buttons[i].text);
+        }
+    }
+    for(size_t i = 0;
+        i < menu->custom_buttons_number;
+        ++i) {
+        if (menu->custom_buttons[i].text) {
+            std::free(menu->custom_buttons[i].text);
+        }
+    }
     if (menu->custom_buttons) {
         std::free(menu->custom_buttons);
         menu->custom_buttons = NULL;
@@ -369,18 +379,89 @@ glm::vec4 get_portal_color(PR::Portal *portal) {
     }
 }
 
+inline
+void menu_set_to_null(PR::Menu *menu) {
+    menu->custom_buttons_number = 0;
+    menu->custom_buttons = NULL;
+    for(size_t i = 0;
+        i < ARRAY_LENGTH(menu->campaign_buttons);
+        ++i) {
+        menu->campaign_buttons[i].text = NULL;
+    }
+    for(size_t i = 0;
+        i < menu->custom_buttons_number;
+        ++i) {
+        menu->custom_buttons[i].text = NULL;
+    }
+}
+
+inline
+void level_set_to_null(PR::Level *level) {
+    level->portals_number = 0;
+    level->portals = NULL;
+    level->obstacles_number = 0;
+    level->obstacles = NULL;
+    level->boosts_number = 0;
+    level->boosts = NULL;
+    for(size_t ps_index = 0;
+        ps_index < ARRAY_LENGTH(level->particle_systems);
+        ++ps_index) {
+        level->particle_systems[ps_index].particles_number = 0;
+        level->particle_systems[ps_index].particles = NULL;
+    }
+}
+
 const char *campaign_levels_filepath[2] = {
     "",
     "level2.prmap"
 };
 
+#define LEVEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
+#define LEVEL_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
+
+#define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
+#define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
+
 int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     PR::WinInfo *win = &glob->window;
+
+    level_set_to_null(level);
+
+    menu->showing_campaign_buttons = true;
+
+    // NOTE: Button to select which buttons to show
+    PR::LevelButton *campaign = &menu->show_campaign_button;
+    campaign->body.pos.x = (win->w * 3.f) / 10.f;
+    campaign->body.pos.y = win->h / 10.f;
+    campaign->body.dim.x = win->w / 3.f;
+    campaign->body.dim.y = win->h / 8.f;
+    campaign->body.angle = 0.f;
+    campaign->body.triangle = false;
+    campaign->col =
+        menu->showing_campaign_buttons ? SHOW_BUTTON_SELECTED_COLOR :
+                                         SHOW_BUTTON_DEFAULT_COLOR;
+    campaign->from_center = true;
+    campaign->text = (char *) std::malloc(strlen("CAMPAIGN") * sizeof(char));
+    std::sprintf(campaign->text, "CAMPAIGN");
+
+    PR::LevelButton *custom = &menu->show_custom_button;
+    custom->body.pos.x = (win->w * 7.f) / 10.f;
+    custom->body.pos.y = win->h / 10.f;
+    custom->body.dim.x = win->w / 3.f;
+    custom->body.dim.y = win->h / 8.f;
+    custom->body.angle = 0.f;
+    custom->body.triangle = false;
+    custom->col = menu->showing_campaign_buttons ? SHOW_BUTTON_DEFAULT_COLOR :
+                                                   SHOW_BUTTON_SELECTED_COLOR;
+    custom->from_center = true;
+    custom->text = (char *) std::malloc(strlen("CUSTOM") * sizeof(char));
+    std::sprintf(custom->text, "CUSTOM");
+
     // NOTE: I want to put 3 buttons on each row
     //       I want to have 4 rows of buttons on the screen,
     //        with some space on top (1/5) to change category (campaign/custom)
     for(size_t levelbutton_index = 0;
-        levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
+        levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
         ++levelbutton_index) {
 
         size_t row = levelbutton_index / 3;
@@ -396,10 +477,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
         button->body.angle = 0.f;
         button->body.triangle = false;
 
-        button->col.r = 0.8f;
-        button->col.g = 0.2f;
-        button->col.b = 0.5f;
-        button->col.a = 1.0f;
+        button->col = LEVEL_BUTTON_DEFAULT_COLOR;
 
         button->from_center = true;
 
@@ -422,38 +500,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     cam->speed_multiplier = 6.f;
     menu->camera_goal_position = cam->pos.y;
 
-    // NOTE: Buttons
-    //button_lvl1.body.pos.x = win->w * 0.5f - 200.f;
-    //button_lvl1.body.pos.y = win->h * 0.5f;
-    //button_lvl1.body.dim.x = 300.f;
-    //button_lvl1.body.dim.y = 100.f;
-    //button_lvl1.col.r = 0.8f;
-    //button_lvl1.col.g = 0.2f;
-    //button_lvl1.col.b = 0.5f;
-    //button_lvl1.col.a = 1.0f;
-    //button_lvl1.from_center = true;
-    //button_lvl1.text = "LEVEL 1";
-
-    //button_lvl2.body.pos.x = win->w * 0.5f + 200.f;
-    //button_lvl2.body.pos.y = win->h * 0.5f;
-    //button_lvl2.body.dim.x = 300.f;
-    //button_lvl2.body.dim.y = 100.f;
-    //button_lvl2.col.r = 0.2f;
-    //button_lvl2.col.g = 0.5f;
-    //button_lvl2.col.b = 0.8f;
-    //button_lvl2.col.a = 1.0f;
-    //button_lvl2.from_center = true;
-    //button_lvl2.text = "LEVEL 2";
-
     // NOTE: Have to set to null what is not used
-    level->portals = NULL;
-    level->obstacles = NULL;
-    level->boosts = NULL;
-    for(size_t ps_index = 0;
-        ps_index < ARRAY_LENGTH(level->particle_systems);
-        ++ps_index) {
-        level->particle_systems[ps_index].particles = NULL;
-    }
 
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -502,11 +549,32 @@ void menu_update(void) {
     cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
          glob->state.delta_time * cam->speed_multiplier);
 
+    // TODO: Maybe remove this
     if (input->level1.clicked) {
         CHANGE_CASE_TO(PR::LEVEL, level_prepare, "");
-    } else
-    if (input->level2.clicked) {
+    } else if (input->level2.clicked) {
         CHANGE_CASE_TO(PR::LEVEL, level_prepare, "level2.prmap");
+    }
+
+    if (rect_contains_point(
+                rect_in_camera_space(menu->show_campaign_button.body, cam),
+                input->mouseX, input->mouseY,
+                menu->show_campaign_button.from_center)) {
+        if (input->mouse_left.clicked) {
+            menu->showing_campaign_buttons = true;
+            menu->show_campaign_button.col = SHOW_BUTTON_SELECTED_COLOR;
+            menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
+        }
+    }
+    if (rect_contains_point(
+                rect_in_camera_space(menu->show_custom_button.body, cam),
+                input->mouseX, input->mouseY,
+                menu->show_custom_button.from_center)) {
+        if (input->mouse_left.clicked) {
+            menu->showing_campaign_buttons = false;
+            menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
+            menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
+        }
     }
 
     for(size_t levelbutton_index = 0;
@@ -520,18 +588,12 @@ void menu_update(void) {
                                 input->mouseX, input->mouseY,
                                 button->from_center)) {
             
-            button->col.r = 0.6f;
-            button->col.g = 0.0f;
-            button->col.b = 0.3f;
-            button->col.a = 1.0f;
+            button->col = LEVEL_BUTTON_SELECTED_COLOR;
             if (input->mouse_left.clicked) {
                 CHANGE_CASE_TO(PR::LEVEL, level_prepare, button->mapfile_path);
             }
         } else {
-            button->col.r = 0.8f;
-            button->col.g = 0.2f;
-            button->col.b = 0.5f;
-            button->col.a = 1.0f;
+            button->col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
     }
 
@@ -544,21 +606,62 @@ void menu_draw(void) {
     PR::Menu *menu = &glob->current_menu;
     PR::Camera *cam = &glob->current_menu.camera;
 
-    for(size_t levelbutton_index = 0;
-        levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
-        ++levelbutton_index) {
+    Rect campaign_rend_rect =
+        rect_in_camera_space(menu->show_campaign_button.body, cam);
+    renderer_add_queue_uni(campaign_rend_rect,
+                           menu->show_campaign_button.col,
+                           menu->show_campaign_button.from_center);
+    renderer_add_queue_text(campaign_rend_rect.pos.x,
+                            campaign_rend_rect.pos.y,
+                            menu->show_campaign_button.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
 
-        PR::LevelButton *button = &menu->campaign_buttons[levelbutton_index];
+    Rect custom_rend_rect =
+        rect_in_camera_space(menu->show_custom_button.body, cam);
+    renderer_add_queue_uni(custom_rend_rect,
+                           menu->show_custom_button.col,
+                           menu->show_custom_button.from_center);
+    renderer_add_queue_text(custom_rend_rect.pos.x,
+                            custom_rend_rect.pos.y,
+                            menu->show_custom_button.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
 
-        Rect button_rend_rect = rect_in_camera_space(button->body, cam);
+    if (menu->showing_campaign_buttons) {
+        for(size_t levelbutton_index = 0;
+            levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
+            ++levelbutton_index) {
 
-        renderer_add_queue_uni(button_rend_rect,
-                               button->col,
-                               button->from_center);
-        renderer_add_queue_text(button_rend_rect.pos.x,
-                                button_rend_rect.pos.y,
-                                button->text, glm::vec4(1.0f),
-                                &glob->rend_res.fonts[0], true);
+            PR::LevelButton *button =
+                &menu->campaign_buttons[levelbutton_index];
+
+            Rect button_rend_rect = rect_in_camera_space(button->body, cam);
+
+            renderer_add_queue_uni(button_rend_rect,
+                                   button->col,
+                                   button->from_center);
+            renderer_add_queue_text(button_rend_rect.pos.x,
+                                    button_rend_rect.pos.y,
+                                    button->text, glm::vec4(1.0f),
+                                    &glob->rend_res.fonts[0], true);
+        }
+    } else {
+        for(size_t custombutton_index = 0;
+            custombutton_index < menu->custom_buttons_number;
+            ++custombutton_index) {
+
+            PR::LevelButton *button =
+                menu->custom_buttons + custombutton_index;
+
+            Rect button_rend_rect = rect_in_camera_space(button->body, cam);
+
+            renderer_add_queue_uni(button_rend_rect,
+                                   button->col,
+                                   button->from_center);
+            renderer_add_queue_text(button_rend_rect.pos.x,
+                                    button_rend_rect.pos.y,
+                                    button->text, glm::vec4(1.0f),
+                                    &glob->rend_res.fonts[0], true);
+        }
     }
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -574,8 +677,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     PR::Rider *rid = &level->rider;
 
     // Have to set to NULL if I don't use it
-    menu->custom_buttons_number = 0;
-    menu->custom_buttons = NULL;
+    menu_set_to_null(menu);
 
 
     PR::Camera *cam = &level->camera;

@@ -135,6 +135,10 @@ struct PR {
         Camera camera;
         float camera_goal_position;
 
+        bool showing_campaign_buttons;
+        LevelButton show_campaign_button;
+        LevelButton show_custom_button;
+
         LevelButton campaign_buttons[CAMPAIGN_LEVELS_NUMBER];
 
         size_t custom_buttons_number;
