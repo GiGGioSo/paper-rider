@@ -127,7 +127,7 @@ struct PR {
         bool from_center;
         char *text;
 
-        const char *mapfile_path;
+        char *mapfile_path;
     };
 
     #define CAMPAIGN_LEVELS_NUMBER 12

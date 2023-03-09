@@ -11,6 +11,13 @@
 #include "pp_renderer.h"
 #include "pp_rect.h"
 
+#ifdef _WIN32
+#    define MINIRENT_IMPLEMENTATION
+#    include <minirent.h>
+#else
+#    include <dirent.h>
+#endif // _WIN32
+
 // TODO:
 // - Load map files from the current working directory in runtime
 
@@ -46,6 +53,12 @@
                       << std::endl;\
         }\
     } while(0)
+
+#define LEVEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
+#define LEVEL_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
+
+#define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
+#define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
 // Utilities functions for code reuse
 void apply_air_resistances(PR::Plane* p);
@@ -350,6 +363,104 @@ int load_map_from_file(const char *file_path,
     return result;
 }
 
+// TODO: Alphabetic order of the levels
+int load_custom_buttons_from_dir(const char *dir_path,
+                                 PR::LevelButton **buttons,
+                                 size_t *buttons_number) {
+
+    PR::WinInfo *win = &glob->window;
+
+    int result = 0;
+    DIR *dir = NULL;
+    *buttons = NULL;
+    *buttons_number = 0;
+
+    {
+        dir = opendir(dir_path);
+        if (dir == NULL) {
+            std::cout << "[ERROR] Could not open directory: "
+                      << dir_path << std::endl;
+            return_defer(1);
+        }
+
+        size_t button_index = 0;
+
+        dirent *dp = NULL;
+        while ((dp = readdir(dir))) {
+
+            const char *extension = std::strrchr(dp->d_name, '.');
+
+            if (std::strcmp(extension, ".prmap") == 0) {
+
+                char map_name[99] = "";
+                std::strncpy(map_name,
+                             dp->d_name,
+                             std::strlen(dp->d_name) - std::strlen(extension));
+
+                std::cout << "Found map_file: "
+                          << map_name << " length: " << std::strlen(map_name)
+                          << std::endl;
+
+                // NOTE: If it's the first button, malloc, otherwise just realloc
+                *buttons = (button_index == 0) ?
+                    (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
+                    (PR::LevelButton *) std::realloc(*buttons,
+                                                     sizeof(PR::LevelButton) *
+                                                      (button_index+1));
+                size_t row = button_index / 3;
+                size_t col = button_index % 3;
+
+                PR::LevelButton *button = *buttons + button_index;
+
+                button->body.pos.x = (col * 2.f + 1.f) / 6.f * win->w;
+                button->body.pos.y = (row * 2.f + 3.f) / 10.f * win->h;
+                button->body.dim.x = win->w / 4.f;
+                button->body.dim.y = win->h / 8.f;
+                button->body.angle = 0.f;
+                button->body.triangle = false;
+
+                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
+
+                button->from_center = true;
+
+                button->text =
+                    (char *) std::malloc(std::strlen(map_name) *
+                                         sizeof(char));
+                std::strcpy(button->text, map_name);
+
+                char map_path[99] = "";
+                std::strcat(map_path, dir_path);
+                std::strcat(map_path, dp->d_name);
+                std::cout << "map_path: " 
+                          << map_path
+                          << " length: "
+                          << std::strlen(map_path)
+                          << std::endl;
+
+                button->mapfile_path =
+                    (char *) std::malloc(std::strlen(map_path) *
+                                         sizeof(char));
+                std::strcpy(button->mapfile_path, map_path);
+
+                ++button_index;
+                
+            }
+        }
+        *buttons_number = button_index;
+    }
+
+    defer:
+    if (result != 0 && *buttons) std::free(*buttons);
+    if (dir) {
+        if (closedir(dir) < 0) {
+            std::cout << "[ERROR] Could not close directory: "
+                      << dir_path << std::endl;
+            result = 1;
+        }
+    }
+    return result;
+}
+
 glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
     if (obs->collide_rider && obs->collide_plane) {
         return glob->colors[glob->current_level.current_red];
@@ -413,14 +524,9 @@ void level_set_to_null(PR::Level *level) {
 
 const char *campaign_levels_filepath[2] = {
     "",
-    "level2.prmap"
+    "./campaign_maps/level2.prmap"
 };
 
-#define LEVEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
-#define LEVEL_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
-
-#define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
-#define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
 int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     PR::WinInfo *win = &glob->window;
@@ -484,9 +590,10 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
         button->text = (char *) std::malloc(11 * sizeof(char));
         std::sprintf(button->text, "LEVEL %zu", levelbutton_index+1);
         if (levelbutton_index < ARRAY_LENGTH(campaign_levels_filepath)) {
-            button->mapfile_path = campaign_levels_filepath[levelbutton_index];
+            button->mapfile_path =
+                (char *) campaign_levels_filepath[levelbutton_index];
         } else {
-            button->mapfile_path = "";
+            button->mapfile_path = (char *) "";
         }
     }
 
@@ -514,6 +621,10 @@ void menu_update(void) {
     PR::Camera *cam = &glob->current_menu.camera;
     PR::Menu *menu = &glob->current_menu;
 
+    size_t buttons_shown_number =
+        menu->showing_campaign_buttons ? CAMPAIGN_LEVELS_NUMBER :
+                                         menu->custom_buttons_number;
+
     // NOTE: Consider the cursor only if it's inside the window
     if (0 < input->mouseX && input->mouseX < win->w &&
         0 < input->mouseY && input->mouseY < win->h) {
@@ -532,8 +643,8 @@ void menu_update(void) {
         //          +3 to count for the empty row left at the top
         //          -1 so that when a row is exactly filled at the end
         //              it doesn't count that as another row
-        size_t rows_in_screen = (((CAMPAIGN_LEVELS_NUMBER+2) % 15) / 3) + 1;
-        float screens_of_buttons = ((CAMPAIGN_LEVELS_NUMBER+2) / 15) +
+        size_t rows_in_screen = (((buttons_shown_number+2) % 15) / 3) + 1;
+        float screens_of_buttons = ((buttons_shown_number+2) / 15) +
                                     rows_in_screen / 5.f;
 
         if (menu->camera_goal_position < win->h*screens_of_buttons &&
@@ -564,6 +675,7 @@ void menu_update(void) {
             menu->showing_campaign_buttons = true;
             menu->show_campaign_button.col = SHOW_BUTTON_SELECTED_COLOR;
             menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
+            menu->camera_goal_position = win->h * 0.5f;
         }
     }
     if (rect_contains_point(
@@ -571,29 +683,70 @@ void menu_update(void) {
                 input->mouseX, input->mouseY,
                 menu->show_custom_button.from_center)) {
         if (input->mouse_left.clicked) {
-            menu->showing_campaign_buttons = false;
-            menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
-            menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
+            int result = 0;
+            PR::LevelButton *temp_custom_buttons = NULL;
+            size_t temp_custom_buttons_number = 0;
+            result =
+                load_custom_buttons_from_dir("./custom_maps/",
+                                             &temp_custom_buttons,
+                                             &temp_custom_buttons_number);
+            if (result == 0) {
+                if (menu->custom_buttons) std::free(menu->custom_buttons);
+                menu->custom_buttons = temp_custom_buttons;
+                menu->custom_buttons_number = temp_custom_buttons_number;
+                menu->showing_campaign_buttons = false;
+                menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
+                menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
+                menu->camera_goal_position = win->h * 0.5f;
+            } else {
+                std::cout << "[ERROR] Could not load map files" << std::endl;
+            }
         }
     }
 
-    for(size_t levelbutton_index = 0;
-        levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
-        ++levelbutton_index) {
+    if (menu->showing_campaign_buttons) {
+        for(size_t levelbutton_index = 0;
+            levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
+            ++levelbutton_index) {
 
-        PR::LevelButton *button =
-            &menu->campaign_buttons[levelbutton_index];
+            PR::LevelButton *button =
+                &menu->campaign_buttons[levelbutton_index];
 
-        if (rect_contains_point(rect_in_camera_space(button->body, cam),
-                                input->mouseX, input->mouseY,
-                                button->from_center)) {
-            
-            button->col = LEVEL_BUTTON_SELECTED_COLOR;
-            if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::LEVEL, level_prepare, button->mapfile_path);
+            if (rect_contains_point(rect_in_camera_space(button->body, cam),
+                                    input->mouseX, input->mouseY,
+                                    button->from_center)) {
+                
+                button->col = LEVEL_BUTTON_SELECTED_COLOR;
+                if (input->mouse_left.clicked) {
+                    CHANGE_CASE_TO(PR::LEVEL,
+                                   level_prepare,
+                                   button->mapfile_path);
+                }
+            } else {
+                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
             }
-        } else {
-            button->col = LEVEL_BUTTON_DEFAULT_COLOR;
+        }
+    } else {
+        for(size_t custombutton_index = 0;
+            custombutton_index < menu->custom_buttons_number;
+            ++custombutton_index) {
+
+            PR::LevelButton *button =
+                menu->custom_buttons + custombutton_index;
+
+            if (rect_contains_point(rect_in_camera_space(button->body, cam),
+                                    input->mouseX, input->mouseY,
+                                    button->from_center)) {
+                
+                button->col = LEVEL_BUTTON_SELECTED_COLOR;
+                if (input->mouse_left.clicked) {
+                    CHANGE_CASE_TO(PR::LEVEL,
+                                   level_prepare,
+                                   button->mapfile_path);
+                }
+            } else {
+                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
+            }
         }
     }
 
