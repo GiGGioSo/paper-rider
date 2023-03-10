@@ -71,15 +71,17 @@ void renderer_draw_uni(Shader s);
 void renderer_create_texture(Texture* t, const char* filename);
 
 void renderer_add_queue_tex(float x, float y,
-                               float w, float h, float r,
-                               float tx, float ty,
-                               float tw, float th);
+                            float w, float h,
+                            float r, bool centered,
+                            float tx, float ty,
+                            float tw, float th);
 
-inline void renderer_add_queue_tex(Rect rec, TexCoords t) {
+inline void renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
     renderer_add_queue_tex(rec.pos.x, rec.pos.y,
-                              rec.dim.x, rec.dim.y, rec.angle,
-                              t.tx, t.ty,
-                              t.tw, t.th);
+                           rec.dim.x, rec.dim.y,
+                           rec.angle, centered,
+                           t.tx, t.ty,
+                           t.tw, t.th);
 }
 
 void renderer_draw_tex(Shader s, Texture* t);

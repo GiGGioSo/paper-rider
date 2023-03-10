@@ -18,16 +18,17 @@
 #    include <dirent.h>
 #endif // _WIN32
 
-// TODO:
-// - Load map files from the current working directory in runtime
+// TODO: Alphabetic order of the levels
+// TODO: Proper gamepad support
+// TODO: Better way to signal boost direction in boost pads
+// TODO: Update the README (before starting the map editor)
 
 // TODO(maybe):
 //  - Find textures
 //  - Make changing angle more or less difficult
-//  - Make the plane change angle alone when the rider jumps off (maybe)
+//  - Make the plane change angle alone when the rider jumps off
+//  - Make the boost change the plane angle
 
-// TODO:
-//  - Maybe make the boost change the plane angle
 
 #define GRAVITY (9.81f * 50.f)
 
@@ -363,7 +364,6 @@ int load_map_from_file(const char *file_path,
     return result;
 }
 
-// TODO: Alphabetic order of the levels
 int load_custom_buttons_from_dir(const char *dir_path,
                                  PR::LevelButton **buttons,
                                  size_t *buttons_number) {
@@ -1755,6 +1755,22 @@ void level_draw(void) {
         renderer_add_queue_uni(pad_in_cam_pos,
                               glm::vec4(0.f, 1.f, 0.f, 1.f),
                               false);
+        
+        if (pad->body.triangle) {
+            pad_in_cam_pos.pos.x += pad_in_cam_pos.dim.x * 0.25f;
+            pad_in_cam_pos.pos.y += pad_in_cam_pos.dim.y * 0.5f;
+            pad_in_cam_pos.dim *= 0.4f;
+        } else  {
+            pad_in_cam_pos.pos += pad_in_cam_pos.dim * 0.5f;
+            pad_in_cam_pos.dim *= 0.5f;
+        }
+        pad_in_cam_pos.angle = pad->boost_angle;
+        renderer_add_queue_tex(pad_in_cam_pos,
+                               texcoords_in_texture_space(
+                                   0.f, 8.f, 96.f, 32.f,
+                                   &glob->rend_res.global_sprite, false),
+                               true);
+
     }
 
     // NOTE: Rendering the obstacles
@@ -1812,8 +1828,6 @@ void level_draw(void) {
         }
     }
 
-    // High wind zone
-    /* renderer_add_queue_uni(0.f, win->h * 0.6f, win->w, win->h * 0.4f, 0.f, glm::vec3(0.2f, 0.3f, 0.6f), false); */
 
     // NOTE: Rendering the plane
     renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
@@ -1846,10 +1860,11 @@ void level_draw(void) {
 
     // NOTE: Rendering plane texture
     renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                              texcoords_in_texture_space(
-				                    p->current_animation * 32.f, 0.f,
-                                    32.f, 8.f,
-                                    &glob->rend_res.global_sprite, p->inverse));
+                           texcoords_in_texture_space(
+                                p->current_animation * 32.f, 0.f,
+                                32.f, 8.f,
+                                &glob->rend_res.global_sprite, p->inverse),
+                           false);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_tex(glob->rend_res.shaders[1],

@@ -211,11 +211,17 @@ void renderer_create_texture(Texture* t, const char* filepath) {
 }
 
 void renderer_add_queue_tex(float x, float y,
-                               float w, float h, float r,
+                               float w, float h,
+                               float r, bool centered,
                                float tx, float ty,
                                float tw, float th) {
 
     Renderer* renderer = &glob->renderer;
+
+    if (centered) {
+        x -= w/2;
+        y -= h/2;
+    }
 
     // NOTE: tx, ty are supposed to be the lower left corner in texture coordinates
     //       tw, th are the width and height, still in texture coordinates
