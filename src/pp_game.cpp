@@ -18,13 +18,17 @@
 #    include <dirent.h>
 #endif // _WIN32
 
-// TODO: Alphabetic order of the levels
-// TODO: Proper gamepad support
-// TODO: Better way to signal boost direction in boost pads
-// TODO: Update the README (before starting the map editor)
+// TODO(before starting game editor):
+//      - Update the README (before starting the map editor)
+//      - Proper gamepad support
+//      - Fixing collision position
+// TODO(after finishing game editor):
+//      - Alphabetic order of the levels
+//      - Better way to signal boost direction in boost pads
+//      - Find/make textures
+//      - Fine tune angle change velocity
 
 // TODO(maybe):
-//  - Find textures
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off
 //  - Make the boost change the plane angle
