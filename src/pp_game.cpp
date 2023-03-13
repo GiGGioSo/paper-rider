@@ -42,8 +42,9 @@
 
 #define CAMERA_MAX_VELOCITY (1500.f)
 
-#define CHANGE_CASE_TO(new_case, prepare_func, map_path)  do {\
+#define CHANGE_CASE_TO(new_case, prepare_func, map_path, edit)  do {\
         PR::Level t_level = glob->current_level;\
+        t_level.edit_mode = edit;\
         PR::Menu t_menu = glob->current_menu;\
         int preparation_result = (prepare_func)(&t_menu, &t_level, map_path);\
         if (preparation_result == 0) {\
@@ -58,6 +59,9 @@
                       << std::endl;\
         }\
     } while(0)
+
+#define EDIT_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
+#define EDIT_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
 
 #define LEVEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define LEVEL_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
@@ -88,6 +92,9 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
 
 void free_menu_level(PR::Menu *menu, PR::Level *level) {
     // Menu freeing
+    if (menu->show_campaign_button.text) {
+        std::free(menu->show_campaign_button.text);
+    }
     for(size_t i = 0;
         i < ARRAY_LENGTH(menu->campaign_buttons);
         ++i) {
@@ -100,11 +107,20 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
         ++i) {
         if (menu->custom_buttons[i].text) {
             std::free(menu->custom_buttons[i].text);
+            menu->custom_buttons[i].text = NULL;
+        }
+        if (menu->custom_edit_buttons[i].text) {
+            std::free(menu->custom_edit_buttons[i].text);
+            menu->custom_edit_buttons[i].text = NULL;
         }
     }
     if (menu->custom_buttons) {
         std::free(menu->custom_buttons);
         menu->custom_buttons = NULL;
+    }
+    if (menu->custom_edit_buttons) {
+        std::free(menu->custom_edit_buttons);
+        menu->custom_edit_buttons = NULL;
     }
 
     // Level freeing
@@ -127,6 +143,42 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
             std::free(level->particle_systems[ps_index].particles);
             level->particle_systems[ps_index].particles = NULL;
         }
+    }
+}
+
+inline
+void menu_set_to_null(PR::Menu *menu) {
+    for(size_t i = 0;
+        i < ARRAY_LENGTH(menu->campaign_buttons);
+        ++i) {
+        menu->campaign_buttons[i].text = NULL;
+    }
+    for(size_t i = 0;
+        i < menu->custom_buttons_number;
+        ++i) {
+        menu->custom_buttons[i].text = NULL;
+        menu->custom_edit_buttons[i].text = NULL;
+    }
+    menu->custom_buttons_number = 0;
+    menu->custom_buttons = NULL;
+    menu->custom_edit_buttons = NULL;
+    menu->show_campaign_button.text = NULL;
+    menu->show_custom_button.text = NULL;
+}
+
+inline
+void level_set_to_null(PR::Level *level) {
+    level->portals_number = 0;
+    level->portals = NULL;
+    level->obstacles_number = 0;
+    level->obstacles = NULL;
+    level->boosts_number = 0;
+    level->boosts = NULL;
+    for(size_t ps_index = 0;
+        ps_index < ARRAY_LENGTH(level->particle_systems);
+        ++ps_index) {
+        level->particle_systems[ps_index].particles_number = 0;
+        level->particle_systems[ps_index].particles = NULL;
     }
 }
 
@@ -370,6 +422,7 @@ int load_map_from_file(const char *file_path,
 
 int load_custom_buttons_from_dir(const char *dir_path,
                                  PR::LevelButton **buttons,
+                                 PR::LevelButton **edit_buttons,
                                  size_t *buttons_number) {
 
     PR::WinInfo *win = &glob->window;
@@ -377,6 +430,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     int result = 0;
     DIR *dir = NULL;
     *buttons = NULL;
+    *edit_buttons = NULL;
     *buttons_number = 0;
 
     {
@@ -405,32 +459,8 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << map_name << " length: " << std::strlen(map_name)
                           << std::endl;
 
-                // NOTE: If it's the first button, malloc, otherwise just realloc
-                *buttons = (button_index == 0) ?
-                    (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
-                    (PR::LevelButton *) std::realloc(*buttons,
-                                                     sizeof(PR::LevelButton) *
-                                                      (button_index+1));
                 size_t row = button_index / 3;
                 size_t col = button_index % 3;
-
-                PR::LevelButton *button = *buttons + button_index;
-
-                button->body.pos.x = (col * 2.f + 1.f) / 6.f * win->w;
-                button->body.pos.y = (row * 2.f + 3.f) / 10.f * win->h;
-                button->body.dim.x = win->w / 4.f;
-                button->body.dim.y = win->h / 8.f;
-                button->body.angle = 0.f;
-                button->body.triangle = false;
-
-                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
-
-                button->from_center = true;
-
-                button->text =
-                    (char *) std::malloc(std::strlen(map_name) *
-                                         sizeof(char));
-                std::strcpy(button->text, map_name);
 
                 char map_path[99] = "";
                 std::strcat(map_path, dir_path);
@@ -441,10 +471,60 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << std::strlen(map_path)
                           << std::endl;
 
+                // Creating the custom level button
+                // NOTE: If it's the first button, malloc, otherwise just realloc
+                *buttons = (button_index == 0) ?
+                    (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
+                    (PR::LevelButton *) std::realloc(*buttons,
+                                                     sizeof(PR::LevelButton) *
+                                                      (button_index+1));
+
+                PR::LevelButton *button = *buttons + button_index;
+
+                button->body.pos.x = (col * 2.f + 1.f) / 6.f * win->w;
+                button->body.pos.y = (row * 2.f + 3.f) / 10.f * win->h;
+                button->body.dim.x = win->w / 4.f;
+                button->body.dim.y = win->h / 8.f;
+                button->body.angle = 0.f;
+                button->body.triangle = false;
+                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
+                button->from_center = true;
+                button->text =
+                    (char *) std::malloc(std::strlen(map_name) *
+                                         sizeof(char));
+                std::strcpy(button->text, map_name);
+
                 button->mapfile_path =
                     (char *) std::malloc(std::strlen(map_path) *
                                          sizeof(char));
                 std::strcpy(button->mapfile_path, map_path);
+
+                // Creating the little custom level edit button
+                *edit_buttons = (button_index == 0) ?
+                    (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
+                    (PR::LevelButton *) std::realloc(*edit_buttons,
+                                                     sizeof(PR::LevelButton) *
+                                                      (button_index+1));
+                PR::LevelButton *edit_button = *edit_buttons + button_index;
+
+                edit_button->body.pos.x = button->body.pos.x +
+                                            button->body.dim.x * 0.05f;
+                edit_button->body.pos.y = button->body.pos.y +
+                                            button->body.dim.y * 0.25f;
+                edit_button->body.dim.x = button->body.dim.x * 0.4f;
+                edit_button->body.dim.y = button->body.dim.y * 0.5f;
+                edit_button->body.angle = 0.f;
+                edit_button->body.triangle = false;
+                edit_button->col = EDIT_BUTTON_DEFAULT_COLOR;
+                edit_button->from_center = false;
+                edit_button->text =
+                    (char *) std::malloc(std::strlen("EDIT") * sizeof(char));
+                std::strcpy(edit_button->text, "EDIT");
+
+                edit_button->mapfile_path =
+                    (char *) std::malloc(std::strlen(map_path) *
+                                         sizeof(char));
+                std::strcpy(edit_button->mapfile_path, map_path);
 
                 ++button_index;
                 
@@ -494,37 +574,6 @@ glm::vec4 get_portal_color(PR::Portal *portal) {
     }
 }
 
-inline
-void menu_set_to_null(PR::Menu *menu) {
-    menu->custom_buttons_number = 0;
-    menu->custom_buttons = NULL;
-    for(size_t i = 0;
-        i < ARRAY_LENGTH(menu->campaign_buttons);
-        ++i) {
-        menu->campaign_buttons[i].text = NULL;
-    }
-    for(size_t i = 0;
-        i < menu->custom_buttons_number;
-        ++i) {
-        menu->custom_buttons[i].text = NULL;
-    }
-}
-
-inline
-void level_set_to_null(PR::Level *level) {
-    level->portals_number = 0;
-    level->portals = NULL;
-    level->obstacles_number = 0;
-    level->obstacles = NULL;
-    level->boosts_number = 0;
-    level->boosts = NULL;
-    for(size_t ps_index = 0;
-        ps_index < ARRAY_LENGTH(level->particle_systems);
-        ++ps_index) {
-        level->particle_systems[ps_index].particles_number = 0;
-        level->particle_systems[ps_index].particles = NULL;
-    }
-}
 
 const char *campaign_levels_filepath[2] = {
     "",
@@ -604,6 +653,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     // NOTE: Custom levels buttons
     menu->custom_buttons_number = 0;
     menu->custom_buttons = NULL;
+    menu->custom_edit_buttons = NULL;
 
     PR::Camera *cam = &menu->camera;
     cam->pos.x = win->w * 0.5f;
@@ -666,9 +716,9 @@ void menu_update(void) {
 
     // TODO: Maybe remove this
     if (input->level1.clicked) {
-        CHANGE_CASE_TO(PR::LEVEL, level_prepare, "");
+        CHANGE_CASE_TO(PR::LEVEL, level_prepare, "", false);
     } else if (input->level2.clicked) {
-        CHANGE_CASE_TO(PR::LEVEL, level_prepare, "level2.prmap");
+        CHANGE_CASE_TO(PR::LEVEL, level_prepare, "level2.prmap", false);
     }
 
     if (rect_contains_point(
@@ -689,21 +739,46 @@ void menu_update(void) {
         if (input->mouse_left.clicked) {
             int result = 0;
             PR::LevelButton *temp_custom_buttons = NULL;
+            PR::LevelButton *temp_custom_edit_buttons = NULL;
             size_t temp_custom_buttons_number = 0;
             result =
                 load_custom_buttons_from_dir("./custom_maps/",
                                              &temp_custom_buttons,
+                                             &temp_custom_edit_buttons,
                                              &temp_custom_buttons_number);
             if (result == 0) {
-                if (menu->custom_buttons) std::free(menu->custom_buttons);
+                // NOTE: Free the previous present custom buttons
+                for(size_t i = 0;
+                    i < menu->custom_buttons_number;
+                    ++i) {
+                    if (menu->custom_buttons[i].text) {
+                        std::free(menu->custom_buttons[i].text);
+                        menu->custom_buttons[i].text = NULL;
+                    }
+                    if (menu->custom_edit_buttons[i].text) {
+                        std::free(menu->custom_edit_buttons[i].text);
+                        menu->custom_edit_buttons[i].text = NULL;
+                    }
+                }
+                if (menu->custom_buttons) {
+                    std::free(menu->custom_buttons);
+                    menu->custom_buttons = NULL;
+                }
+                if (menu->custom_edit_buttons) {
+                    std::free(menu->custom_edit_buttons);
+                    menu->custom_edit_buttons = NULL;
+                }
+                // NOTE: Reassing the updated and checked values
                 menu->custom_buttons = temp_custom_buttons;
+                menu->custom_edit_buttons = temp_custom_edit_buttons;
                 menu->custom_buttons_number = temp_custom_buttons_number;
                 menu->showing_campaign_buttons = false;
                 menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
                 menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
                 menu->camera_goal_position = win->h * 0.5f;
             } else {
-                std::cout << "[ERROR] Could not load map files" << std::endl;
+                std::cout << "[ERROR] Could not load custom map files"
+                          << std::endl;
             }
         }
     }
@@ -724,7 +799,7 @@ void menu_update(void) {
                 if (input->mouse_left.clicked) {
                     CHANGE_CASE_TO(PR::LEVEL,
                                    level_prepare,
-                                   button->mapfile_path);
+                                   button->mapfile_path, false);
                 }
             } else {
                 button->col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -735,22 +810,42 @@ void menu_update(void) {
             custombutton_index < menu->custom_buttons_number;
             ++custombutton_index) {
 
+            PR::LevelButton *edit_button =
+                menu->custom_edit_buttons + custombutton_index;
+
             PR::LevelButton *button =
                 menu->custom_buttons + custombutton_index;
 
-            if (rect_contains_point(rect_in_camera_space(button->body, cam),
+            if (rect_contains_point(rect_in_camera_space(edit_button->body, cam),
                                     input->mouseX, input->mouseY,
-                                    button->from_center)) {
+                                    edit_button->from_center)) {
                 
-                button->col = LEVEL_BUTTON_SELECTED_COLOR;
+                edit_button->col = EDIT_BUTTON_SELECTED_COLOR;
+                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
                 if (input->mouse_left.clicked) {
                     CHANGE_CASE_TO(PR::LEVEL,
                                    level_prepare,
-                                   button->mapfile_path);
+                                   edit_button->mapfile_path, true);
                 }
             } else {
-                button->col = LEVEL_BUTTON_DEFAULT_COLOR;
+                edit_button->col = EDIT_BUTTON_DEFAULT_COLOR;
+
+                // NOTE: Don't even check if it's inside the edit button
+                if (rect_contains_point(rect_in_camera_space(button->body, cam),
+                                        input->mouseX, input->mouseY,
+                                        button->from_center)) {
+                    
+                    button->col = LEVEL_BUTTON_SELECTED_COLOR;
+                    if (input->mouse_left.clicked) {
+                        CHANGE_CASE_TO(PR::LEVEL,
+                                       level_prepare,
+                                       button->mapfile_path, false);
+                    }
+                } else {
+                    button->col = LEVEL_BUTTON_DEFAULT_COLOR;
+                }
             }
+
         }
     }
 
@@ -818,6 +913,22 @@ void menu_draw(void) {
                                     button_rend_rect.pos.y,
                                     button->text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
+
+
+            PR::LevelButton *edit_button =
+                menu->custom_edit_buttons + custombutton_index;
+
+            button_rend_rect = rect_in_camera_space(edit_button->body, cam);
+
+            renderer_add_queue_uni(button_rend_rect,
+                                   edit_button->col,
+                                   edit_button->from_center);
+            renderer_add_queue_text(button_rend_rect.pos.x+
+                                        button_rend_rect.dim.x*0.5f,
+                                    button_rend_rect.pos.y+
+                                        button_rend_rect.dim.y*0.5f,
+                                    edit_button->text, glm::vec4(1.0f),
+                                    &glob->rend_res.fonts[0], true);
         }
     }
 
@@ -836,6 +947,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     // Have to set to NULL if I don't use it
     menu_set_to_null(menu);
 
+    std::cout << "Is the level editable? " << level->edit_mode << std::endl;
 
     PR::Camera *cam = &level->camera;
     // cam->pos.x is set afterwards
@@ -1210,7 +1322,7 @@ void level_update(void) {
     assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
 
     if (input->menu.clicked) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
+        CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
     #if 0
@@ -1498,7 +1610,7 @@ void level_update(void) {
 
     if (!p->crashed &&
         p->body.pos.x + p->body.dim.x*0.5f > level->goal_line) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare, "");
+        CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
     // NOTE: The portal can be activated only by the rider.

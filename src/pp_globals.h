@@ -143,10 +143,13 @@ struct PR {
 
         size_t custom_buttons_number;
         LevelButton *custom_buttons;
+        LevelButton *custom_edit_buttons;
     };
     Menu current_menu;
 
     struct Level {
+        bool edit_mode;
+
         Plane plane;
         Camera camera;
 
