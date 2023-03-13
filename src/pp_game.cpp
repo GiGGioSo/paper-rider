@@ -1313,10 +1313,10 @@ void level_update(void) {
 
         // DEBUG
         // float vel = 100.f;
-        // if (input->up) p->body.pos.y -= vel * dt;
-        // if (input->down) p->body.pos.y += vel * dt;
-        // if (input->left) p->body.pos.x -= vel * dt;
-        // if (input->right) p->body.pos.x += vel * dt;
+        // if (input->up.pressed) p->body.pos.y -= vel * dt;
+        // if (input->down.pressed) p->body.pos.y += vel * dt;
+        // if (input->left.pressed) p->body.pos.x -= vel * dt;
+        // if (input->right.pressed) p->body.pos.x += vel * dt;
         // #### END PLANE STUFF
         if (!rid->crashed) {
             if (rid->attached) {

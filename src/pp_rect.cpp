@@ -45,6 +45,7 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
     // NOTE: Check if rec contains the point
     float center_x, center_y;
     float x, y, w, h;
+
     if (centered) {
         center_x = rec.pos.x;
         center_y = rec.pos.y;
@@ -56,23 +57,39 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
         x = rec.pos.x;
         y = rec.pos.y;
     }
+
     w = rec.dim.x;
     h = rec.dim.y;
     float cosine = cos(glm::radians(rec.angle));
     float sine = sin(glm::radians(rec.angle));
+
+    float rx = center_x +
+            (px - center_x) * cosine -
+            (py - center_y) * sine;
+    float ry = center_y +
+            (px - center_x) * sine +
+            (py - center_y) * cosine;
+
     if (!rec.triangle) {
-        float rx = center_x +
-                (px - center_x) * cosine -
-                (py - center_y) * sine;
-        float ry = center_y +
-                (px - center_x) * sine +
-                (py - center_y) * cosine;
         if (x < rx && rx < x + w &&
             y < ry && ry < y + h) {
             return true;
         }
     } else {
-        // TODO: Implement if rec is a triangle
+        //std::cout << "--------------------------"
+        //          << "\nx: " << x
+        //          << "\ny: " << y
+        //          << "\nx+w: " << x+w
+        //          << "\ny+h: " << y+h
+        //          << "\nrx: " << rx
+        //          << "\nry: " << ry
+        //          << std::endl;
+        if (rx > x && ry > y &&
+            lines_are_colliding(
+                rx, ry, x+w, y+h,
+                x, y+h, x+w, y,
+                NULL, NULL)) return true;
+
     }
     return false;
 }
