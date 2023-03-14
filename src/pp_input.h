@@ -37,6 +37,8 @@ struct InputController {
     //        - Vertical joystick movement for the plane
     //        - Horizontal joystick movement for the rider
 
+    int8_t current_joystick;
+
     // NOTE: Global
     Key exit;
 

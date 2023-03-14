@@ -20,9 +20,10 @@ void callback_debug(GLenum source,
                     GLuint id, GLenum severity,
                     GLsizei length, const GLchar* message,
                     const void* user);
+void callback_joystick(int joystick_id, int event);
 
 // Initializing global structure
-PR* glob;
+PR* glob = NULL;
 void glob_init();
 void glob_free();
 
@@ -73,6 +74,7 @@ int main() {
     // Callbacks
     glfwSetFramebufferSizeCallback(glob->window.glfw_win,
                                    callback_framebuffer_size);
+    glfwSetJoystickCallback(callback_joystick);
     glDebugMessageCallback(&callback_debug, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
@@ -225,6 +227,33 @@ void glob_init(void) {
 void glob_free(void) {
     std::free(glob->rend_res.fonts[0].char_data);
     std::free(glob);
+}
+
+void callback_joystick(int joystick_id, int event) {
+
+    InputController *in = &glob->input;
+
+    if (event == GLFW_CONNECTED) {
+        if (in->current_joystick == -1) {
+            in->current_joystick = joystick_id;
+        } // else we don't care, how current controller is still good to go
+    }
+    else if (event == GLFW_DISCONNECTED) {
+        if (joystick_id == in->current_joystick) {
+            in->current_joystick = -1;
+            // NOTE: Try to find another controller
+            for(size_t jid = 0;
+                jid < GLFW_JOYSTICK_LAST;
+                ++jid) {
+
+                if (glfwJoystickPresent(jid)) {
+                    in->current_joystick = jid;
+                    break;
+                }
+            }
+        } // else we don't care, how current controller is still good to go
+    }
+
 }
 
 void callback_framebuffer_size(GLFWwindow* window,

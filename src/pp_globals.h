@@ -13,6 +13,7 @@
 #define SCREEN_HEIGHT_PROPORTION 240
 
 #define ARRAY_LENGTH(arr) ((int)(sizeof(arr) / sizeof(arr[0])))
+#define UNUSED(expr) do { (void)(expr); } while (0)
 
 struct PR {
 
