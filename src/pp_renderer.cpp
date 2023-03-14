@@ -351,11 +351,33 @@ void renderer_add_queue_text(float x, float y,
     float maxX = 0.f;
     float maxY = 0.f;
 
+    bool reference_found = false;
+
+    stbtt_aligned_quad q;
+
+    // NOTE: I use the letter 'A' to center vertically the text,
+    //          otherwise letters like 'j', 'y', 'q' would make the text
+    //          center too low
+    //
+    //       If for some reason the letter 'A' is not present in the font,
+    //       then just pretend like this never happened
+    if ('A' >= font->first_char && 'A' < font->first_char+font->num_chars ) {
+        reference_found = true;
+        float temp_x = 0.f;
+        float temp_y = 0.f;
+        stbtt_GetBakedQuad(font->char_data,
+                           font->bitmap_width,
+                           font->bitmap_height,
+                           'A' - font->first_char,
+                           &temp_x, &temp_y, &q, 1);
+        minY = q.y0;
+        maxY = q.y1;
+    }
+
     for(int i = 0; i < length; i++) {
         if (text[i] >= font->first_char &&
             text[i] < font->first_char+font->num_chars) {
 
-            stbtt_aligned_quad q;
             stbtt_GetBakedQuad(font->char_data,
                                font->bitmap_width,
                                font->bitmap_height,
@@ -364,14 +386,18 @@ void renderer_add_queue_text(float x, float y,
 
             if (i == 0) {
                 minX = q.x0;
-                minY = q.y0;
                 maxX = q.x1;
-                maxY = q.y1;
+                if (!reference_found) {
+                    minY = q.y0;
+                    maxY = q.y1;
+                }
             } else {
                 if (q.x0 < minX) minX = q.x0;
-                if (q.y0 < minY) minY = q.y0;
                 if (q.x1 > maxX) maxX = q.x1;
-                if (q.y1 > maxY) maxY = q.y1;
+                if (!reference_found) {
+                    if (q.y0 < minY) minY = q.y0;
+                    if (q.y1 > maxY) maxY = q.y1;
+                }
             }
 
             // down left
