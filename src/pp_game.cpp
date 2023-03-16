@@ -449,7 +449,7 @@ int save_map_to_file(const char *file_path,
 
             std::fprintf(map_file,
                          "%i %i %i %f %f %f %f %f\n",
-                         obs->collide_plane, &obs->collide_rider,
+                         obs->collide_plane, obs->collide_rider,
                          b.triangle, b.pos.x, b.pos.y,
                          b.dim.x, b.dim.y, b.angle);
             if (std::ferror(map_file)) return_defer(1);
@@ -459,7 +459,7 @@ int save_map_to_file(const char *file_path,
         std::fprintf(map_file, "%zu\n", level->boosts_number);
         if (std::ferror(map_file)) return_defer(1);
 
-        for(size_t boost_index;
+        for(size_t boost_index = 0;
             boost_index < level->boosts_number;
             ++boost_index) {
 
@@ -502,7 +502,7 @@ int save_map_to_file(const char *file_path,
     }
 
     defer:
-    if (map_file) std::close(map_file);
+    if (map_file) std::fclose(map_file);
     return result;
 }
 
