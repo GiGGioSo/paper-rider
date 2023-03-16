@@ -3,6 +3,8 @@
 #include "pp_globals.h"
 #include <iostream>
 
+#define IS_KEY_PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)
+
 void input_controller_update(GLFWwindow *window, InputController* input) {
     // NOTE: Multiple values might be set based off the same keys.
     //       This could happen because a menu action has the
@@ -26,6 +28,11 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     key_reset(&input->jump);
 
     key_reset(&input->menu);
+    // Editing
+    key_reset(&input->edit);
+    key_reset(&input->save_map);
+    key_reset(&input->reload_map);
+
     // Menu
     key_reset(&input->level1);
     key_reset(&input->level2);
@@ -37,20 +44,20 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     key_reset(&input->left);
     key_reset(&input->right);
 
-    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    if(IS_KEY_PRESSED(GLFW_KEY_UP)) {
         key_pressed(&input->up);
     }
-    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    if(IS_KEY_PRESSED(GLFW_KEY_DOWN)) {
         key_pressed(&input->down);
     }
-    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    if(IS_KEY_PRESSED(GLFW_KEY_LEFT)) {
         key_pressed(&input->left);
     }
-    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    if(IS_KEY_PRESSED(GLFW_KEY_RIGHT)) {
         key_pressed(&input->right);
     }
 
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    if(IS_KEY_PRESSED(GLFW_KEY_ESCAPE)) {
         key_pressed(&input->exit);
     }
 
@@ -108,34 +115,45 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     UNUSED(buttons);
     // TODO: Handle abnormal gamepads
 
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+    if (IS_KEY_PRESSED(GLFW_KEY_1)) {
         key_pressed(&input->level1);
     }
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+    if (IS_KEY_PRESSED(GLFW_KEY_2)) {
         key_pressed(&input->level2);
     }
-    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+    if (IS_KEY_PRESSED(GLFW_KEY_0)) {
         key_pressed(&input->menu);
     }
 
 
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    if(IS_KEY_PRESSED(GLFW_KEY_A)) {
         input->left_right = -1.0f;
 
-    } else if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    } else if(IS_KEY_PRESSED(GLFW_KEY_D)) {
         input->left_right = 1.0f;
 
     }
 
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+    if (IS_KEY_PRESSED(GLFW_KEY_P)) {
         key_pressed(&input->debug);
     }
 
-    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+    if (IS_KEY_PRESSED(GLFW_KEY_F)) {
         key_pressed(&input->jump);
     }
 
-    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    if (IS_KEY_PRESSED(GLFW_KEY_SPACE)) {
         key_pressed(&input->boost);
+    }
+
+    // Editing
+    if (IS_KEY_PRESSED(GLFW_KEY_E)) {
+        key_pressed(&input->edit);
+    }
+    if (IS_KEY_PRESSED(GLFW_KEY_M)) {
+        key_pressed(&input->save_map);
+    }
+    if (IS_KEY_PRESSED(GLFW_KEY_L)) {
+        key_pressed(&input->reload_map);
     }
 }

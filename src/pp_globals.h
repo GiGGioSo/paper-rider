@@ -149,7 +149,8 @@ struct PR {
     Menu current_menu;
 
     struct Level {
-        bool edit_mode;
+        bool editing_now;
+        bool editing_available;
 
         Plane plane;
         Camera camera;

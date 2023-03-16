@@ -44,7 +44,7 @@
 
 #define CHANGE_CASE_TO(new_case, prepare_func, map_path, edit)  do {\
         PR::Level t_level = glob->current_level;\
-        t_level.edit_mode = edit;\
+        t_level.editing_available = edit;\
         PR::Menu t_menu = glob->current_menu;\
         int preparation_result = (prepare_func)(&t_menu, &t_level, map_path);\
         if (preparation_result == 0) {\
@@ -417,6 +417,92 @@ int load_map_from_file(const char *file_path,
 
     defer:
     if (map_file) std::fclose(map_file);
+    return result;
+}
+
+int save_map_to_file(const char *file_path,
+                     PR::Level *level,
+                     const float width, const float height) {
+    int result = 0;
+    FILE *map_file = NULL;
+
+    float inv_proportion_x = SCREEN_WIDTH_PROPORTION / width;
+    float inv_proportion_y = SCREEN_HEIGHT_PROPORTION / height;
+
+    {
+        map_file = std::fopen(file_path, "wb");
+        if (map_file == NULL) return_defer(1);
+
+        std::fprintf(map_file, "%zu\n", level->obstacles_number);
+        if (std::ferror(map_file)) return_defer(1);
+
+        for(size_t obs_index = 0;
+            obs_index < level->obstacles_number;
+            ++obs_index) {
+
+            PR::Obstacle *obs = level->obstacles + obs_index;
+            Rect b = obs->body;
+            b.pos.x *= inv_proportion_x;
+            b.pos.y *= inv_proportion_y;
+            b.dim.x *= inv_proportion_x;
+            b.dim.y *= inv_proportion_y;
+
+            std::fprintf(map_file,
+                         "%i %i %i %f %f %f %f %f\n",
+                         obs->collide_plane, &obs->collide_rider,
+                         b.triangle, b.pos.x, b.pos.y,
+                         b.dim.x, b.dim.y, b.angle);
+            if (std::ferror(map_file)) return_defer(1);
+
+        }
+
+        std::fprintf(map_file, "%zu\n", level->boosts_number);
+        if (std::ferror(map_file)) return_defer(1);
+
+        for(size_t boost_index;
+            boost_index < level->boosts_number;
+            ++boost_index) {
+
+            PR::BoostPad *pad = level->boosts + boost_index;
+            Rect b = pad->body;
+            b.pos.x *= inv_proportion_x;
+            b.pos.y *= inv_proportion_y;
+            b.dim.x *= inv_proportion_x;
+            b.dim.y *= inv_proportion_y;
+
+            std::fprintf(map_file,
+                         "%i %f %f %f %f %f %f %f\n",
+                         b.triangle, b.pos.x, b.pos.y,
+                         b.dim.x, b.dim.y, b.angle,
+                         pad->boost_angle, pad->boost_power);
+            if (std::ferror(map_file)) return_defer(1);
+        }
+
+        std::fprintf(map_file, "%zu", level->portals_number);
+        if (std::ferror(map_file)) return_defer(1);
+
+        for(size_t portal_index = 0;
+            portal_index < level->portals_number;
+            ++portal_index) {
+
+            PR::Portal *portal = level->portals + portal_index;
+            Rect b = portal->body;
+            b.pos.x *= inv_proportion_x;
+            b.pos.y *= inv_proportion_y;
+            b.dim.x *= inv_proportion_x;
+            b.dim.y *= inv_proportion_y;
+
+            std::fprintf(map_file,
+                        "%i %i %f %f %f %f\n",
+                        portal->type, portal->enable_effect,
+                        b.pos.x, b.pos.y, b.dim.x, b.dim.y);
+            if (std::ferror(map_file)) return_defer(1);
+
+        }
+    }
+
+    defer:
+    if (map_file) std::close(map_file);
     return result;
 }
 
@@ -947,7 +1033,9 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     // Have to set to NULL if I don't use it
     menu_set_to_null(menu);
 
-    std::cout << "Is the level editable? " << level->edit_mode << std::endl;
+    std::cout << "Is the level editable? "
+              << level->editing_available
+              << std::endl;
 
     PR::Camera *cam = &level->camera;
     // cam->pos.x is set afterwards
@@ -962,6 +1050,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     level->current_white = PR::WHITE;
     level->current_blue = PR::BLUE;
     level->current_gray = PR::GRAY;
+
+    level->editing_now = false;
 
     if (std::strcmp(mapfile_path, "")) {
 
@@ -1325,6 +1415,27 @@ void level_update(void) {
         CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
+    if (level->editing_available &&
+        input->edit.clicked) {
+
+        if (level->editing_now) {
+            std::cout << "Deactivating edit mode!" << std::endl;
+            level->editing_now = false;
+            glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        } else {
+            std::cout << "Activating edit mode!" << std::endl;
+            level->editing_now = true;
+            p->inverse = false;
+            p->crashed = false;
+            p->vel = glm::vec2(0.f);
+            rid->inverse = false;
+            rid->crashed = false;
+            rid->attached = true;
+            rid->vel = glm::vec2(0.f);
+            glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+
     #if 0
     // Do I want the plane to keep going if the rider crashes?
 
@@ -1380,55 +1491,59 @@ void level_update(void) {
         // #### START PLANE STUFF
         // NOTE: Reset the accelleration for it to be recalculated
         p->acc *= 0;
-        apply_air_resistances(p);
 
-        // NOTE: Checking collision with boost_pads
-        for (size_t boost_index = 0;
-             boost_index < boosts_number;
-             ++boost_index) {
+        if (level->editing_now) { // EDITING
+            float velx = 1000.f;
+            float vely = 600.f;
+            if (input->up.pressed) p->body.pos.y -= vely * dt;
+            if (input->down.pressed) p->body.pos.y += vely * dt;
+            if (input->left.pressed) p->body.pos.x -= velx * dt;
+            if (input->right.pressed) p->body.pos.x += velx * dt;
+        } else { // PLAYING
+            apply_air_resistances(p);
 
-            PR::BoostPad *pad = boosts + boost_index;
+            // NOTE: Checking collision with boost_pads
+            for (size_t boost_index = 0;
+                 boost_index < boosts_number;
+                 ++boost_index) {
 
-            if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
+                PR::BoostPad *pad = boosts + boost_index;
 
-                p->acc.x += pad->boost_power *
-                            cos(glm::radians(pad->boost_angle));
-                p->acc.y += pad->boost_power *
-                            -sin(glm::radians(pad->boost_angle));
+                if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
 
-                // std::cout << "BOOOST!!! against " << boost_index << std::endl;
+                    p->acc.x += pad->boost_power *
+                                cos(glm::radians(pad->boost_angle));
+                    p->acc.y += pad->boost_power *
+                                -sin(glm::radians(pad->boost_angle));
+
+                    // std::cout << "BOOOST!!! against " << boost_index << std::endl;
+                }
             }
-        }
-        // Propulsion
-        // TODO: Could this be a "powerup" or something?
-        if (glob->input.boost.pressed &&
-            !rid->crashed && rid->attached) {
-            float propulsion = 8.f;
-            p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-            p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
-            boost_ps->active = true;
-        }
-        // NOTE: The mass is greater if the rider is attached
-        if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
-        else p->acc *= 1.f/p->mass;
+            // Propulsion
+            // TODO: Could this be a "powerup" or something?
+            if (glob->input.boost.pressed &&
+                !rid->crashed && rid->attached) {
+                float propulsion = 8.f;
+                p->acc.x += propulsion * cos(glm::radians(p->body.angle));
+                p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+                boost_ps->active = true;
+            }
+            // NOTE: The mass is greater if the rider is attached
+            if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
+            else p->acc *= 1.f/p->mass;
 
-        // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-        p->acc.y += p->inverse ? -GRAVITY : GRAVITY;
+            // NOTE: Gravity is already an accelleration so it doesn't need to be divided
+            p->acc.y += p->inverse ? -GRAVITY : GRAVITY;
 
-        // NOTE: Motion of the plane
-        p->vel += p->acc * dt;
-        // NOTE: Limit velocities
-        if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
-            p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
+            // NOTE: Motion of the plane
+            p->vel += p->acc * dt;
+            // NOTE: Limit velocities
+            if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
+                p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
+            }
+            p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
         }
-        p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
 
-        // DEBUG
-        // float vel = 100.f;
-        // if (input->up.pressed) p->body.pos.y -= vel * dt;
-        // if (input->down.pressed) p->body.pos.y += vel * dt;
-        // if (input->left.pressed) p->body.pos.x -= vel * dt;
-        // if (input->right.pressed) p->body.pos.x += vel * dt;
         // #### END PLANE STUFF
         if (!rid->crashed) {
             if (rid->attached) {
@@ -1447,7 +1562,7 @@ void level_update(void) {
                     p->body.angle += 360.f;
                 }
                 // NOTE: Make the rider jump based on input
-                if (input->jump.clicked) {
+                if (!level->editing_now && input->jump.clicked) { // PLAYING
                     rid->attached = false;
                     rid->second_jump = true;
                     rid->base_velocity = p->vel.x;
@@ -1608,108 +1723,111 @@ void level_update(void) {
     }
 
 
-    if (!p->crashed &&
+    if (!p->crashed && !level->editing_now &&
         p->body.pos.x + p->body.dim.x*0.5f > level->goal_line) {
         CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
-    // NOTE: The portal can be activated only by the rider.
-    //       If the rider is attached, then, by extensions, also
-    //          the plane will activate the portal.
-    //       Even if the rider is not attached, the effect is also
-    //          applied to the plane.
-    for(size_t portal_index = 0;
-        portal_index < portals_number;
-        ++portal_index) {
 
-        PR::Portal *portal = portals + portal_index;
+    if (!level->editing_now) {
+        // NOTE: The portal can be activated only by the rider.
+        //       If the rider is attached, then, by extensions, also
+        //          the plane will activate the portal.
+        //       Even if the rider is not attached, the effect is also
+        //          applied to the plane.
+        for(size_t portal_index = 0;
+            portal_index < portals_number;
+            ++portal_index) {
 
-        if (!rid->crashed &&
-            (rect_are_colliding(&rid->body, &portal->body, NULL, NULL) ||
-             (rid->attached && rect_are_colliding(&p->body,
-                                                 &portal->body,
-                                                 NULL, NULL)))) {
-            switch(portal->type) {
-                case PR::INVERSE:
-                {
-                    // NOTE: Skip if the plane/rider already has the effect
-                    if (p->inverse == portal->enable_effect ||
-                        rid->inverse == portal->enable_effect) break;
+            PR::Portal *portal = portals + portal_index;
 
-                    if (!p->crashed) {
-                        p->inverse = portal->enable_effect;
-                        p->body.pos.y += p->body.dim.y;
-                        p->body.dim.y = -p->body.dim.y;
+            if (!rid->crashed &&
+                (rect_are_colliding(&rid->body, &portal->body, NULL, NULL) ||
+                 (rid->attached && rect_are_colliding(&p->body,
+                                                     &portal->body,
+                                                     NULL, NULL)))) {
+                switch(portal->type) {
+                    case PR::INVERSE:
+                    {
+                        // NOTE: Skip if the plane/rider already has the effect
+                        if (p->inverse == portal->enable_effect ||
+                            rid->inverse == portal->enable_effect) break;
+
+                        if (!p->crashed) {
+                            p->inverse = portal->enable_effect;
+                            p->body.pos.y += p->body.dim.y;
+                            p->body.dim.y = -p->body.dim.y;
+                        }
+                        rid->inverse = portal->enable_effect;
+                        rid->body.dim.y = -rid->body.dim.y;
+                        break;
                     }
-                    rid->inverse = portal->enable_effect;
-                    rid->body.dim.y = -rid->body.dim.y;
-                    break;
-                }
-                case PR::SHUFFLE_COLORS:
-                {
-                    if (level->colors_shuffled == portal->enable_effect) break;
+                    case PR::SHUFFLE_COLORS:
+                    {
+                        if (level->colors_shuffled == portal->enable_effect) break;
 
-                    level->colors_shuffled = portal->enable_effect;
+                        level->colors_shuffled = portal->enable_effect;
 
-                    if (portal->enable_effect) {
-                        level->current_red = PR::WHITE;
-                        level->current_blue = PR::RED;
-                        level->current_gray = PR::BLUE;
-                        level->current_white = PR::GRAY;
-                    } else {
-                        level->current_red = PR::RED;
-                        level->current_blue = PR::BLUE;
-                        level->current_gray = PR::GRAY;
-                        level->current_white = PR::WHITE;
+                        if (portal->enable_effect) {
+                            level->current_red = PR::WHITE;
+                            level->current_blue = PR::RED;
+                            level->current_gray = PR::BLUE;
+                            level->current_white = PR::GRAY;
+                        } else {
+                            level->current_red = PR::RED;
+                            level->current_blue = PR::BLUE;
+                            level->current_gray = PR::GRAY;
+                            level->current_white = PR::WHITE;
+                        }
+
+                        break;
                     }
-
-                    break;
                 }
             }
         }
-    }
 
-    // NOTE: Checking collision with obstacles
-    for (int obstacle_index = 0;
-         obstacle_index < obstacles_number;
-         obstacle_index++) {
+        // NOTE: Checking collision with obstacles
+        for (int obstacle_index = 0;
+             obstacle_index < obstacles_number;
+             obstacle_index++) {
 
-        PR::Obstacle *obs = obstacles + obstacle_index;
+            PR::Obstacle *obs = obstacles + obstacle_index;
 
-        if (!p->crashed && obs->collide_plane &&
-            rect_are_colliding(&p->body, &obs->body,
-                               &p->crash_position.x,
-                               &p->crash_position.y)) {
-            // NOTE: Plane colliding with an obstacle
+            if (!p->crashed && obs->collide_plane &&
+                rect_are_colliding(&p->body, &obs->body,
+                                   &p->crash_position.x,
+                                   &p->crash_position.y)) {
+                // NOTE: Plane colliding with an obstacle
 
-            if (rid->attached) {
+                if (rid->attached) {
+                    rid->vel *= 0.f;
+                    rid->base_velocity = 0.f;
+                    rid->input_velocity = 0.f;
+                }
+                p->crashed = true;
+                p->crash_position = p->body.pos;
+                p->acc *= 0.f;
+                p->vel *= 0.f;
+
+                // TODO: Debug flag
+                std::cout << "Plane collided with " << obstacle_index << std::endl;
+            }
+            if (!rid->crashed && obs->collide_rider &&
+                rect_are_colliding(&rid->body, &obs->body,
+                                   &rid->crash_position.x,
+                                   &rid->crash_position.y)) {
+                // NOTE: Rider colliding with an obstacle
+
+                rid->crashed = true;
+                rid->attached = false;
+                rid->crash_position = rid->body.pos;
                 rid->vel *= 0.f;
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
+
+                // TODO: Debug flag
+                std::cout << "Rider collided with " << obstacle_index << std::endl;
             }
-            p->crashed = true;
-            p->crash_position = p->body.pos;
-            p->acc *= 0.f;
-            p->vel *= 0.f;
-
-            // TODO: Debug flag
-            std::cout << "Plane collided with " << obstacle_index << std::endl;
-        }
-        if (!rid->crashed && obs->collide_rider &&
-            rect_are_colliding(&rid->body, &obs->body,
-                               &rid->crash_position.x,
-                               &rid->crash_position.y)) {
-            // NOTE: Rider colliding with an obstacle
-
-            rid->crashed = true;
-            rid->attached = false;
-            rid->crash_position = rid->body.pos;
-            rid->vel *= 0.f;
-            rid->base_velocity = 0.f;
-            rid->input_velocity = 0.f;
-
-            // TODO: Debug flag
-            std::cout << "Rider collided with " << obstacle_index << std::endl;
         }
     }
 
@@ -2063,13 +2181,16 @@ void apply_air_resistances(PR::Plane* p) {
 
 void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
     // NOTE: Making the camera move to the plane
+    PR::Level *level = &glob->current_level;
     float dest_x = center ?
                    rec->pos.x + rec->dim.x*0.5f :
                    rec->pos.x;
-    if (dest_x > cam->pos.x) {
+    if (level->editing_now || dest_x > cam->pos.x) {
         cam->pos.x = lerp(cam->pos.x,
                           dest_x,
-                          glob->state.delta_time * cam->speed_multiplier);
+                          level->editing_now ? 1.f :
+                                               glob->state.delta_time *
+                                                cam->speed_multiplier);
     }
 }
 
