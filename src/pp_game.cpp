@@ -19,14 +19,15 @@
 #endif // _WIN32
 
 // TODO(before starting game editor):
-//      - Update the README (before starting the map editor)
 //      - Proper gamepad support
 //      - Fixing collision position
 // TODO(after finishing game editor):
+//      - Update the README
 //      - Alphabetic order of the levels
 //      - Better way to signal boost direction in boost pads
 //      - Find/make textures
 //      - Fine tune angle change velocity
+//      - Profiling
 
 // TODO(maybe):
 //  - Make changing angle more or less difficult
@@ -672,7 +673,9 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
 
     level_set_to_null(level);
 
-    menu->showing_campaign_buttons = true;
+    // NOTE: By not setting this, it will remain the same as before
+    //          starting the level
+    //menu->showing_campaign_buttons = true;
 
     // NOTE: Button to select which buttons to show
     PR::LevelButton *campaign = &menu->show_campaign_button;
@@ -737,9 +740,24 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     }
 
     // NOTE: Custom levels buttons
-    menu->custom_buttons_number = 0;
-    menu->custom_buttons = NULL;
-    menu->custom_edit_buttons = NULL;
+    if (menu->showing_campaign_buttons) {
+        menu->custom_buttons_number = 0;
+        menu->custom_buttons = NULL;
+        menu->custom_edit_buttons = NULL;
+    } else {
+        int result = 0;
+        result =
+            load_custom_buttons_from_dir("./custom_maps/",
+                                         &menu->custom_buttons,
+                                         &menu->custom_edit_buttons,
+                                         &menu->custom_buttons_number);
+        if (result != 0) {
+            std::cout << "[ERROR] Could not load custom map files"
+                      << std::endl;
+
+            return result;
+        }
+    }
 
     PR::Camera *cam = &menu->camera;
     cam->pos.x = win->w * 0.5f;
@@ -1425,9 +1443,16 @@ void level_update(void) {
         } else {
             std::cout << "Activating edit mode!" << std::endl;
             level->editing_now = true;
+            if (p->inverse) {
+                p->body.pos.y += p->body.dim.y;
+                p->body.dim.y = -p->body.dim.y;
+            }
             p->inverse = false;
             p->crashed = false;
             p->vel = glm::vec2(0.f);
+            if (rid->inverse) {
+                rid->body.dim.y = -rid->body.dim.y;
+            }
             rid->inverse = false;
             rid->crashed = false;
             rid->attached = true;
@@ -2065,8 +2090,8 @@ void level_draw(void) {
 
     // NOTE: Rendering the plane
     renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
-                          glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                          false);
+                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
+                           false);
 
     /*
     glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;

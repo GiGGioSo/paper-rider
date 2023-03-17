@@ -168,6 +168,11 @@ void glob_init(void) {
 
 
     glob->state.current_case = PR::MENU;
+
+    // NOTE: I need to set it here because I do not reset
+    //       it when preparing the menu, so that the player comes back to
+    //       where he was before
+    glob->current_menu.showing_campaign_buttons = true;
     menu_prepare(&glob->current_menu, &glob->current_level, "");
 
     PR::WinInfo* win = &glob->window;

@@ -131,7 +131,7 @@ struct PR {
         char *mapfile_path;
     };
 
-    #define CAMPAIGN_LEVELS_NUMBER 12
+    #define CAMPAIGN_LEVELS_NUMBER 2
     struct Menu {
         Camera camera;
         float camera_goal_position;
