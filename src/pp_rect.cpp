@@ -7,36 +7,34 @@
 
 // NOTE: Returns true the lines intersect, otherwise false. In addition, if the lines 
 //       intersect the intersection point may be stored in the floats x and y.
-bool lines_are_colliding(float x0, float y0,
-                           float x1, float y1,
-                           float s0, float t0,
-                           float s1, float t1,
+bool lines_are_colliding(float x1, float y1,
+                           float x2, float y2,
+                           float x3, float y3,
+                           float x4, float y4,
                            float *x, float *y) {
 
-    float s1_x, s1_y, s2_x, s2_y;
+    float denominator = ((x1-x2) * (y3-y4)) - ((y1-y2) * (x3-x4));
 
-    s1_x = x1 - x0;
-    s1_y = y1 - y0;
-    s2_x = s1 - s0;
-    s2_y = t1 - t0;
+    float t_numerator = ((x1-x3) * (y3-y4)) - ((y1-y3) * (x3-x4));
 
-    float s, t;
+    float u_numerator = ((x1-x3) * (y1-y2)) - ((y1-y3) * (x1-x2));
 
-    s = (-s1_y * (x0 - s0) + s1_x * (y0 - t0)) / (-s2_x * s1_y + s1_x * s2_y);
-    t = ( s2_x * (y0 - t0) - s2_y * (x0 - s0)) / (-s2_x * s1_y + s1_x * s2_y);
+    if (0 <= t_numerator && t_numerator <= denominator &&
+        0 <= u_numerator && u_numerator <= denominator) {
 
-    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
-    {
-        // Collision detected
+        float t = t_numerator / denominator;
+
         if (x) {
-            *x = x0 + (t * s1_x);
+            *x = x1 + t * (x2-x1);
         }
         if (y) {
-            *y = y0 + (t * s1_y);
+            *y = y1 + t * (y2-y1);
         }
 
         return true;
+
     }
+
 
     return false; // No collision
 }
@@ -76,14 +74,6 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
             return true;
         }
     } else {
-        //std::cout << "--------------------------"
-        //          << "\nx: " << x
-        //          << "\ny: " << y
-        //          << "\nx+w: " << x+w
-        //          << "\ny+h: " << y+h
-        //          << "\nrx: " << rx
-        //          << "\nry: " << ry
-        //          << std::endl;
         if (rx > x && ry > y &&
             lines_are_colliding(
                 rx, ry, x+w, y+h,

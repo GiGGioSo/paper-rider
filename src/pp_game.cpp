@@ -1830,7 +1830,6 @@ void level_update(void) {
                     rid->input_velocity = 0.f;
                 }
                 p->crashed = true;
-                p->crash_position = p->body.pos;
                 p->acc *= 0.f;
                 p->vel *= 0.f;
 
@@ -1845,7 +1844,6 @@ void level_update(void) {
 
                 rid->crashed = true;
                 rid->attached = false;
-                rid->crash_position = rid->body.pos;
                 rid->vel *= 0.f;
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
@@ -2053,39 +2051,6 @@ void level_draw(void) {
     glob->current_level.particle_systems[0].time_between_particles =
         lerp(0.02f, 0.01f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
 
-    // NOTE: Updating and rendering all the particle systems
-    for(size_t ps_index = 0;
-        ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
-        ++ps_index) {
-
-        PR::ParticleSystem *ps =
-            &glob->current_level.particle_systems[ps_index];
-
-        if (ps->particles_number == 0) continue;
-
-        ps->time_elapsed += dt;
-        if (ps->time_elapsed > ps->time_between_particles) {
-            ps->time_elapsed -= ps->time_between_particles;
-
-            PR::Particle *particle = ps->particles +
-                                     ps->current_particle;
-            ps->current_particle = (ps->current_particle + 1) %
-                                         ps->particles_number;
-
-            (ps->create_particle)(ps, particle);
-        }
-        for (size_t particle_index = 0;
-             particle_index < ps->particles_number;
-             ++particle_index) {
-
-            PR::Particle *particle = ps->particles + particle_index;
-
-            (ps->update_particle)(ps, particle);
-
-            renderer_add_queue_uni(rect_in_camera_space(particle->body, cam),
-                                 particle->color, true);
-        }
-    }
 
 
     // NOTE: Rendering the plane
@@ -2128,6 +2093,41 @@ void level_draw(void) {
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_tex(glob->rend_res.shaders[1],
                       &glob->rend_res.global_sprite);
+
+    // NOTE: Updating and rendering all the particle systems
+    for(size_t ps_index = 0;
+        ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
+        ++ps_index) {
+
+        PR::ParticleSystem *ps =
+            &glob->current_level.particle_systems[ps_index];
+
+        if (ps->particles_number == 0) continue;
+
+        ps->time_elapsed += dt;
+        if (ps->time_elapsed > ps->time_between_particles) {
+            ps->time_elapsed -= ps->time_between_particles;
+
+            PR::Particle *particle = ps->particles +
+                                     ps->current_particle;
+            ps->current_particle = (ps->current_particle + 1) %
+                                         ps->particles_number;
+
+            (ps->create_particle)(ps, particle);
+        }
+        for (size_t particle_index = 0;
+             particle_index < ps->particles_number;
+             ++particle_index) {
+
+            PR::Particle *particle = ps->particles + particle_index;
+
+            (ps->update_particle)(ps, particle);
+
+            renderer_add_queue_uni(rect_in_camera_space(particle->body, cam),
+                                 particle->color, true);
+        }
+    }
+    renderer_draw_uni(glob->rend_res.shaders[0]);
 }
 
 // Utilities

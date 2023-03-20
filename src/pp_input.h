@@ -58,7 +58,6 @@ struct InputController {
     // NOTE: Editing
     Key edit;
     Key save_map;
-    Key reload_map;
 
     // NOTE: Menu
     Key level1;

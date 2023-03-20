@@ -31,7 +31,6 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     // Editing
     key_reset(&input->edit);
     key_reset(&input->save_map);
-    key_reset(&input->reload_map);
 
     // Menu
     key_reset(&input->level1);
@@ -152,8 +151,5 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     }
     if (IS_KEY_PRESSED(GLFW_KEY_M)) {
         key_pressed(&input->save_map);
-    }
-    if (IS_KEY_PRESSED(GLFW_KEY_L)) {
-        key_pressed(&input->reload_map);
     }
 }
