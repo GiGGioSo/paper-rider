@@ -1541,7 +1541,6 @@ void level_update(void) {
                     p->acc.y += pad->boost_power *
                                 -sin(glm::radians(pad->boost_angle));
 
-                    // std::cout << "BOOOST!!! against " << boost_index << std::endl;
                 }
             }
             // Propulsion

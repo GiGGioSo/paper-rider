@@ -19,6 +19,12 @@ bool lines_are_colliding(float x1, float y1,
 
     float u_numerator = ((x1-x3) * (y1-y2)) - ((y1-y3) * (x1-x2));
 
+    if (denominator < 0) {
+        denominator = -denominator;
+        t_numerator = -t_numerator;
+        u_numerator = -u_numerator;
+    }
+
     if (0 <= t_numerator && t_numerator <= denominator &&
         0 <= u_numerator && u_numerator <= denominator) {
 
@@ -78,8 +84,9 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
             lines_are_colliding(
                 rx, ry, x+w, y+h,
                 x, y+h, x+w, y,
-                NULL, NULL)) return true;
-
+                NULL, NULL)) {
+            return true;
+        }
     }
     return false;
 }
