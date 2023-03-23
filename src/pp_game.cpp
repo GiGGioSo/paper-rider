@@ -70,6 +70,21 @@
 #define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
+#define DISPLAY_PORTAL_INFO(portal, x, y) do {\
+        renderer_add_queue_text(x, y, "SELECTED A PORTAL!", glm::vec4(1.f),\
+                                &glob->rend_res.fonts[0], false);\
+    } while(0)
+
+#define DISPLAY_BOOST_INFO(boost, x, y) do {\
+        renderer_add_queue_text(x, y, "SELECTED A BOOST!", glm::vec4(1.f),\
+                                &glob->rend_res.fonts[0], false);\
+    } while(0)
+
+#define DISPLAY_OBSTACLE_INFO(obstacle, x, y) do {\
+        renderer_add_queue_text(x, y, "SELECTED AN OBSTACLE!", glm::vec4(1.f),\
+                                &glob->rend_res.fonts[0], false);\
+    } while(0)
+
 // Utilities functions for code reuse
 void apply_air_resistances(PR::Plane* p);
 void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1071,6 +1086,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
 
     level->editing_now = false;
 
+    level->selected = NULL;
+
     if (std::strcmp(mapfile_path, "")) {
 
         // TODO: include this in the mapfile
@@ -1753,7 +1770,61 @@ void level_update(void) {
     }
 
 
-    if (!level->editing_now) {
+    if (level->editing_now) { // EDITING
+
+        // NOTE: If you click the left mouse button when you have something
+        //          selected, you will drop it
+        bool set_selected_to_null = false;
+        if (input->mouse_left.clicked && level->selected) {
+            set_selected_to_null = true;
+        }
+
+        for(size_t portal_index = 0;
+            portal_index < portals_number;
+            ++portal_index) {
+
+            PR::Portal *portal = portals + portal_index;
+
+            if (rect_contains_point(rect_in_camera_space(portal->body, cam),
+                                    input->mouseX, input->mouseY, false)) {
+                if (input->mouse_left.clicked && level->selected == NULL) {
+                    level->selected = &portal->body;
+                }
+            }
+
+        }
+
+        for (int obstacle_index = 0;
+             obstacle_index < obstacles_number;
+             obstacle_index++) {
+
+            PR::Obstacle *obs = obstacles + obstacle_index;
+
+            if (rect_contains_point(rect_in_camera_space(obs->body, cam),
+                                    input->mouseX, input->mouseY, false)) {
+                if (input->mouse_left.clicked && level->selected == NULL) {
+                    level->selected = &obs->body;
+                }
+            }
+        }
+
+        for (size_t boost_index = 0;
+             boost_index < boosts_number;
+             ++boost_index) {
+
+            PR::BoostPad *pad = boosts + boost_index;
+
+            if (rect_contains_point(rect_in_camera_space(pad->body, cam),
+                                    input->mouseX, input->mouseY, false)) {
+                if (input->mouse_left.clicked && level->selected == NULL) {
+                    level->selected = &pad->body;
+                }
+            }
+        }
+
+        if (set_selected_to_null) level->selected = NULL;
+        
+    } else { // PLAYING
         // NOTE: The portal can be activated only by the rider.
         //       If the rider is attached, then, by extensions, also
         //          the plane will activate the portal.
@@ -1943,6 +2014,10 @@ void level_draw(void) {
 
         PR::Portal *portal = portals + portal_index;
 
+        if (level->selected == &portal->body) {
+            DISPLAY_PORTAL_INFO(portal, 100.f, 40.f);
+        }
+
         if (portal->type == PR::SHUFFLE_COLORS) {
 
             Rect b = portal->body;
@@ -1994,6 +2069,7 @@ void level_draw(void) {
                                    get_portal_color(portal),
                                    false);
         }
+
     }
 
     // NOTE: Rendering the boosts
@@ -2002,6 +2078,10 @@ void level_draw(void) {
         ++boost_index) {
 
         PR::BoostPad *pad = boosts + boost_index;
+
+        if (level->selected == &pad->body) {
+            DISPLAY_BOOST_INFO(pad, 100.f, 40.f);
+        }
 
         Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
 
@@ -2036,6 +2116,10 @@ void level_draw(void) {
 
         PR::Obstacle *obs = obstacles + obstacle_index;
 
+        if (level->selected == &obs->body) {
+            DISPLAY_OBSTACLE_INFO(obs, 100.f, 40.f);
+        }
+
         Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
         if (obs_in_cam_pos.pos.x < -((float)win->w) ||
@@ -2044,6 +2128,7 @@ void level_draw(void) {
         renderer_add_queue_uni(obs_in_cam_pos,
                               get_obstacle_color(obs),
                               false);
+
     }
 
     // Set the time_between_particles for the boost based on the velocity
@@ -2127,6 +2212,7 @@ void level_draw(void) {
         }
     }
     renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 }
 
 // Utilities

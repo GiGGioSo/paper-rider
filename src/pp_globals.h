@@ -168,6 +168,8 @@ struct PR {
         ObstacleColorIndex current_blue;
         ObstacleColorIndex current_gray;
 
+        Rect *selected;
+
         size_t obstacles_number;
         Obstacle *obstacles;
         size_t boosts_number;
