@@ -18,9 +18,12 @@
 #    include <dirent.h>
 #endif // _WIN32
 
+// TODO(editor):
+//      - Adding obstacles/portals/boosts
+//      - Changing properties of selected item
+
 // TODO(before starting game editor):
 //      - Proper gamepad support
-//      - Fixing collision position
 // TODO(after finishing game editor):
 //      - Update the README
 //      - Alphabetic order of the levels
@@ -44,22 +47,22 @@
 #define CAMERA_MAX_VELOCITY (1500.f)
 
 #define CHANGE_CASE_TO(new_case, prepare_func, map_path, edit)  do {\
-        PR::Level t_level = glob->current_level;\
-        t_level.editing_available = edit;\
-        PR::Menu t_menu = glob->current_menu;\
-        int preparation_result = (prepare_func)(&t_menu, &t_level, map_path);\
-        if (preparation_result == 0) {\
-            free_menu_level(&glob->current_menu, &glob->current_level);\
-            glob->current_level = t_level;\
-            glob->current_menu = t_menu;\
-            glob->state.current_case = new_case;\
-            return;\
-        } else {\
-            std::cout << "[ERROR] Could not prepare case: "\
-                      << get_case_name(new_case)\
-                      << std::endl;\
-        }\
-    } while(0)
+    PR::Level t_level = glob->current_level;\
+    t_level.editing_available = edit;\
+    PR::Menu t_menu = glob->current_menu;\
+    int preparation_result = (prepare_func)(&t_menu, &t_level, map_path);\
+    if (preparation_result == 0) {\
+        free_menu_level(&glob->current_menu, &glob->current_level);\
+        glob->current_level = t_level;\
+        glob->current_menu = t_menu;\
+        glob->state.current_case = new_case;\
+        return;\
+    } else {\
+        std::cout << "[ERROR] Could not prepare case: "\
+                  << get_case_name(new_case)\
+                  << std::endl;\
+    }\
+} while(0)
 
 #define EDIT_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
 #define EDIT_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
@@ -71,24 +74,36 @@
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
 #define DISPLAY_PORTAL_INFO(portal, x, y) do {\
-        renderer_add_queue_text(x, y, "SELECTED A PORTAL!", glm::vec4(1.f),\
-                                &glob->rend_res.fonts[0], false);\
-    } while(0)
+    renderer_add_queue_text(x, y, "SELECTED A PORTAL!", glm::vec4(1.f),\
+                            &glob->rend_res.fonts[0], false);\
+} while(0)
 
 #define DISPLAY_BOOST_INFO(boost, x, y) do {\
-        renderer_add_queue_text(x, y, "SELECTED A BOOST!", glm::vec4(1.f),\
-                                &glob->rend_res.fonts[0], false);\
-    } while(0)
+    renderer_add_queue_text(x, y, "SELECTED A BOOST!", glm::vec4(1.f),\
+                            &glob->rend_res.fonts[0], false);\
+} while(0)
 
 #define DISPLAY_OBSTACLE_INFO(obstacle, x, y) do {\
-        renderer_add_queue_text(x, y, "SELECTED AN OBSTACLE!", glm::vec4(1.f),\
-                                &glob->rend_res.fonts[0], false);\
-    } while(0)
+    renderer_add_queue_text(x, y, "SELECTED AN OBSTACLE!", glm::vec4(1.f),\
+                            &glob->rend_res.fonts[0], false);\
+} while(0)
+
+#define RESET_LEVEL_COLORS(level) do {\
+    level->current_red = PR::RED;\
+    level->current_blue = PR::BLUE;\
+    level->current_gray = PR::GRAY;\
+    level->current_white = PR::WHITE;\
+} while(0)
 
 // Utilities functions for code reuse
-void apply_air_resistances(PR::Plane* p);
-void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
-void move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
+inline void portal_render(PR::Portal *portal);
+inline void boostpad_render(PR::BoostPad *pad);
+inline void obstacle_render(PR::Obstacle *obs);
+inline void plane_update_animation(PR::Plane *p);
+
+inline void apply_air_resistances(PR::Plane* p);
+inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
+inline void move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
 
 // Particle system functions
 void create_particle_plane_boost(PR::ParticleSystem *ps,
@@ -1474,6 +1489,8 @@ void level_update(void) {
             rid->crashed = false;
             rid->attached = true;
             rid->vel = glm::vec2(0.f);
+            level->colors_shuffled = false;
+            RESET_LEVEL_COLORS(level);
             glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
     }
@@ -1550,6 +1567,8 @@ void level_update(void) {
                  ++boost_index) {
 
                 PR::BoostPad *pad = boosts + boost_index;
+
+                boostpad_render(pad);
 
                 if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
 
@@ -1769,6 +1788,35 @@ void level_update(void) {
         CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
+    // NOTE: Loop over window edged pacman style,
+    //       but only on the top and bottom
+    if (p->body.pos.y + p->body.dim.y/2 > win->h) {
+        p->body.pos.y -= win->h;
+    }
+    if (p->body.pos.y + p->body.dim.y/2 < 0) {
+        p->body.pos.y += win->h;
+    }
+
+    if (!rid->attached) {
+        if (rid->body.pos.y + rid->body.dim.y * 0.5f > win->h) {
+            rid->body.pos.y -= win->h;
+        }
+        if (rid->body.pos.y + rid->body.dim.y * 0.5f < 0) {
+            rid->body.pos.y += win->h;
+        }
+    }
+
+    // NOTE: Update the `render_zone`s based on the `body`s
+    p->render_zone.pos.x = p->body.pos.x;
+    p->render_zone.pos.y = p->inverse ? p->body.pos.y+p->body.dim.y :
+                                        p->body.pos.y;
+    p->render_zone.angle = p->body.angle;
+
+    rid->render_zone.pos = rid->body.pos +
+                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->render_zone.angle = rid->body.angle;
+
+    plane_update_animation(p);
 
     if (level->editing_now) { // EDITING
 
@@ -1792,20 +1840,12 @@ void level_update(void) {
                 }
             }
 
-        }
-
-        for (int obstacle_index = 0;
-             obstacle_index < obstacles_number;
-             obstacle_index++) {
-
-            PR::Obstacle *obs = obstacles + obstacle_index;
-
-            if (rect_contains_point(rect_in_camera_space(obs->body, cam),
-                                    input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked && level->selected == NULL) {
-                    level->selected = &obs->body;
-                }
+            if (level->selected == &portal->body) {
+                DISPLAY_PORTAL_INFO(portal, 100.f, 40.f);
             }
+
+            portal_render(portal);
+
         }
 
         for (size_t boost_index = 0;
@@ -1820,7 +1860,35 @@ void level_update(void) {
                     level->selected = &pad->body;
                 }
             }
+
+            if (level->selected == &pad->body) {
+                DISPLAY_BOOST_INFO(pad, 100.f, 40.f);
+            }
+
+            boostpad_render(pad);
         }
+
+        for (int obstacle_index = 0;
+             obstacle_index < obstacles_number;
+             obstacle_index++) {
+
+            PR::Obstacle *obs = obstacles + obstacle_index;
+
+            if (rect_contains_point(rect_in_camera_space(obs->body, cam),
+                                    input->mouseX, input->mouseY, false)) {
+                if (input->mouse_left.clicked && level->selected == NULL) {
+                    level->selected = &obs->body;
+                }
+            }
+
+            if (level->selected == &obs->body) {
+                DISPLAY_OBSTACLE_INFO(obs, 100.f, 40.f);
+            }
+
+            obstacle_render(obs);
+
+        }
+
 
         if (set_selected_to_null) level->selected = NULL;
         
@@ -1835,6 +1903,8 @@ void level_update(void) {
             ++portal_index) {
 
             PR::Portal *portal = portals + portal_index;
+
+            portal_render(portal);
 
             if (!rid->crashed &&
                 (rect_are_colliding(&rid->body, &portal->body, NULL, NULL) ||
@@ -1869,10 +1939,7 @@ void level_update(void) {
                             level->current_gray = PR::BLUE;
                             level->current_white = PR::GRAY;
                         } else {
-                            level->current_red = PR::RED;
-                            level->current_blue = PR::BLUE;
-                            level->current_gray = PR::GRAY;
-                            level->current_white = PR::WHITE;
+                            RESET_LEVEL_COLORS(level);
                         }
 
                         break;
@@ -1887,6 +1954,8 @@ void level_update(void) {
              obstacle_index++) {
 
             PR::Obstacle *obs = obstacles + obstacle_index;
+
+            obstacle_render(obs);
 
             if (!p->crashed && obs->collide_plane &&
                 rect_are_colliding(&p->body, &obs->body,
@@ -1919,266 +1988,16 @@ void level_update(void) {
                 rid->input_velocity = 0.f;
 
                 // TODO: Debug flag
-                std::cout << "Rider collided with " << obstacle_index << std::endl;
+                std::cout << "Rider collided with "
+                          << obstacle_index << std::endl;
             }
         }
     }
 
-    // NOTE: Loop over window edged pacman style,
-    //       but only on the top and bottom
-    if (p->body.pos.y + p->body.dim.y/2 > win->h) {
-        p->body.pos.y -= win->h;
-    }
-    if (p->body.pos.y + p->body.dim.y/2 < 0) {
-        p->body.pos.y += win->h;
-    }
-
-    if (!rid->attached) {
-        if (rid->body.pos.y + rid->body.dim.y * 0.5f > win->h) {
-            rid->body.pos.y -= win->h;
-        }
-        if (rid->body.pos.y + rid->body.dim.y * 0.5f < 0) {
-            rid->body.pos.y += win->h;
-        }
-    }
-
-    // NOTE: Update the `render_zone`s based on the `body`s
-    p->render_zone.pos.x = p->body.pos.x;
-    p->render_zone.pos.y = p->inverse ? p->body.pos.y+p->body.dim.y :
-                                        p->body.pos.y;
-    p->render_zone.angle = p->body.angle;
-
-    rid->render_zone.pos = rid->body.pos +
-                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
-    rid->render_zone.angle = rid->body.angle;
-
-    // NOTE: Animation based on the accelleration
-    if (p->animation_countdown < 0) {
-        if (glm::abs(p->acc.y) < 20.f) {
-            p->current_animation = PR::Plane::IDLE_ACC;
-            p->animation_countdown = 0.25f;
-        } else {
-            if (p->current_animation == PR::Plane::UPWARDS_ACC) {
-                p->current_animation =
-                    (p->acc.y > 0) ?
-                    PR::Plane::IDLE_ACC :
-                    PR::Plane::UPWARDS_ACC;
-            } else
-            if (p->current_animation == PR::Plane::IDLE_ACC) {
-                p->current_animation =
-                    (p->acc.y > 0) ?
-                    PR::Plane::DOWNWARDS_ACC :
-                    PR::Plane::UPWARDS_ACC;
-            } else
-            if (p->current_animation == PR::Plane::DOWNWARDS_ACC) {
-                p->current_animation =
-                    (p->acc.y > 0) ?
-                    PR::Plane::DOWNWARDS_ACC :
-                    PR::Plane::IDLE_ACC;
-            }
-
-            p->animation_countdown = 0.25f;
-        }
-    } else {
-        p->animation_countdown -= dt;
-    }
-}
-
-void level_draw(void) {
-    if (glob->state.current_case != PR::LEVEL) return;
-
-    PR::Plane *p = &glob->current_level.plane;
-    PR::Camera *cam = &glob->current_level.camera;
-    PR::Rider *rid = &glob->current_level.rider;
-    size_t obstacles_number = glob->current_level.obstacles_number;
-    PR::Obstacle *obstacles = glob->current_level.obstacles;
-    size_t boosts_number = glob->current_level.boosts_number;
-    PR::BoostPad *boosts = glob->current_level.boosts;
-    size_t portals_number = glob->current_level.portals_number;
-    PR::Portal *portals = glob->current_level.portals;
-
-    PR::Level *level = &glob->current_level;
-
-    // Global stuff
-    PR::WinInfo *win = &glob->window;
-    float dt = glob->state.delta_time;
-
-    renderer_add_queue_uni(level->goal_line - cam->pos.x + win->w*0.5f, 0.f,
-                           30.f, win->h,
-                           0.f, glm::vec4(1.0f,1.0f,1.0f,1.0f), false, false);
-
-    // TESTING: Rendering the portals
-    for(size_t portal_index = 0;
-        portal_index < portals_number;
-        ++portal_index) {
-
-        PR::Portal *portal = portals + portal_index;
-
-        if (level->selected == &portal->body) {
-            DISPLAY_PORTAL_INFO(portal, 100.f, 40.f);
-        }
-
-        if (portal->type == PR::SHUFFLE_COLORS) {
-
-            Rect b = portal->body;
-
-            Rect q1;
-            q1.angle = 0.f;
-            q1.triangle = false;
-            q1.pos = b.pos;
-            q1.dim = b.dim * 0.5f;
-            renderer_add_queue_uni(
-                rect_in_camera_space(q1, cam),
-                glob->colors[glob->current_level.current_gray],
-                false);
-
-            Rect q2;
-            q2.angle = 0.f;
-            q2.triangle = false;
-            q2.pos.x = b.pos.x + b.dim.x*0.5f;
-            q2.pos.y = b.pos.y;
-            q2.dim = b.dim * 0.5f;
-            renderer_add_queue_uni(
-                rect_in_camera_space(q2, cam),
-                glob->colors[glob->current_level.current_white],
-                false);
-
-            Rect q3;
-            q3.angle = 0.f;
-            q3.triangle = false;
-            q3.pos.x = b.pos.x;
-            q3.pos.y = b.pos.y + b.dim.y*0.5f;
-            q3.dim = b.dim * 0.5f;
-            renderer_add_queue_uni(
-                rect_in_camera_space(q3, cam),
-                glob->colors[glob->current_level.current_blue],
-                false);
-
-            Rect q4;
-            q4.angle = 0.f;
-            q4.triangle = false;
-            q4.pos.x = b.pos.x + b.dim.x*0.5f;
-            q4.pos.y = b.pos.y + b.dim.y*0.5f;
-            q4.dim = b.dim * 0.5f;
-            renderer_add_queue_uni(
-                rect_in_camera_space(q4, cam),
-                glob->colors[glob->current_level.current_red],
-                false);
-        } else {
-            renderer_add_queue_uni(rect_in_camera_space(portal->body, cam),
-                                   get_portal_color(portal),
-                                   false);
-        }
-
-    }
-
-    // NOTE: Rendering the boosts
-    for(size_t boost_index = 0;
-        boost_index < boosts_number;
-        ++boost_index) {
-
-        PR::BoostPad *pad = boosts + boost_index;
-
-        if (level->selected == &pad->body) {
-            DISPLAY_BOOST_INFO(pad, 100.f, 40.f);
-        }
-
-        Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
-
-        if (pad_in_cam_pos.pos.x < -((float)win->w) ||
-            pad_in_cam_pos.pos.x > win->w * 2.f) continue;
-
-        renderer_add_queue_uni(pad_in_cam_pos,
-                              glm::vec4(0.f, 1.f, 0.f, 1.f),
-                              false);
-        
-        if (pad->body.triangle) {
-            pad_in_cam_pos.pos.x += pad_in_cam_pos.dim.x * 0.25f;
-            pad_in_cam_pos.pos.y += pad_in_cam_pos.dim.y * 0.5f;
-            pad_in_cam_pos.dim *= 0.4f;
-        } else  {
-            pad_in_cam_pos.pos += pad_in_cam_pos.dim * 0.5f;
-            pad_in_cam_pos.dim *= 0.5f;
-        }
-        pad_in_cam_pos.angle = pad->boost_angle;
-        renderer_add_queue_tex(pad_in_cam_pos,
-                               texcoords_in_texture_space(
-                                   0.f, 8.f, 96.f, 32.f,
-                                   &glob->rend_res.global_sprite, false),
-                               true);
-
-    }
-
-    // NOTE: Rendering the obstacles
-    for(size_t obstacle_index = 0;
-        obstacle_index < obstacles_number;
-        ++obstacle_index) {
-
-        PR::Obstacle *obs = obstacles + obstacle_index;
-
-        if (level->selected == &obs->body) {
-            DISPLAY_OBSTACLE_INFO(obs, 100.f, 40.f);
-        }
-
-        Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
-
-        if (obs_in_cam_pos.pos.x < -((float)win->w) ||
-            obs_in_cam_pos.pos.x > win->w * 2.f) continue;
-
-        renderer_add_queue_uni(obs_in_cam_pos,
-                              get_obstacle_color(obs),
-                              false);
-
-    }
-
+    // NOTE: Updating and rendering all the particle systems
     // Set the time_between_particles for the boost based on the velocity
     glob->current_level.particle_systems[0].time_between_particles =
         lerp(0.02f, 0.01f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
-
-
-
-    // NOTE: Rendering the plane
-    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
-                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                           false);
-
-    /*
-    glm::vec2 p_cam_pos = rect_in_camera_space(p->render_zone, cam).pos;
-    if (glob->input.boost) {
-        float bx = p_cam_pos.x + p->render_zone.dim.x*0.5f -
-                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
-                    cos(glm::radians(p->render_zone.angle));
-        float by = p_cam_pos.y + p->render_zone.dim.y*0.5f +
-                    (p->render_zone.dim.x+p->render_zone.dim.y)*0.5f *
-                    sin(glm::radians(p->render_zone.angle));
-
-        // NOTE: Rendering the boost of the plane
-        renderer_add_queue_uni(bx, by,
-                              p->render_zone.dim.y, p->render_zone.dim.y,
-                              p->render_zone.angle,
-                              glm::vec4(1.0f, 0.0f, 0.0f, 1.f),
-                              true);
-    }
-    */
-
-    renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
-                          glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
-                          false);
-
-
-    // NOTE: Rendering plane texture
-    renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
-                           texcoords_in_texture_space(
-                                p->current_animation * 32.f, 0.f,
-                                32.f, 8.f,
-                                &glob->rend_res.global_sprite, p->inverse),
-                           false);
-
-    renderer_draw_uni(glob->rend_res.shaders[0]);
-    renderer_draw_tex(glob->rend_res.shaders[1],
-                      &glob->rend_res.global_sprite);
-
-    // NOTE: Updating and rendering all the particle systems
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
         ++ps_index) {
@@ -2211,13 +2030,170 @@ void level_draw(void) {
                                  particle->color, true);
         }
     }
+
+    // NOTE: Rendering the plane
+    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
+                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
+                           false);
+
+    // NOTE: Rendering plane texture
+    renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
+                           texcoords_in_texture_space(
+                                p->current_animation * 32.f, 0.f,
+                                32.f, 8.f,
+                                &glob->rend_res.global_sprite, p->inverse),
+                           false);
+
+    // NOTE: Rendering the rider
+    renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
+                          glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
+                          false);
+
+    // NOTE: Rendering goal line
+    renderer_add_queue_uni(level->goal_line - cam->pos.x + win->w*0.5f, 0.f,
+                           30.f, win->h,
+                           0.f, glm::vec4(1.0f,1.0f,1.0f,1.0f), false, false);
+
+    // Actually issuing the render calls
     renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_tex(glob->rend_res.shaders[1],
+                      &glob->rend_res.global_sprite);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 }
 
 // Utilities
+inline void plane_update_animation(PR::Plane *p) {
+    // NOTE: Animation based on the accelleration
+    if (p->animation_countdown < 0) {
+        if (glm::abs(p->acc.y) < 20.f) {
+            p->current_animation = PR::Plane::IDLE_ACC;
+            p->animation_countdown = 0.25f;
+        } else {
+            if (p->current_animation == PR::Plane::UPWARDS_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::IDLE_ACC :
+                    PR::Plane::UPWARDS_ACC;
+            } else
+            if (p->current_animation == PR::Plane::IDLE_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::DOWNWARDS_ACC :
+                    PR::Plane::UPWARDS_ACC;
+            } else
+            if (p->current_animation == PR::Plane::DOWNWARDS_ACC) {
+                p->current_animation =
+                    (p->acc.y > 0) ?
+                    PR::Plane::DOWNWARDS_ACC :
+                    PR::Plane::IDLE_ACC;
+            }
 
-void apply_air_resistances(PR::Plane* p) {
+            p->animation_countdown = 0.25f;
+        }
+    } else {
+        p->animation_countdown -= glob->state.delta_time;
+    }
+}
+
+inline void portal_render(PR::Portal *portal) {
+    PR::Camera *cam = &glob->current_level.camera;
+    //PR::WinInfo *win = &glob->window;
+    if (portal->type == PR::SHUFFLE_COLORS) {
+
+        Rect b = portal->body;
+
+        Rect q1;
+        q1.angle = 0.f;
+        q1.triangle = false;
+        q1.pos = b.pos;
+        q1.dim = b.dim * 0.5f;
+        renderer_add_queue_uni(
+            rect_in_camera_space(q1, cam),
+            glob->colors[glob->current_level.current_gray],
+            false);
+
+        Rect q2;
+        q2.angle = 0.f;
+        q2.triangle = false;
+        q2.pos.x = b.pos.x + b.dim.x*0.5f;
+        q2.pos.y = b.pos.y;
+        q2.dim = b.dim * 0.5f;
+        renderer_add_queue_uni(
+            rect_in_camera_space(q2, cam),
+            glob->colors[glob->current_level.current_white],
+            false);
+
+        Rect q3;
+        q3.angle = 0.f;
+        q3.triangle = false;
+        q3.pos.x = b.pos.x;
+        q3.pos.y = b.pos.y + b.dim.y*0.5f;
+        q3.dim = b.dim * 0.5f;
+        renderer_add_queue_uni(
+            rect_in_camera_space(q3, cam),
+            glob->colors[glob->current_level.current_blue],
+            false);
+
+        Rect q4;
+        q4.angle = 0.f;
+        q4.triangle = false;
+        q4.pos.x = b.pos.x + b.dim.x*0.5f;
+        q4.pos.y = b.pos.y + b.dim.y*0.5f;
+        q4.dim = b.dim * 0.5f;
+        renderer_add_queue_uni(
+            rect_in_camera_space(q4, cam),
+            glob->colors[glob->current_level.current_red],
+            false);
+    } else {
+        renderer_add_queue_uni(rect_in_camera_space(portal->body, cam),
+                               get_portal_color(portal),
+                               false);
+    }
+}
+
+inline void boostpad_render(PR::BoostPad *pad) {
+    PR::Camera *cam = &glob->current_level.camera;
+    PR::WinInfo *win = &glob->window;
+
+    Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
+
+    if (pad_in_cam_pos.pos.x < -((float)win->w) ||
+        pad_in_cam_pos.pos.x > win->w * 2.f) return;
+
+    renderer_add_queue_uni(pad_in_cam_pos,
+                          glm::vec4(0.f, 1.f, 0.f, 1.f),
+                          false);
+    
+    if (pad->body.triangle) {
+        pad_in_cam_pos.pos.x += pad_in_cam_pos.dim.x * 0.25f;
+        pad_in_cam_pos.pos.y += pad_in_cam_pos.dim.y * 0.5f;
+        pad_in_cam_pos.dim *= 0.4f;
+    } else  {
+        pad_in_cam_pos.pos += pad_in_cam_pos.dim * 0.5f;
+        pad_in_cam_pos.dim *= 0.5f;
+    }
+    pad_in_cam_pos.angle = pad->boost_angle;
+    renderer_add_queue_tex(pad_in_cam_pos,
+                           texcoords_in_texture_space(
+                               0.f, 8.f, 96.f, 32.f,
+                               &glob->rend_res.global_sprite, false),
+                           true);
+}
+
+inline void obstacle_render(PR::Obstacle *obs) {
+    PR::Camera *cam = &glob->current_level.camera;
+    PR::WinInfo *win = &glob->window;
+    Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
+
+    if (obs_in_cam_pos.pos.x < -((float)win->w) ||
+        obs_in_cam_pos.pos.x > win->w * 2.f) return;
+
+    renderer_add_queue_uni(obs_in_cam_pos,
+                          get_obstacle_color(obs),
+                          false);
+}
+
+inline void apply_air_resistances(PR::Plane* p) {
     PR::Atmosphere *air = &glob->current_level.air;
 
 
@@ -2289,7 +2265,7 @@ void apply_air_resistances(PR::Plane* p) {
     /*             ",  HD: " << horizontal_drag << std::endl; */
 }
 
-void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
+inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
     // NOTE: Making the camera move to the plane
     PR::Level *level = &glob->current_level;
     float dest_x = center ?
@@ -2304,7 +2280,7 @@ void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
     }
 }
 
-void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
+inline void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
     // NOTE: Making the rider stick to the plane
     rid->body.angle = p->body.angle;
     rid->body.pos.x =

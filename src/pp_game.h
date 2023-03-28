@@ -10,7 +10,6 @@ void menu_draw(void);
 
 int level_prepare(PR::Menu *menu, PR::Level *leve, const char* mapfile_path);
 void level_update(void);
-void level_draw(void);
 
 #define POW2(x) (x * x)
 

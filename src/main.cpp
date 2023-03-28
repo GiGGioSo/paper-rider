@@ -122,7 +122,6 @@ int main() {
             case PR::LEVEL:
             {
                 level_update();
-                level_draw();
                 break;
             }
         }
