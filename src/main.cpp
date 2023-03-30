@@ -69,6 +69,9 @@ int main() {
 
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
+    //glEnable(GL_DEPTH_TEST);
+    //glDepthFunc(GL_GEQUAL);
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Callbacks
@@ -204,20 +207,36 @@ void glob_init(void) {
     renderer_create_texture(&glob->rend_res.global_sprite,
                             "res/paper-rider_sprite.png");
 
-    Font *f1 = &glob->rend_res.fonts[0];
+    int error = 0;
+    Font *f1 = &glob->rend_res.fonts[DEFAULT_FONT];
     f1->filename = "./arial.ttf";
     f1->first_char = 32;
     f1->num_chars = 96;
-    f1->font_height = 64.0f;
-    f1->bitmap_width = 1024;
-    f1->bitmap_height = 1024;
+    f1->font_height = DEFAULT_FONT_SIZE;
+    f1->bitmap_width = 512;
+    f1->bitmap_height = 512;
     f1->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
                                                    f1->num_chars);
-    int error = renderer_create_font_atlas(f1);
+    error = renderer_create_font_atlas(f1);
     if (error) {
-        std::cout << "[ERROR] Could not create font atlas "
-                  << error
-                  << std::endl;
+        std::cout << "[ERROR] Could not create font atlas: "
+                  << error << std::endl;
+    }
+
+
+    Font *f2 = &glob->rend_res.fonts[OBJECT_INFO_FONT];
+    f2->filename = "./arial.ttf";
+    f2->first_char = 32;
+    f2->num_chars = 96;
+    f2->font_height = OBJECT_INFO_FONT_SIZE;
+    f2->bitmap_width = 512;
+    f2->bitmap_height = 512;
+    f2->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
+                                                   f2->num_chars);
+    error = renderer_create_font_atlas(f2);
+    if (error) {
+        std::cout << "[ERROR] Could not create font atlas: "
+                  << error << std::endl;
     }
 
     renderer_init(&glob->renderer);

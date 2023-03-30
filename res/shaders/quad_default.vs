@@ -9,7 +9,7 @@ uniform mat4 projection;
 
 void main() {
 
-    gl_Position = projection * vec4(inPos.xy, 0.0, 1.0);
+    gl_Position = projection * vec4(inPos.xy, 1.0, 1.0);
 
     vColor = inColor;
 }

@@ -73,19 +73,87 @@
 #define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
-#define DISPLAY_PORTAL_INFO(portal, x, y) do {\
-    renderer_add_queue_text(x, y, "SELECTED A PORTAL!", glm::vec4(1.f),\
-                            &glob->rend_res.fonts[0], false);\
+#define DISPLAY_PORTAL_INFO(portal, tx, ty) do {\
+    char buffer[99];\
+    size_t index = 1;\
+    float spacing = OBJECT_INFO_FONT_SIZE;\
+    std::sprintf(buffer, "PORTAL INFO:");\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "pos: (%f, %f)",\
+                 (portal)->body.pos.x, (portal)->body.pos.y);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "dim: (%f, %f)",\
+                 (portal)->body.dim.x, (portal)->body.dim.y);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "type: %s",\
+                 get_portal_type_name((portal)->type));\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "enable_effect: %s",\
+                 (portal)->enable_effect ? "true" : "false");\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
 } while(0)
 
-#define DISPLAY_BOOST_INFO(boost, x, y) do {\
-    renderer_add_queue_text(x, y, "SELECTED A BOOST!", glm::vec4(1.f),\
-                            &glob->rend_res.fonts[0], false);\
+#define DISPLAY_BOOST_INFO(boost, tx, ty) do {\
+    char buffer[99];\
+    size_t index = 1;\
+    float spacing = OBJECT_INFO_FONT_SIZE;\
+    std::sprintf(buffer, "BOOST INFO:");\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "pos: (%f, %f)",\
+                 (boost)->body.pos.x, (boost)->body.pos.y);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "dim: (%f, %f)",\
+                 (boost)->body.dim.x, (boost)->body.dim.y);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "angle: %f",\
+                 (boost)->body.angle);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "boost_angle: %f",\
+                 (boost)->boost_angle);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "boost_power: %f",\
+                 (boost)->boost_power);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
 } while(0)
 
-#define DISPLAY_OBSTACLE_INFO(obstacle, x, y) do {\
-    renderer_add_queue_text(x, y, "SELECTED AN OBSTACLE!", glm::vec4(1.f),\
-                            &glob->rend_res.fonts[0], false);\
+#define DISPLAY_OBSTACLE_INFO(obstacle, tx, ty) do {\
+    char buffer[99];\
+    size_t index = 1;\
+    float spacing = OBJECT_INFO_FONT_SIZE;\
+    std::sprintf(buffer, "OBSTACLE INFO:");\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "pos: (%f, %f)",\
+                 (obstacle)->body.pos.x, (obstacle)->body.pos.y);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "dim: (%f, %f)",\
+                 (obstacle)->body.dim.x, (obstacle)->body.dim.y);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "angle: %f",\
+                 (obstacle)->body.angle);\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "collide_plane: %s",\
+                 (obstacle)->collide_plane ? "true" : "false");\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
+    std::sprintf(buffer, "collide_rider: %s",\
+                 (obstacle)->collide_rider ? "true" : "false");\
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
 } while(0)
 
 #define RESET_LEVEL_COLORS(level) do {\
@@ -1470,6 +1538,7 @@ void level_update(void) {
 
         if (level->editing_now) {
             std::cout << "Deactivating edit mode!" << std::endl;
+            level->selected = NULL;
             level->editing_now = false;
             glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         } else {
@@ -1818,6 +1887,8 @@ void level_update(void) {
 
     plane_update_animation(p);
 
+    level->old_selected = level->selected;
+
     if (level->editing_now) { // EDITING
 
         // NOTE: If you click the left mouse button when you have something
@@ -1836,13 +1907,11 @@ void level_update(void) {
             if (rect_contains_point(rect_in_camera_space(portal->body, cam),
                                     input->mouseX, input->mouseY, false)) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
-                    level->selected = &portal->body;
+                    level->selected = (void *) portal;
+                    level->selected_type = PR::PORTAL_TYPE;
                 }
             }
 
-            if (level->selected == &portal->body) {
-                DISPLAY_PORTAL_INFO(portal, 100.f, 40.f);
-            }
 
             portal_render(portal);
 
@@ -1857,12 +1926,9 @@ void level_update(void) {
             if (rect_contains_point(rect_in_camera_space(pad->body, cam),
                                     input->mouseX, input->mouseY, false)) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
-                    level->selected = &pad->body;
+                    level->selected = (void *) pad;
+                    level->selected_type = PR::BOOST_TYPE;
                 }
-            }
-
-            if (level->selected == &pad->body) {
-                DISPLAY_BOOST_INFO(pad, 100.f, 40.f);
             }
 
             boostpad_render(pad);
@@ -1877,12 +1943,9 @@ void level_update(void) {
             if (rect_contains_point(rect_in_camera_space(obs->body, cam),
                                     input->mouseX, input->mouseY, false)) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
-                    level->selected = &obs->body;
+                    level->selected = (void *) obs;
+                    level->selected_type = PR::OBSTACLE_TYPE;
                 }
-            }
-
-            if (level->selected == &obs->body) {
-                DISPLAY_OBSTACLE_INFO(obs, 100.f, 40.f);
             }
 
             obstacle_render(obs);
@@ -1929,7 +1992,8 @@ void level_update(void) {
                     }
                     case PR::SHUFFLE_COLORS:
                     {
-                        if (level->colors_shuffled == portal->enable_effect) break;
+                        if (level->colors_shuffled == portal->enable_effect)
+                            break;
 
                         level->colors_shuffled = portal->enable_effect;
 
@@ -2059,6 +2123,30 @@ void level_update(void) {
     renderer_draw_tex(glob->rend_res.shaders[1],
                       &glob->rend_res.global_sprite);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+
+    if (level->selected && level->selected == level->old_selected) {
+        switch(level->selected_type) {
+            case PR::PORTAL_TYPE:
+            {
+                PR::Portal *portal = (PR::Portal *) level->selected;
+                DISPLAY_PORTAL_INFO(portal, 5.f, 0.f);
+                // Render and check input 
+                break;
+            }
+            case PR::BOOST_TYPE:
+            {
+                DISPLAY_BOOST_INFO((PR::BoostPad *) level->selected, 5.f, 0.f);
+                break;
+            }
+            case PR::OBSTACLE_TYPE:
+            {
+                DISPLAY_OBSTACLE_INFO((PR::Obstacle *)level->selected, 5.f, 0.f);
+                break;
+            }
+        }
+        renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                           glob->rend_res.shaders[2]);
+    }
 }
 
 // Utilities

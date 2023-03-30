@@ -11,7 +11,7 @@ uniform mat4 projection;
 
 void main() {
     vec2 pos = vertex.xy;
-    gl_Position = projection * vec4(pos, 0.0, 1.0);
+    gl_Position = projection * vec4(pos, 1.0, 1.0);
     
     TexCoords = vertex.zw;
     vColor = inColor;

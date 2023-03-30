@@ -148,6 +148,12 @@ struct PR {
     };
     Menu current_menu;
 
+    enum ObjectType {
+        PORTAL_TYPE = 0,
+        BOOST_TYPE = 1,
+        OBSTACLE_TYPE = 2,
+    };
+
     struct Level {
         bool editing_now;
         bool editing_available;
@@ -168,7 +174,9 @@ struct PR {
         ObstacleColorIndex current_blue;
         ObstacleColorIndex current_gray;
 
-        Rect *selected;
+        void *selected;
+        void *old_selected;
+        ObjectType selected_type;
 
         size_t obstacles_number;
         Obstacle *obstacles;
@@ -179,10 +187,16 @@ struct PR {
     };
     Level current_level;
 
+#define DEFAULT_FONT 0
+#define OBJECT_INFO_FONT 1
+
+#define DEFAULT_FONT_SIZE (64.f)
+#define OBJECT_INFO_FONT_SIZE (24.f)
+
     struct RenderResources {
         glm::mat4 ortho_proj;
         Shader shaders[3];
-        Font fonts[1];
+        Font fonts[2];
         Texture global_sprite;
     };
     RenderResources rend_res;
