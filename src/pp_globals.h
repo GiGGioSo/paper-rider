@@ -126,9 +126,9 @@ struct PR {
         Rect body;
         glm::vec4 col;
         bool from_center;
-        char *text;
+        char text[99];
 
-        char *mapfile_path;
+        char mapfile_path[99];
     };
 
     #define CAMPAIGN_LEVELS_NUMBER 2
@@ -155,8 +155,8 @@ struct PR {
     };
 
     struct Level {
-        bool editing_now;
-        bool editing_available;
+
+        char file_path[99];
 
         Plane plane;
         Camera camera;
@@ -165,6 +165,7 @@ struct PR {
         Rider rider;
 
         float goal_line;
+        glm::vec2 start_pos;
 
         ParticleSystem particle_systems[3];
 
@@ -174,9 +175,16 @@ struct PR {
         ObstacleColorIndex current_blue;
         ObstacleColorIndex current_gray;
 
+        bool editing_available;
+        bool editing_now;
         void *selected;
         void *old_selected;
         ObjectType selected_type;
+#define SELECTED_PORTAL_OPTIONS 2
+#define SELECTED_BOOST_OPTIONS 0
+#define SELECTED_OBSTACLE_OPTIONS 0
+#define SELECTED_MAX_OPTIONS 2
+        LevelButton selected_options_buttons[SELECTED_MAX_OPTIONS];
 
         size_t obstacles_number;
         Obstacle *obstacles;

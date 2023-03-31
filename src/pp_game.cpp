@@ -20,6 +20,7 @@
 
 // TODO(editor):
 //      - Adding obstacles/portals/boosts
+//      - Deleting obstacles/portals/boosts
 //      - Changing properties of selected item
 
 // TODO(before starting game editor):
@@ -73,88 +74,6 @@
 #define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
-#define DISPLAY_PORTAL_INFO(portal, tx, ty) do {\
-    char buffer[99];\
-    size_t index = 1;\
-    float spacing = OBJECT_INFO_FONT_SIZE;\
-    std::sprintf(buffer, "PORTAL INFO:");\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "pos: (%f, %f)",\
-                 (portal)->body.pos.x, (portal)->body.pos.y);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "dim: (%f, %f)",\
-                 (portal)->body.dim.x, (portal)->body.dim.y);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "type: %s",\
-                 get_portal_type_name((portal)->type));\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "enable_effect: %s",\
-                 (portal)->enable_effect ? "true" : "false");\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-} while(0)
-
-#define DISPLAY_BOOST_INFO(boost, tx, ty) do {\
-    char buffer[99];\
-    size_t index = 1;\
-    float spacing = OBJECT_INFO_FONT_SIZE;\
-    std::sprintf(buffer, "BOOST INFO:");\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "pos: (%f, %f)",\
-                 (boost)->body.pos.x, (boost)->body.pos.y);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "dim: (%f, %f)",\
-                 (boost)->body.dim.x, (boost)->body.dim.y);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "angle: %f",\
-                 (boost)->body.angle);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "boost_angle: %f",\
-                 (boost)->boost_angle);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "boost_power: %f",\
-                 (boost)->boost_power);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-} while(0)
-
-#define DISPLAY_OBSTACLE_INFO(obstacle, tx, ty) do {\
-    char buffer[99];\
-    size_t index = 1;\
-    float spacing = OBJECT_INFO_FONT_SIZE;\
-    std::sprintf(buffer, "OBSTACLE INFO:");\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "pos: (%f, %f)",\
-                 (obstacle)->body.pos.x, (obstacle)->body.pos.y);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "dim: (%f, %f)",\
-                 (obstacle)->body.dim.x, (obstacle)->body.dim.y);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "angle: %f",\
-                 (obstacle)->body.angle);\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "collide_plane: %s",\
-                 (obstacle)->collide_plane ? "true" : "false");\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-    std::sprintf(buffer, "collide_rider: %s",\
-                 (obstacle)->collide_rider ? "true" : "false");\
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),\
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);\
-} while(0)
 
 #define RESET_LEVEL_COLORS(level) do {\
     level->current_red = PR::RED;\
@@ -167,6 +86,9 @@
 inline void portal_render(PR::Portal *portal);
 inline void boostpad_render(PR::BoostPad *pad);
 inline void obstacle_render(PR::Obstacle *obs);
+inline void portal_render_info(PR::Portal *portal, float tx, float ty);
+inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
+inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
 inline void plane_update_animation(PR::Plane *p);
 
 inline void apply_air_resistances(PR::Plane* p);
@@ -191,28 +113,6 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
 
 void free_menu_level(PR::Menu *menu, PR::Level *level) {
     // Menu freeing
-    if (menu->show_campaign_button.text) {
-        std::free(menu->show_campaign_button.text);
-    }
-    for(size_t i = 0;
-        i < ARRAY_LENGTH(menu->campaign_buttons);
-        ++i) {
-        if (menu->campaign_buttons[i].text) {
-            std::free(menu->campaign_buttons[i].text);
-        }
-    }
-    for(size_t i = 0;
-        i < menu->custom_buttons_number;
-        ++i) {
-        if (menu->custom_buttons[i].text) {
-            std::free(menu->custom_buttons[i].text);
-            menu->custom_buttons[i].text = NULL;
-        }
-        if (menu->custom_edit_buttons[i].text) {
-            std::free(menu->custom_edit_buttons[i].text);
-            menu->custom_edit_buttons[i].text = NULL;
-        }
-    }
     if (menu->custom_buttons) {
         std::free(menu->custom_buttons);
         menu->custom_buttons = NULL;
@@ -247,22 +147,9 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
 
 inline
 void menu_set_to_null(PR::Menu *menu) {
-    for(size_t i = 0;
-        i < ARRAY_LENGTH(menu->campaign_buttons);
-        ++i) {
-        menu->campaign_buttons[i].text = NULL;
-    }
-    for(size_t i = 0;
-        i < menu->custom_buttons_number;
-        ++i) {
-        menu->custom_buttons[i].text = NULL;
-        menu->custom_edit_buttons[i].text = NULL;
-    }
     menu->custom_buttons_number = 0;
     menu->custom_buttons = NULL;
     menu->custom_edit_buttons = NULL;
-    menu->show_campaign_button.text = NULL;
-    menu->show_custom_button.text = NULL;
 }
 
 inline
@@ -577,7 +464,7 @@ int save_map_to_file(const char *file_path,
             if (std::ferror(map_file)) return_defer(1);
         }
 
-        std::fprintf(map_file, "%zu", level->portals_number);
+        std::fprintf(map_file, "%zu\n", level->portals_number);
         if (std::ferror(map_file)) return_defer(1);
 
         for(size_t portal_index = 0;
@@ -598,6 +485,20 @@ int save_map_to_file(const char *file_path,
             if (std::ferror(map_file)) return_defer(1);
 
         }
+
+        // Goal line
+        std::fprintf(map_file,
+                     "%f\n",
+                     level->goal_line * inv_proportion_x);
+        if (std::ferror(map_file)) return_defer(1);
+
+        // Player start position
+        std::fprintf(map_file,
+                     "%f %f",
+                     level->start_pos.x * inv_proportion_x,
+                     level->start_pos.y * inv_proportion_y);
+        if (std::ferror(map_file)) return_defer(1);
+
     }
 
     defer:
@@ -636,9 +537,12 @@ int load_custom_buttons_from_dir(const char *dir_path,
             if (std::strcmp(extension, ".prmap") == 0) {
 
                 char map_name[99] = "";
-                std::strncpy(map_name,
-                             dp->d_name,
-                             std::strlen(dp->d_name) - std::strlen(extension));
+                assert((std::strlen(dp->d_name)-std::strlen(extension)+1 <=
+                            ARRAY_LENGTH(map_name)) &&
+                        "File name bigger than temporary buffer");
+                std::snprintf(map_name,
+                             std::strlen(dp->d_name)-std::strlen(extension)+1,
+                             "%s", dp->d_name);
 
                 std::cout << "Found map_file: "
                           << map_name << " length: " << std::strlen(map_name)
@@ -648,6 +552,9 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 size_t col = button_index % 3;
 
                 char map_path[99] = "";
+                assert((std::strlen(dir_path)+std::strlen(dp->d_name)+1 <=
+                            ARRAY_LENGTH(map_path))
+                        && "Map path too big for temporary buffer!");
                 std::strcat(map_path, dir_path);
                 std::strcat(map_path, dp->d_name);
                 std::cout << "map_path: " 
@@ -674,15 +581,17 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 button->body.triangle = false;
                 button->col = LEVEL_BUTTON_DEFAULT_COLOR;
                 button->from_center = true;
-                button->text =
-                    (char *) std::malloc(std::strlen(map_name) *
-                                         sizeof(char));
-                std::strcpy(button->text, map_name);
 
-                button->mapfile_path =
-                    (char *) std::malloc(std::strlen(map_path) *
-                                         sizeof(char));
-                std::strcpy(button->mapfile_path, map_path);
+                assert((std::strlen(map_name)+1 <= ARRAY_LENGTH(button->text))
+                        && "Map name bigger than button text buffer!");
+                std::snprintf(button->text, std::strlen(map_name)+1,
+                              "%s", map_name);
+
+                assert((std::strlen(map_path)+1 <=
+                            ARRAY_LENGTH(button->mapfile_path))
+                        && "Mapfile path bigger than button mapfile buffer!");
+                std::snprintf(button->mapfile_path, std::strlen(map_path)+1,
+                              "%s", map_path);
 
                 // Creating the little custom level edit button
                 *edit_buttons = (button_index == 0) ?
@@ -702,14 +611,13 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 edit_button->body.triangle = false;
                 edit_button->col = EDIT_BUTTON_DEFAULT_COLOR;
                 edit_button->from_center = false;
-                edit_button->text =
-                    (char *) std::malloc(std::strlen("EDIT") * sizeof(char));
-                std::strcpy(edit_button->text, "EDIT");
+                std::snprintf(edit_button->text, std::strlen("EDIT")+1, "EDIT");
 
-                edit_button->mapfile_path =
-                    (char *) std::malloc(std::strlen(map_path) *
-                                         sizeof(char));
-                std::strcpy(edit_button->mapfile_path, map_path);
+                assert((std::strlen(map_path)+1 <=
+                            ARRAY_LENGTH(edit_button->mapfile_path))
+                        && "Mapfile path bigger than button mapfile buffer!");
+                std::snprintf(edit_button->mapfile_path,
+                              std::strlen(map_path)+1, "%s", map_path);
 
                 ++button_index;
                 
@@ -787,8 +695,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
         menu->showing_campaign_buttons ? SHOW_BUTTON_SELECTED_COLOR :
                                          SHOW_BUTTON_DEFAULT_COLOR;
     campaign->from_center = true;
-    campaign->text = (char *) std::malloc(strlen("CAMPAIGN") * sizeof(char));
-    std::sprintf(campaign->text, "CAMPAIGN");
+    std::snprintf(campaign->text, strlen("CAMPAIGN")+1, "CAMPAIGN");
 
     PR::LevelButton *custom = &menu->show_custom_button;
     custom->body.pos.x = (win->w * 7.f) / 10.f;
@@ -800,8 +707,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
     custom->col = menu->showing_campaign_buttons ? SHOW_BUTTON_DEFAULT_COLOR :
                                                    SHOW_BUTTON_SELECTED_COLOR;
     custom->from_center = true;
-    custom->text = (char *) std::malloc(strlen("CUSTOM") * sizeof(char));
-    std::sprintf(custom->text, "CUSTOM");
+    std::snprintf(custom->text, strlen("CUSTOM")+1, "CUSTOM");
 
     // NOTE: I want to put 3 buttons on each row
     //       I want to have 4 rows of buttons on the screen,
@@ -827,13 +733,20 @@ int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path) {
 
         button->from_center = true;
 
-        button->text = (char *) std::malloc(11 * sizeof(char));
-        std::sprintf(button->text, "LEVEL %zu", levelbutton_index+1);
+        int size = std::snprintf(nullptr, 0, "LEVEL %zu", levelbutton_index+1);
+        assert((size+1 <= ARRAY_LENGTH(button->text))
+                && "Text buffer is too little!");
+        std::snprintf(button->text, size+1, "LEVEL %zu", levelbutton_index+1);
         if (levelbutton_index < ARRAY_LENGTH(campaign_levels_filepath)) {
-            button->mapfile_path =
-                (char *) campaign_levels_filepath[levelbutton_index];
+            assert((std::strlen(campaign_levels_filepath[levelbutton_index]) <
+                        ARRAY_LENGTH(button->mapfile_path))
+                    && "Map file too big for button mapfile buffer!");
+            std::snprintf(
+                    button->mapfile_path,
+                    std::strlen(campaign_levels_filepath[levelbutton_index])+1,
+                    "%s", campaign_levels_filepath[levelbutton_index]);
         } else {
-            button->mapfile_path = (char *) "";
+            std::snprintf(button->mapfile_path, 1, "");
         }
     }
 
@@ -950,18 +863,6 @@ void menu_update(void) {
                                              &temp_custom_buttons_number);
             if (result == 0) {
                 // NOTE: Free the previous present custom buttons
-                for(size_t i = 0;
-                    i < menu->custom_buttons_number;
-                    ++i) {
-                    if (menu->custom_buttons[i].text) {
-                        std::free(menu->custom_buttons[i].text);
-                        menu->custom_buttons[i].text = NULL;
-                    }
-                    if (menu->custom_edit_buttons[i].text) {
-                        std::free(menu->custom_edit_buttons[i].text);
-                        menu->custom_edit_buttons[i].text = NULL;
-                    }
-                }
                 if (menu->custom_buttons) {
                     std::free(menu->custom_buttons);
                     menu->custom_buttons = NULL;
@@ -1171,6 +1072,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
 
     level->selected = NULL;
 
+    std::snprintf(level->file_path,
+                  std::strlen(mapfile_path)+1,
+                  "%s", mapfile_path);
+
     if (std::strcmp(mapfile_path, "")) {
 
         // TODO: include this in the mapfile
@@ -1184,7 +1089,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
                 &level->boosts_number,
                 &level->portals,
                 &level->portals_number,
-                &p->body.pos.x, &p->body.pos.y,
+                &level->start_pos.x, &level->start_pos.y,
                 &level->goal_line,
                 win->w, win->h);
         if (loading_result != 0) return loading_result;
@@ -1192,8 +1097,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
         // Hardcoding the fuck out of everything,
         // except for what is set in the mapfile
         {
-            cam->pos.x = p->body.pos.x;
 
+            p->body.pos = level->start_pos;
             p->crashed = false;
             p->crash_position.x = 0.f;
             p->crash_position.y = 0.f;
@@ -1220,6 +1125,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
             p->animation_countdown = 0.f;
             p->inverse = false;
 
+            cam->pos.x = p->body.pos.x;
 
             rid->crashed = false;
             rid->crash_position.x = 0.f;
@@ -1532,6 +1438,8 @@ void level_update(void) {
     if (input->menu.clicked) {
         CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
+
+    level->old_selected = level->selected;
 
     if (level->editing_available &&
         input->edit.clicked) {
@@ -1887,16 +1795,16 @@ void level_update(void) {
 
     plane_update_animation(p);
 
-    level->old_selected = level->selected;
+    // NOTE: If you click the left mouse button when you have something
+    //          selected and you are not clicking on an option
+    //          button, the object will be deselected
+    bool set_selected_to_null = false;
+    if (input->mouse_left.clicked && level->selected) {
+        set_selected_to_null = true;
+    }
 
     if (level->editing_now) { // EDITING
 
-        // NOTE: If you click the left mouse button when you have something
-        //          selected, you will drop it
-        bool set_selected_to_null = false;
-        if (input->mouse_left.clicked && level->selected) {
-            set_selected_to_null = true;
-        }
 
         for(size_t portal_index = 0;
             portal_index < portals_number;
@@ -1909,6 +1817,49 @@ void level_update(void) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
                     level->selected = (void *) portal;
                     level->selected_type = PR::PORTAL_TYPE;
+
+                    // NOTE: Set up options buttons for the selected portal
+                    for(size_t option_button_index = 0;
+                        option_button_index < SELECTED_PORTAL_OPTIONS;
+                        ++option_button_index) {
+                        assert((option_button_index <
+                                 ARRAY_LENGTH(level->selected_options_buttons))
+                                && "Selected options out of bound for portals");
+
+                        PR::LevelButton *button =
+                         &level->selected_options_buttons[option_button_index];
+
+                        button->from_center = true;
+                        button->body.pos.x = win->w * (option_button_index+1) /
+                                             (SELECTED_PORTAL_OPTIONS+1);
+                        button->body.pos.y = win->h * 9 / 10;
+                        button->body.dim.x = win->w /
+                                             (SELECTED_PORTAL_OPTIONS+2);
+                        button->body.dim.y = win->h / 10;
+
+
+                        switch(option_button_index) {
+                            case 0:
+                                std::snprintf(button->text,
+                                              std::strlen("TYPE")+1,
+                                              "TYPE");
+                                break;
+                            case 1:
+                                std::snprintf(button->text,
+                                              std::strlen("ENABLE")+1,
+                                              "ENABLE");
+                                break;
+                            default:
+                                std::snprintf(button->text,
+                                              std::strlen("UNDEFINED")+1,
+                                              "UNDEFINED");
+                                break;
+                        }
+
+                        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+
+                    }
+
                 }
             }
 
@@ -1953,7 +1904,6 @@ void level_update(void) {
         }
 
 
-        if (set_selected_to_null) level->selected = NULL;
         
     } else { // PLAYING
         // NOTE: The portal can be activated only by the rider.
@@ -1972,42 +1922,53 @@ void level_update(void) {
             if (!rid->crashed &&
                 (rect_are_colliding(&rid->body, &portal->body, NULL, NULL) ||
                  (rid->attached && rect_are_colliding(&p->body,
-                                                     &portal->body,
-                                                     NULL, NULL)))) {
+                                                      &portal->body,
+                                                      NULL, NULL)))) {
+                // std::cout << "------------------------"
+                //           << "\nCollided with portal"
+                //           << std::endl;
                 switch(portal->type) {
                     case PR::INVERSE:
-                    {
                         // NOTE: Skip if the plane/rider already has the effect
-                        if (p->inverse == portal->enable_effect ||
-                            rid->inverse == portal->enable_effect) break;
+                        // std::cout << "-------------------------"
+                        //           << "\np->inv: " << p->inverse
+                        //           << "\nrid->inv: " << rid->inverse
+                        //           << std::endl;
+                        if (p->inverse != portal->enable_effect &&
+                            rid->inverse != portal->enable_effect) {
 
-                        if (!p->crashed) {
-                            p->inverse = portal->enable_effect;
-                            p->body.pos.y += p->body.dim.y;
-                            p->body.dim.y = -p->body.dim.y;
+                            if (!p->crashed) {
+                                p->inverse = portal->enable_effect;
+                                p->body.pos.y += p->body.dim.y;
+                                p->body.dim.y = -p->body.dim.y;
+                            }
+                            rid->inverse = portal->enable_effect;
+                            rid->body.dim.y = -rid->body.dim.y;
                         }
-                        rid->inverse = portal->enable_effect;
-                        rid->body.dim.y = -rid->body.dim.y;
                         break;
-                    }
                     case PR::SHUFFLE_COLORS:
-                    {
-                        if (level->colors_shuffled == portal->enable_effect)
-                            break;
+                        // std::cout << "--------------------"
+                        //           << "\nrid.x: " << rid->body.pos.x
+                        //           << "\npor.x: " << portal->body.pos.x
+                        //           << "\ncp: " << rect_are_colliding(&p->body, &portal->body, NULL, NULL)
+                        //           << "\ncr: " << rect_are_colliding(&rid->body, &portal->body, NULL, NULL)
+                        //           << std::endl;
+                        if (level->colors_shuffled != portal->enable_effect) {
 
-                        level->colors_shuffled = portal->enable_effect;
+                            level->colors_shuffled = portal->enable_effect;
 
-                        if (portal->enable_effect) {
-                            level->current_red = PR::WHITE;
-                            level->current_blue = PR::RED;
-                            level->current_gray = PR::BLUE;
-                            level->current_white = PR::GRAY;
-                        } else {
-                            RESET_LEVEL_COLORS(level);
+                            if (portal->enable_effect) {
+                                level->current_red = PR::WHITE;
+                                level->current_blue = PR::RED;
+                                level->current_gray = PR::BLUE;
+                                level->current_white = PR::GRAY;
+                            } else {
+                                RESET_LEVEL_COLORS(level);
+                            }
                         }
-
                         break;
-                    }
+                    default:
+                        break;
                 }
             }
         }
@@ -2037,7 +1998,8 @@ void level_update(void) {
                 p->vel *= 0.f;
 
                 // TODO: Debug flag
-                std::cout << "Plane collided with " << obstacle_index << std::endl;
+                std::cout << "Plane collided with "
+                          << obstacle_index << std::endl;
             }
             if (!rid->crashed && obs->collide_rider &&
                 rect_are_colliding(&rid->body, &obs->body,
@@ -2124,28 +2086,97 @@ void level_update(void) {
                       &glob->rend_res.global_sprite);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
-    if (level->selected && level->selected == level->old_selected) {
+    // NOTE: This check is done so that if when an obstacle is selected and
+    //          a button (to modify the selected object) appears on the cursor
+    //          position, that button is not pressed automatically
+    if (level->selected != NULL && level->selected == level->old_selected) {
         switch(level->selected_type) {
             case PR::PORTAL_TYPE:
             {
                 PR::Portal *portal = (PR::Portal *) level->selected;
-                DISPLAY_PORTAL_INFO(portal, 5.f, 0.f);
-                // Render and check input 
+                portal_render_info(portal, 5.f, 0.f);
+                renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                                   glob->rend_res.shaders[2]);
+
+                // Render and check input on selected options
+                for(size_t option_button_index = 0;
+                    option_button_index < SELECTED_PORTAL_OPTIONS;
+                    ++option_button_index) {
+                    assert((option_button_index <
+                                ARRAY_LENGTH(level->selected_options_buttons))
+                            && "Selected options out of bound for portals");
+
+                    PR::LevelButton *button =
+                        &level->selected_options_buttons[option_button_index];
+
+                    if (rect_contains_point(button->body,
+                                            input->mouseX,
+                                            input->mouseY, true) &&
+                        input->mouse_left.clicked) {
+                        // Something useful was indeed clicked,
+                        // so don't reset the seleciton
+                        set_selected_to_null = false;
+
+                        switch (option_button_index) {
+                            case 0:
+                                if (portal->type == PR::INVERSE) {
+                                    portal->type = PR::SHUFFLE_COLORS;
+                                } else {
+                                    portal->type = PR::INVERSE;
+                                }
+                                break;
+                            case 1:
+                                portal->enable_effect = !portal->enable_effect;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    renderer_add_queue_uni(button->body,
+                                           button->col,
+                                           button->from_center);
+                    // TODO: Selected an appropriate font for this
+                    renderer_add_queue_text(button->body.pos.x,
+                                            button->body.pos.y,
+                                            button->text, glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+
+                }
                 break;
             }
             case PR::BOOST_TYPE:
             {
-                DISPLAY_BOOST_INFO((PR::BoostPad *) level->selected, 5.f, 0.f);
+                PR::BoostPad *pad = (PR::BoostPad *) level->selected;
+                boostpad_render_info(pad, 5.f, 0.f);
+                renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                                   glob->rend_res.shaders[2]);
                 break;
             }
             case PR::OBSTACLE_TYPE:
             {
-                DISPLAY_OBSTACLE_INFO((PR::Obstacle *)level->selected, 5.f, 0.f);
+                PR::Obstacle *obs = (PR::Obstacle *) level->selected;
+                obstacle_render_info(obs, 5.f, 0.f);
+                renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                                   glob->rend_res.shaders[2]);
                 break;
             }
         }
+        renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                            glob->rend_res.shaders[2]);
+    }
+
+    if (set_selected_to_null) level->selected = NULL;
+
+    if (input->save_map.clicked) {
+        if (save_map_to_file(level->file_path, level, win->w, win->h)) {
+            std::cout << "[ERROR] Could not save the map in the file: "
+                      << level->file_path << std::endl;
+        } else {
+            std::cout << "Saved current level to file: "
+                      << level->file_path << std::endl;
+        }
     }
 }
 
@@ -2279,6 +2310,89 @@ inline void obstacle_render(PR::Obstacle *obs) {
     renderer_add_queue_uni(obs_in_cam_pos,
                           get_obstacle_color(obs),
                           false);
+}
+
+inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
+    char buffer[99];
+    size_t index = 1;
+    float spacing = OBJECT_INFO_FONT_SIZE;
+    std::sprintf(buffer, "PORTAL INFO:");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "pos: (%f, %f)",
+                 (portal)->body.pos.x, (portal)->body.pos.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "dim: (%f, %f)",
+                 (portal)->body.dim.x, (portal)->body.dim.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "type: %s",
+                 get_portal_type_name((portal)->type));
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "enable_effect: %s",
+                 (portal)->enable_effect ? "true" : "false");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+}
+
+inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty) {
+    char buffer[99];
+    size_t index = 1;
+    float spacing = OBJECT_INFO_FONT_SIZE;
+    std::sprintf(buffer, "BOOST INFO:");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "pos: (%f, %f)",
+                 (boost)->body.pos.x, (boost)->body.pos.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "dim: (%f, %f)",
+                 (boost)->body.dim.x, (boost)->body.dim.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "angle: %f",
+                 (boost)->body.angle);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "boost_angle: %f",
+                 (boost)->boost_angle);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "boost_power: %f",
+                 (boost)->boost_power);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+}
+
+inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty) {
+    char buffer[99];
+    size_t index = 1;
+    float spacing = OBJECT_INFO_FONT_SIZE;
+    std::sprintf(buffer, "OBSTACLE INFO:");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "pos: (%f, %f)",
+                 (obstacle)->body.pos.x, (obstacle)->body.pos.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "dim: (%f, %f)",
+                 (obstacle)->body.dim.x, (obstacle)->body.dim.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "angle: %f",
+                 (obstacle)->body.angle);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "collide_plane: %s",
+                 (obstacle)->collide_plane ? "true" : "false");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "collide_rider: %s",
+                 (obstacle)->collide_rider ? "true" : "false");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
 inline void apply_air_resistances(PR::Plane* p) {

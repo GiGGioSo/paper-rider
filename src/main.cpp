@@ -37,7 +37,7 @@ float time_from_last_fps_update;
 int main() {
     srand(time(NULL));
 
-    glob = (PR*) std::malloc(sizeof(PR));
+    glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
     glob->window.w = (uint32_t) (SCREEN_WIDTH_PROPORTION * 3.5f);
     glob->window.h = (uint32_t) (SCREEN_HEIGHT_PROPORTION * 3.5f);
@@ -146,15 +146,11 @@ void glob_init(void) {
         for(size_t col = 0; col < 16; ++col) {
             size_t pixel = (row*16+col) * 4;
             if (row + col < 16) {
-                cursor_pixels[pixel + 0] = 0x33;
-                cursor_pixels[pixel + 1] = 0x33;
-                cursor_pixels[pixel + 2] = 0x33;
-                cursor_pixels[pixel + 3] = 0xff;
+                // NOTE: Alpha-Blue-Green-Red
+                *((uint32_t *) &cursor_pixels[pixel]) = 0xff333333;
             } else {
-                cursor_pixels[pixel + 0] = 0x00;
-                cursor_pixels[pixel + 1] = 0x00;
-                cursor_pixels[pixel + 2] = 0x00;
-                cursor_pixels[pixel + 3] = 0x00;
+                // NOTE: Alpha-Blue-Green-Red
+                *((uint32_t *) &cursor_pixels[pixel]) = 0x00;
             }
         }
     }
@@ -186,20 +182,20 @@ void glob_init(void) {
     // NOTE: Initializing of the shaders
     /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
     Shader *s1 = &glob->rend_res.shaders[0];
-    shaderer_create_program(s1, "res/shaders/quad_default.vs",
-                            "res/shaders/quad_default.fs");
+    shaderer_create_program(s1, "./res/shaders/quad_default.vs",
+                            "./res/shaders/quad_default.fs");
     shaderer_set_mat4(*s1, "projection",
                       glob->rend_res.ortho_proj);
 
     Shader *s2 = &glob->rend_res.shaders[1];
-    shaderer_create_program(s2, "res/shaders/tex_default.vs",
-                            "res/shaders/tex_default.fs");
+    shaderer_create_program(s2, "./res/shaders/tex_default.vs",
+                            "./res/shaders/tex_default.fs");
     shaderer_set_mat4(*s2, "projection",
                       glob->rend_res.ortho_proj);
 
     Shader *s3 = &glob->rend_res.shaders[2];
-    shaderer_create_program(s3, "res/shaders/text_default.vs",
-                            "res/shaders/text_default.fs");
+    shaderer_create_program(s3, "./res/shaders/text_default.vs",
+                            "./res/shaders/text_default.fs");
     shaderer_set_mat4(*s3, "projection",
                       glob->rend_res.ortho_proj);
 
