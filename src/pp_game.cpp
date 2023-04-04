@@ -1837,7 +1837,6 @@ void level_update(void) {
                                              (SELECTED_PORTAL_OPTIONS+2);
                         button->body.dim.y = win->h / 10;
 
-
                         switch(option_button_index) {
                             case 0:
                                 std::snprintf(button->text,
@@ -1846,8 +1845,8 @@ void level_update(void) {
                                 break;
                             case 1:
                                 std::snprintf(button->text,
-                                              std::strlen("ENABLE")+1,
-                                              "ENABLE");
+                                              std::strlen("ENABLE_EFFECT")+1,
+                                              "ENABLE_EFFECT");
                                 break;
                             default:
                                 std::snprintf(button->text,
@@ -1879,6 +1878,48 @@ void level_update(void) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
                     level->selected = (void *) pad;
                     level->selected_type = PR::BOOST_TYPE;
+
+                    // NOTE: Set up options buttons for the selected boost
+                    for(size_t option_button_index = 0;
+                        option_button_index < SELECTED_BOOST_OPTIONS;
+                        ++option_button_index) {
+
+                        assert((option_button_index <
+                                 ARRAY_LENGTH(level->selected_options_buttons))
+                                && "Selected options out of bounds for boosts");
+
+                        PR::LevelButton *button =
+                         &level->selected_options_buttons[option_button_index];
+
+                        button->from_center = true;
+                        button->body.pos.x = win->w * (option_button_index+1) /
+                                             (SELECTED_BOOST_OPTIONS+1);
+                        button->body.pos.y = win->h * 9 / 10;
+                        button->body.dim.x = win->w /
+                                             (SELECTED_BOOST_OPTIONS+2);
+                        button->body.dim.y = win->h / 10;
+
+                        switch(option_button_index) {
+                            case 0:
+                                std::snprintf(button->text,
+                                              std::strlen("BOOST_ANGLE")+1,
+                                              "BOOST_ANGLE");
+                                break;
+                            case 1:
+                                std::snprintf(button->text,
+                                              std::strlen("BOOST_POWER")+1,
+                                              "BOOST_POWER");
+                                break;
+                            default:
+                                std::snprintf(button->text,
+                                              std::strlen("UNDEFINED")+1,
+                                              "UNDEFINED");
+                                break;
+                        }
+
+                        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+
+                    }
                 }
             }
 
@@ -1896,6 +1937,45 @@ void level_update(void) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
                     level->selected = (void *) obs;
                     level->selected_type = PR::OBSTACLE_TYPE;
+
+                    // NOTE: Set up options buttons for the selected obstacle
+                    for(size_t option_button_index = 0;
+                        option_button_index < SELECTED_OBSTACLE_OPTIONS;
+                        ++option_button_index) {
+                        assert((option_button_index <
+                                 ARRAY_LENGTH(level->selected_options_buttons))
+                                && "Selected options out of bound for obstacle");
+
+                        PR::LevelButton *button =
+                         &level->selected_options_buttons[option_button_index];
+
+                        button->from_center = true;
+                        button->body.pos.x = win->w * (option_button_index+1) /
+                                             (SELECTED_OBSTACLE_OPTIONS+1);
+                        button->body.pos.y = win->h * 9 / 10;
+                        button->body.dim.x = win->w /
+                                             (SELECTED_OBSTACLE_OPTIONS+2);
+                        button->body.dim.y = win->h / 10;
+
+                        switch(option_button_index) {
+                            case 0:
+                                std::snprintf(button->text,
+                                              std::strlen("COLLIDE_PLANE")+1,
+                                              "COLLIDE_PLANE");
+                                break;
+                            case 1:
+                                std::snprintf(button->text,
+                                              std::strlen("COLLIDE_RIDER")+1,
+                                              "COLLIDE_RIDER");
+                                break;
+                            default:
+                                std::snprintf(button->text,
+                                              std::strlen("UNDEFINED")+1,
+                                              "UNDEFINED");
+                                break;
+                        }
+                        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+                    }
                 }
             }
 
@@ -2109,10 +2189,10 @@ void level_update(void) {
                     PR::LevelButton *button =
                         &level->selected_options_buttons[option_button_index];
 
-                    if (rect_contains_point(button->body,
+                    if (input->mouse_left.clicked &&
+                        rect_contains_point(button->body,
                                             input->mouseX,
-                                            input->mouseY, true) &&
-                        input->mouse_left.clicked) {
+                                            input->mouseY, true)) {
                         // Something useful was indeed clicked,
                         // so don't reset the seleciton
                         set_selected_to_null = false;
@@ -2151,6 +2231,149 @@ void level_update(void) {
                 boostpad_render_info(pad, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
+
+                // Render and check input on selected options
+                for(size_t option_button_index = 0;
+                    option_button_index < SELECTED_BOOST_OPTIONS;
+                    ++option_button_index) {
+                    assert((option_button_index <
+                                ARRAY_LENGTH(level->selected_options_buttons))
+                            && "Selected options out of bound for boosts");
+
+                    PR::LevelButton *button =
+                        &level->selected_options_buttons[option_button_index];
+
+                    PR::LevelButton minus1;
+                    minus1.from_center = true;
+                    minus1.body.angle = 0.f;
+                    minus1.body.triangle = false;
+                    minus1.body.dim.x = button->body.dim.x * 0.2f;
+                    minus1.body.dim.y = minus1.body.dim.x;
+                    minus1.body.pos.x = button->body.pos.x -
+                                        button->body.dim.x * 0.5f;
+                    minus1.body.pos.y = button->body.pos.y -
+                                        button->body.dim.y * 0.5f;
+                    minus1.col = button->col * 0.5f;
+                    minus1.col.a = 1.f;
+
+                    PR::LevelButton minus5 = minus1;
+                    minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+
+                    PR::LevelButton plus1;
+                    plus1.from_center = true;
+                    plus1.body.angle = 0.f;
+                    plus1.body.triangle = false;
+                    plus1.body.dim = minus1.body.dim;
+                    plus1.body.pos.x = button->body.pos.x +
+                                       button->body.dim.x * 0.5f;
+                    plus1.body.pos.y = button->body.pos.y -
+                                       button->body.dim.y * 0.5f;
+                    plus1.col = button->col * 0.5f;
+                    plus1.col.a = 1.f;
+
+                    PR::LevelButton plus5 = plus1;
+                    plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+
+                    if (input->mouse_left.clicked) {
+                        if (rect_contains_point(plus1.body,
+                                                input->mouseX,
+                                                input->mouseY, true)) {
+                            set_selected_to_null = false;
+                            switch(option_button_index) {
+                                case 0:
+                                    pad->boost_angle += 1.f;
+                                    break;
+                                case 1:
+                                    pad->boost_power += 1.f;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        } else
+                        if (rect_contains_point(plus5.body,
+                                                input->mouseX,
+                                                input->mouseY, true)) {
+                            set_selected_to_null = false;
+                            switch(option_button_index) {
+                                case 0:
+                                    pad->boost_angle += 5.f;
+                                    break;
+                                case 1:
+                                    pad->boost_power += 5.f;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        } else
+                        if (rect_contains_point(minus1.body,
+                                                input->mouseX,
+                                                input->mouseY, true)) {
+                            set_selected_to_null = false;
+                            switch(option_button_index) {
+                                case 0:
+                                    pad->boost_angle -= 1.f;
+                                    break;
+                                case 1:
+                                    pad->boost_power -= 1.f;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        } else
+                        if (rect_contains_point(minus5.body,
+                                                input->mouseX,
+                                                input->mouseY, true)) {
+                            set_selected_to_null = false;
+                            switch(option_button_index) {
+                                case 0:
+                                    pad->boost_angle -= 5.f;
+                                    break;
+                                case 1:
+                                    pad->boost_power -= 5.f;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    renderer_add_queue_uni(button->body,
+                                           button->col,
+                                           button->from_center);
+                    renderer_add_queue_text(button->body.pos.x,
+                                            button->body.pos.y,
+                                            button->text, glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+                    renderer_add_queue_uni(plus1.body,
+                                           plus1.col,
+                                           plus1.from_center);
+                    renderer_add_queue_text(plus1.body.pos.x,
+                                            plus1.body.pos.y,
+                                            "+1", glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+                    renderer_add_queue_uni(plus5.body,
+                                           plus5.col,
+                                           plus5.from_center);
+                    renderer_add_queue_text(plus5.body.pos.x,
+                                            plus5.body.pos.y,
+                                            "+5", glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+                    renderer_add_queue_uni(minus1.body,
+                                           minus1.col,
+                                           minus1.from_center);
+                    renderer_add_queue_text(minus1.body.pos.x,
+                                            minus1.body.pos.y,
+                                            "-1", glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+                    renderer_add_queue_uni(minus5.body,
+                                           minus5.col,
+                                           minus5.from_center);
+                    renderer_add_queue_text(minus5.body.pos.x,
+                                            minus5.body.pos.y,
+                                            "-5", glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+
+                }
+
                 break;
             }
             case PR::OBSTACLE_TYPE:
@@ -2159,6 +2382,48 @@ void level_update(void) {
                 obstacle_render_info(obs, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
+
+                for(size_t option_button_index = 0;
+                    option_button_index < SELECTED_PORTAL_OPTIONS;
+                    ++option_button_index) {
+                    assert((option_button_index <
+                                ARRAY_LENGTH(level->selected_options_buttons))
+                            && "Selected options out of bound for obstacles");
+
+                    PR::LevelButton *button =
+                        &level->selected_options_buttons[option_button_index];
+
+                    if (input->mouse_left.clicked &&
+                        rect_contains_point(button->body,
+                                            input->mouseX,
+                                            input->mouseY, true)) {
+                        // Something useful was indeed clicked,
+                        // so don't reset the seleciton
+                        set_selected_to_null = false;
+
+                        switch (option_button_index) {
+                            case 0:
+                                obs->collide_plane = !obs->collide_plane;
+                                break;
+                            case 1:
+                                obs->collide_rider = !obs->collide_rider;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    renderer_add_queue_uni(button->body,
+                                           button->col,
+                                           button->from_center);
+                    // TODO: Selected an appropriate font for this
+                    renderer_add_queue_text(button->body.pos.x,
+                                            button->body.pos.y,
+                                            button->text, glm::vec4(1.0f),
+                                            &glob->rend_res.fonts[1], true);
+
+                }
+
                 break;
             }
         }
