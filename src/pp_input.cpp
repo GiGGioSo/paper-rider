@@ -86,9 +86,9 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
                                              &axes_count);
         // TODO: Decent Warning handling
         if (axes_count != 6) {
-            // std::cout << "[WARNING] Controller with "
-            //           << axes_count << " axes!!"
-            //           << std::endl;
+            std::cout << "[WARNING] Controller with "
+                      << axes_count << " axes!!"
+                      << std::endl;
             axes = NULL;
         }
 
@@ -97,10 +97,10 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
             (unsigned char *) glfwGetJoystickButtons(input->current_joystick,
                                                      &buttons_count);
         // TODO: Decent Warning handling
-        if (buttons_count != 17) {
-            // std::cout << "[WARNING] Controller with "
-            //           << buttons_count << " buttons!!"
-            //           << std::endl;
+        if (buttons_count != 18) {
+            std::cout << "[WARNING] Controller with "
+                      << buttons_count << " buttons!!"
+                      << std::endl;
             buttons = NULL;
         }
     }
@@ -112,6 +112,23 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     //          wrong with the gamepad.
     UNUSED(axes);
     UNUSED(buttons);
+
+    if (axes && buttons) {
+        if (buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS) {
+            key_pressed(&input->jump);
+        }
+        if (buttons[GLFW_GAMEPAD_BUTTON_X] == GLFW_PRESS) {
+            key_pressed(&input->boost);
+        }
+        if (buttons[GLFW_GAMEPAD_BUTTON_Y] == GLFW_PRESS) {
+            key_pressed(&input->menu);
+        }
+        if (glm::abs(axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > 0.1f) {
+            input->left_right = axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        }
+    }
+
+
     // TODO: Handle abnormal gamepads
 
     if (IS_KEY_PRESSED(GLFW_KEY_1)) {

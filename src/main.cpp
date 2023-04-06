@@ -100,9 +100,10 @@ int main() {
 
             // TODO: Debug flag
             std::cout << "FPS: " << fps_to_display << std::endl;
-            /*std::cout << "Current case: "
-                      << get_case_name(glob->state.current_case)
-                      << std::endl;*/
+            std::cout << "Controller: "
+                      << (int) glob->input.current_joystick
+                      << std::endl;
+
         }
 
         glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
@@ -249,7 +250,6 @@ void glob_free(void) {
 }
 
 void callback_joystick(int joystick_id, int event) {
-
     InputController *in = &glob->input;
 
     if (event == GLFW_CONNECTED) {
@@ -272,7 +272,6 @@ void callback_joystick(int joystick_id, int event) {
             }
         } // else we don't care, how current controller is still good to go
     }
-
 }
 
 void callback_framebuffer_size(GLFWwindow* window,

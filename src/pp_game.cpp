@@ -33,6 +33,9 @@
 //      - Fine tune angle change velocity
 //      - Profiling
 
+// TODO(fix):
+//      - Fix collision when rider/plane are inverted
+
 // TODO(maybe):
 //  - Make changing angle more or less difficult
 //  - Make the plane change angle alone when the rider jumps off
