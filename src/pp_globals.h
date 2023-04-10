@@ -177,6 +177,9 @@ struct PR {
 
         bool editing_available;
         bool editing_now;
+
+        bool adding_now;
+
         void *selected;
         void *old_selected;
         ObjectType selected_type;

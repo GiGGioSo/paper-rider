@@ -31,6 +31,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     // Editing
     key_reset(&input->edit);
     key_reset(&input->save_map);
+    key_reset(&input->obj_delete);
+    key_reset(&input->obj_add);
 
     // Menu
     key_reset(&input->level1);
@@ -144,10 +146,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
 
     if(IS_KEY_PRESSED(GLFW_KEY_A)) {
         input->left_right = -1.0f;
-
     } else if(IS_KEY_PRESSED(GLFW_KEY_D)) {
         input->left_right = 1.0f;
-
     }
 
     if (IS_KEY_PRESSED(GLFW_KEY_P)) {
@@ -168,5 +168,11 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     }
     if (IS_KEY_PRESSED(GLFW_KEY_M)) {
         key_pressed(&input->save_map);
+    }
+    if(IS_KEY_PRESSED(GLFW_KEY_C)) {
+        key_pressed(&input->obj_delete);
+    }
+    if(IS_KEY_PRESSED(GLFW_KEY_V)) {
+        key_pressed(&input->obj_add);
     }
 }

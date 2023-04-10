@@ -180,6 +180,8 @@ void glob_init(void) {
     glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)win->w,
                                        (float)win->h, 0.0f);
 
+    glob->input.current_joystick = -1;
+
     // NOTE: Initializing of the shaders
     /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
     Shader *s1 = &glob->rend_res.shaders[0];

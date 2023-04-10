@@ -58,6 +58,8 @@ struct InputController {
     // NOTE: Editing
     Key edit;
     Key save_map;
+    Key obj_delete;
+    Key obj_add;
 
     // NOTE: Menu
     Key level1;

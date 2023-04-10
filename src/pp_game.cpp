@@ -77,12 +77,18 @@
 #define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
-
 #define RESET_LEVEL_COLORS(level) do {\
     level->current_red = PR::RED;\
     level->current_blue = PR::BLUE;\
     level->current_gray = PR::GRAY;\
     level->current_white = PR::WHITE;\
+} while(0)
+
+#define DEACTIVATE_EDIT_MODE(level) do {\
+    std::cout << "Deactivating edit mode!" << std::endl;\
+    (level)->selected = NULL;\
+    (level)->editing_now = false;\
+    (level)->cam.pos = level->plane.pos;\
 } while(0)
 
 // Utilities functions for code reuse
@@ -93,6 +99,7 @@ inline void portal_render_info(PR::Portal *portal, float tx, float ty);
 inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
 inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
 inline void plane_update_animation(PR::Plane *p);
+inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type);
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1073,6 +1080,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
 
     level->editing_now = false;
 
+    level->adding_now = false;
+
     level->selected = NULL;
 
     std::snprintf(level->file_path,
@@ -1448,9 +1457,7 @@ void level_update(void) {
         input->edit.clicked) {
 
         if (level->editing_now) {
-            std::cout << "Deactivating edit mode!" << std::endl;
-            level->selected = NULL;
-            level->editing_now = false;
+            DEACTIVATE_EDIT_MODE(level);
             glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         } else {
             std::cout << "Activating edit mode!" << std::endl;
@@ -1534,10 +1541,25 @@ void level_update(void) {
         if (level->editing_now) { // EDITING
             float velx = 1000.f;
             float vely = 600.f;
-            if (input->up.pressed) p->body.pos.y -= vely * dt;
-            if (input->down.pressed) p->body.pos.y += vely * dt;
-            if (input->left.pressed) p->body.pos.x -= velx * dt;
-            if (input->right.pressed) p->body.pos.x += velx * dt;
+            if (level->selected) {
+                Rect *b = get_selected_body(level->selected,
+                                            level->selected_type);
+                if (b) {
+                    if (input->up.pressed) b->pos.y -= vely * dt;
+                    if (input->down.pressed) b->pos.y += vely * dt;
+                    if (input->left.pressed) b->pos.x -= velx * dt;
+                    if (input->right.pressed) b->pos.x += velx * dt;
+                } else {
+                    std::cout << "Could not get object body of type: "
+                              << level->selected_type
+                              << std::endl;
+                }
+            } else {
+                if (input->up.pressed) p->body.pos.y -= vely * dt;
+                if (input->down.pressed) p->body.pos.y += vely * dt;
+                if (input->left.pressed) p->body.pos.x -= velx * dt;
+                if (input->right.pressed) p->body.pos.x += velx * dt;
+            }
         } else { // PLAYING
             apply_air_resistances(p);
 
@@ -1612,7 +1634,13 @@ void level_update(void) {
                     rid->jump_time_elapsed = 0.f;
                 }
                 // NOTE: Making the camera move to the plane
-                lerp_camera_x_to_rect(cam, &p->body, true);
+                if (level->selected) { // FOCUS SELECTED OBJECT
+                    Rect *b = get_selected_body(level->selected,
+                                                level->selected_type);
+                    lerp_camera_x_to_rect(cam, b, false);
+                } else {
+                    lerp_camera_x_to_rect(cam, &p->body, true);
+                }
             } else { // !rid->attached
 
                 // NOTE: Modify accelleration based on input
@@ -1820,6 +1848,7 @@ void level_update(void) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
                     level->selected = (void *) portal;
                     level->selected_type = PR::PORTAL_TYPE;
+                    level->adding_now = false;
 
                     // NOTE: Set up options buttons for the selected portal
                     for(size_t option_button_index = 0;
@@ -1881,6 +1910,7 @@ void level_update(void) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
                     level->selected = (void *) pad;
                     level->selected_type = PR::BOOST_TYPE;
+                    level->adding_now = false;
 
                     // NOTE: Set up options buttons for the selected boost
                     for(size_t option_button_index = 0;
@@ -1940,6 +1970,7 @@ void level_update(void) {
                 if (input->mouse_left.clicked && level->selected == NULL) {
                     level->selected = (void *) obs;
                     level->selected_type = PR::OBSTACLE_TYPE;
+                    level->adding_now = false;
 
                     // NOTE: Set up options buttons for the selected obstacle
                     for(size_t option_button_index = 0;
@@ -1986,7 +2017,10 @@ void level_update(void) {
 
         }
 
-
+        if (input->obj_add.clicked) {
+            level->adding_now = true;
+            level->selected = NULL;
+        }
         
     } else { // PLAYING
         // NOTE: The portal can be activated only by the rider.
@@ -2169,10 +2203,76 @@ void level_update(void) {
                       &glob->rend_res.global_sprite);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
+    if (level->adding_now) {
+        PR::LevelButton add_portal;
+        add_portal.from_center = true;
+        add_portal.body.pos.x = win->w * 1 / (3 * 4);
+        add_portal.body.pos.y = win->h * 0.5f;
+        add_portal.body.dim.x = win->w * 0.2f;
+        add_portal.body.dim.y = win->h * 0.3f;
+        add_portal.body.triangle = false;
+        add_portal.body.angle = 0.f;
+        std::snprintf(add_portal.text,
+                      std::strlen("ADD PORTAL")+1,
+                      "ADD PORTAL");
+
+        PR::LevelButton add_boost;
+        add_boost.from_center = true;
+        add_boost.body.pos.x = win->w * 2 / (3 * 4);
+        add_boost.body.pos.y = win->h * 0.5f;
+        add_boost.body.dim.x = win->w * 0.2f;
+        add_boost.body.dim.y = win->h * 0.3f;
+        add_boost.body.triangle = false;
+        add_boost.body.angle = 0.f;
+        std::snprintf(add_boost.text,
+                      std::strlen("ADD BOOST")+1,
+                      "ADD BOOST");
+
+        PR::LevelButton add_obstacle;
+        add_obstacle.from_center = true;
+        add_obstacle.body.pos.x = win->w * 3 / (3 * 4);
+        add_obstacle.body.pos.y = win->h * 0.5f;
+        add_obstacle.body.dim.x = win->w * 0.2f;
+        add_obstacle.body.dim.y = win->h * 0.3f;
+        add_obstacle.body.triangle = false;
+        add_obstacle.body.angle = 0.f;
+        std::snprintf(add_obstacle.text,
+                      std::strlen("ADD OBSTACLE")+1,
+                      "ADD OBSTACLE");
+
+        if (input->mouse_left.clicked &&
+            rect_contains_point(add_portal.body,
+                                input->mouseX, input->mouseY,
+                                add_portal.from_center)) {
+
+            // TODO: ADD OBSTACLE
+
+        } else
+        if (input->mouse_left.clicked &&
+            rect_contains_point(add_boost.body,
+                                input->mouseX, input->mouseY,
+                                add_boost.from_center)) {
+
+            // TODO: ADD BOOST
+
+        } else
+        if (input->mouse_left.clicked &&
+            rect_contains_point(add_obstacle.body,
+                                input->mouseX, input->mouseY,
+                                add_obstacle.from_center)) {
+
+            // TODO: ADD OBSTACLE
+
+        }
+
+    }
+
     // NOTE: This check is done so that if when an obstacle is selected and
     //          a button (to modify the selected object) appears on the cursor
     //          position, that button is not pressed automatically
-    if (level->selected != NULL && level->selected == level->old_selected) {
+    if (level->selected != NULL &&
+        level->selected == level->old_selected &&
+        !level->adding_now) {
         switch(level->selected_type) {
             case PR::PORTAL_TYPE:
             {
@@ -2769,6 +2869,25 @@ inline void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
             sin(glm::radians(rid->body.angle));
 }
 
+inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type) {
+    Rect *b;
+    switch(selected_type) {
+        case PR::PORTAL_TYPE:
+            b = &((PR::Portal *)selected)->body;
+            break;
+        case PR::BOOST_TYPE:
+            b = &((PR::BoostPad *)selected)->body;
+            break;
+        case PR::OBSTACLE_TYPE:
+            b = &((PR::Obstacle *)selected)->body;
+            break;
+        default:
+            b = NULL;
+            break;
+    }
+    return b;
+}
+
 // Particle systems
 
 void create_particle_plane_boost(PR::ParticleSystem *ps,
@@ -2898,3 +3017,4 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
         glm::sign(particle->vel.x) *
         lerp(0.f, 720.f, glm::abs(particle->vel.x)/150.f) * dt;
 }
+
