@@ -88,7 +88,7 @@
     std::cout << "Deactivating edit mode!" << std::endl;\
     (level)->selected = NULL;\
     (level)->editing_now = false;\
-    (level)->cam.pos = level->plane.pos;\
+    (level)->camera.pos.x = (level)->plane.body.pos.x;\
 } while(0)
 
 // Utilities functions for code reuse
@@ -1570,8 +1570,6 @@ void level_update(void) {
 
                 PR::BoostPad *pad = boosts + boost_index;
 
-                boostpad_render(pad);
-
                 if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
 
                     p->acc.x += pad->boost_power *
@@ -1637,7 +1635,7 @@ void level_update(void) {
                 if (level->selected) { // FOCUS SELECTED OBJECT
                     Rect *b = get_selected_body(level->selected,
                                                 level->selected_type);
-                    lerp_camera_x_to_rect(cam, b, false);
+                    lerp_camera_x_to_rect(cam, b, true);
                 } else {
                     lerp_camera_x_to_rect(cam, &p->body, true);
                 }
@@ -1717,6 +1715,7 @@ void level_update(void) {
         }
     } else { // p->crashed
         plane_crash_ps->active = true;
+
         if (!rid->crashed) {
             if (rid->attached) {
                 move_rider_to_plane(rid, p);
@@ -1872,10 +1871,20 @@ void level_update(void) {
                         switch(option_button_index) {
                             case 0:
                                 std::snprintf(button->text,
+                                              std::strlen("WIDTH")+1,
+                                              "WIDTH");
+                                break;
+                            case 1:
+                                std::snprintf(button->text,
+                                              std::strlen("HEIGHT")+1,
+                                              "HEIGHT");
+                                break;
+                            case 2:
+                                std::snprintf(button->text,
                                               std::strlen("TYPE")+1,
                                               "TYPE");
                                 break;
-                            case 1:
+                            case 3:
                                 std::snprintf(button->text,
                                               std::strlen("ENABLE_EFFECT")+1,
                                               "ENABLE_EFFECT");
@@ -1935,10 +1944,30 @@ void level_update(void) {
                         switch(option_button_index) {
                             case 0:
                                 std::snprintf(button->text,
+                                              std::strlen("WIDTH")+1,
+                                              "WIDTH");
+                                break;
+                            case 1:
+                                std::snprintf(button->text,
+                                              std::strlen("HEIGHT")+1,
+                                              "HEIGHT");
+                                break;
+                            case 2:
+                                std::snprintf(button->text,
+                                              std::strlen("ANGLE")+1,
+                                              "ANGLE");
+                                break;
+                            case 3:
+                                std::snprintf(button->text,
+                                              std::strlen("TRIANGLE")+1,
+                                              "TRIANGLE");
+                                break;
+                            case 4:
+                                std::snprintf(button->text,
                                               std::strlen("BOOST_ANGLE")+1,
                                               "BOOST_ANGLE");
                                 break;
-                            case 1:
+                            case 5:
                                 std::snprintf(button->text,
                                               std::strlen("BOOST_POWER")+1,
                                               "BOOST_POWER");
@@ -1994,10 +2023,30 @@ void level_update(void) {
                         switch(option_button_index) {
                             case 0:
                                 std::snprintf(button->text,
+                                              std::strlen("WIDTH")+1,
+                                              "WIDTH");
+                                break;
+                            case 1:
+                                std::snprintf(button->text,
+                                              std::strlen("HEIGHT")+1,
+                                              "HEIGHT");
+                                break;
+                            case 2:
+                                std::snprintf(button->text,
+                                              std::strlen("ANGLE")+1,
+                                              "ANGLE");
+                                break;
+                            case 3:
+                                std::snprintf(button->text,
+                                              std::strlen("TRIANGLE")+1,
+                                              "TRIANGLE");
+                                break;
+                            case 4:
+                                std::snprintf(button->text,
                                               std::strlen("COLLIDE_PLANE")+1,
                                               "COLLIDE_PLANE");
                                 break;
-                            case 1:
+                            case 5:
                                 std::snprintf(button->text,
                                               std::strlen("COLLIDE_RIDER")+1,
                                               "COLLIDE_RIDER");
@@ -2088,6 +2137,15 @@ void level_update(void) {
                         break;
                 }
             }
+        }
+
+        // NOTE: Render the boosts
+        for (size_t boost_index = 0;
+             boost_index < boosts_number;
+             ++boost_index) {
+
+            PR::BoostPad *pad = boosts + boost_index;
+            boostpad_render(pad);
         }
 
         // NOTE: Checking collision with obstacles
@@ -2206,65 +2264,211 @@ void level_update(void) {
     if (level->adding_now) {
         PR::LevelButton add_portal;
         add_portal.from_center = true;
-        add_portal.body.pos.x = win->w * 1 / (3 * 4);
+        add_portal.body.pos.x = win->w * 0.25f;
         add_portal.body.pos.y = win->h * 0.5f;
         add_portal.body.dim.x = win->w * 0.2f;
         add_portal.body.dim.y = win->h * 0.3f;
         add_portal.body.triangle = false;
         add_portal.body.angle = 0.f;
+        add_portal.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
         std::snprintf(add_portal.text,
                       std::strlen("ADD PORTAL")+1,
                       "ADD PORTAL");
 
         PR::LevelButton add_boost;
         add_boost.from_center = true;
-        add_boost.body.pos.x = win->w * 2 / (3 * 4);
+        add_boost.body.pos.x = win->w * 0.5f;
         add_boost.body.pos.y = win->h * 0.5f;
         add_boost.body.dim.x = win->w * 0.2f;
         add_boost.body.dim.y = win->h * 0.3f;
         add_boost.body.triangle = false;
         add_boost.body.angle = 0.f;
+        add_boost.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
         std::snprintf(add_boost.text,
                       std::strlen("ADD BOOST")+1,
                       "ADD BOOST");
 
         PR::LevelButton add_obstacle;
         add_obstacle.from_center = true;
-        add_obstacle.body.pos.x = win->w * 3 / (3 * 4);
+        add_obstacle.body.pos.x = win->w * 0.75f;
         add_obstacle.body.pos.y = win->h * 0.5f;
         add_obstacle.body.dim.x = win->w * 0.2f;
         add_obstacle.body.dim.y = win->h * 0.3f;
         add_obstacle.body.triangle = false;
         add_obstacle.body.angle = 0.f;
+        add_obstacle.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
         std::snprintf(add_obstacle.text,
                       std::strlen("ADD OBSTACLE")+1,
                       "ADD OBSTACLE");
 
-        if (input->mouse_left.clicked &&
-            rect_contains_point(add_portal.body,
+        if (input->mouse_left.clicked) {
+            level->adding_now = false;
+            if (rect_contains_point(add_portal.body,
                                 input->mouseX, input->mouseY,
                                 add_portal.from_center)) {
 
-            // TODO: ADD OBSTACLE
+                level->portals_number++;
+                level->portals = (PR::Portal *)
+                    std::realloc((void *) level->portals,
+                                 sizeof(PR::Portal) * level->portals_number);
+                PR::Portal *portal =
+                    level->portals + (level->portals_number - 1);
+                portal->body.pos = cam->pos;
+                portal->body.dim.x = win->w * 0.2f;
+                portal->body.dim.y = win->h * 0.2f;
+                portal->body.triangle = false;
+                portal->body.angle = 0.f;
+                portal->type = PR::SHUFFLE_COLORS;
+                portal->enable_effect = true;
 
-        } else
-        if (input->mouse_left.clicked &&
-            rect_contains_point(add_boost.body,
-                                input->mouseX, input->mouseY,
-                                add_boost.from_center)) {
+            } else
+            if (rect_contains_point(add_boost.body,
+                                    input->mouseX, input->mouseY,
+                                    add_boost.from_center)) {
 
-            // TODO: ADD BOOST
+                level->boosts_number++;
+                level->boosts = (PR::BoostPad *)
+                    std::realloc((void *) level->boosts,
+                                 sizeof(PR::BoostPad) * level->boosts_number);
+                PR::BoostPad *pad =
+                    level->boosts + (level->boosts_number - 1);
+                pad->body.pos = cam->pos;
+                pad->body.dim.x = win->w * 0.2f;
+                pad->body.dim.y = win->h * 0.2f;
+                pad->body.triangle = false;
+                pad->body.angle = 0.f;
+                pad->boost_angle = 0.f;
+                pad->boost_power = 0.f;
 
-        } else
-        if (input->mouse_left.clicked &&
-            rect_contains_point(add_obstacle.body,
-                                input->mouseX, input->mouseY,
-                                add_obstacle.from_center)) {
+            } else
+            if (rect_contains_point(add_obstacle.body,
+                                    input->mouseX, input->mouseY,
+                                    add_obstacle.from_center)) {
 
-            // TODO: ADD OBSTACLE
+                level->obstacles_number++;
+                level->obstacles = (PR::Obstacle *)
+                    std::realloc((void *) level->obstacles,
+                                 sizeof(PR::Obstacle) *
+                                    level->obstacles_number);
+                PR::Obstacle *obs =
+                    level->obstacles+(level->obstacles_number - 1);
+                obs->body.pos = cam->pos;
+                obs->body.dim.x = win->w * 0.2f;
+                obs->body.dim.y = win->h * 0.2f;
+                obs->body.triangle = false;
+                obs->body.angle = 0.f;
+                obs->collide_plane = false;
+                obs->collide_rider = false;
 
+            }
         }
 
+        renderer_add_queue_uni(add_portal.body,
+                               add_portal.col,
+                               add_portal.from_center);
+        // TODO: Selected an appropriate font for this
+        renderer_add_queue_text(add_portal.body.pos.x,
+                                add_portal.body.pos.y,
+                                add_portal.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[1], true);
+
+        renderer_add_queue_uni(add_boost.body,
+                               add_boost.col,
+                               add_boost.from_center);
+        // TODO: Selected an appropriate font for this
+        renderer_add_queue_text(add_boost.body.pos.x,
+                                add_boost.body.pos.y,
+                                add_boost.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[1], true);
+
+        renderer_add_queue_uni(add_obstacle.body,
+                               add_obstacle.col,
+                               add_obstacle.from_center);
+        // TODO: Selected an appropriate font for this
+        renderer_add_queue_text(add_obstacle.body.pos.x,
+                                add_obstacle.body.pos.y,
+                                add_obstacle.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[1], true);
+
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                           glob->rend_res.shaders[2]);
+    }
+
+    if (level->selected && input->obj_delete.clicked) {
+        switch(level->selected_type) {
+            case PR::PORTAL_TYPE:
+            {
+                PR::Portal *portal = (PR::Portal *) level->selected;
+
+                int index = portal - level->portals;
+
+                std::memmove((void *)(level->portals + index),
+                             (void *)(level->portals + index + 1),
+                             (size_t)(level->portals_number - index - 1) *
+                                sizeof(PR::Portal));
+
+                level->portals_number--;
+                level->portals = (PR::Portal *)
+                    std::realloc((void *) level->portals,
+                                 sizeof(PR::Portal) *
+                                    level->portals_number);
+
+                std::cout << "Removed portal n. " << index << std::endl;
+                
+                level->selected = NULL;
+
+                break;
+            }
+            case PR::BOOST_TYPE:
+            {
+                PR::BoostPad *pad = (PR::BoostPad *) level->selected;
+
+                int index = pad - level->boosts;
+
+                std::memmove((void *)(level->boosts + index),
+                             (void *)(level->boosts + index + 1),
+                             (size_t)(level->boosts_number - index - 1) *
+                                sizeof(PR::BoostPad));
+
+                level->boosts_number--;
+                level->boosts = (PR::BoostPad *)
+                    std::realloc((void *) level->boosts,
+                                 sizeof(PR::BoostPad) *
+                                    level->boosts_number);
+
+                std::cout << "Removed boost n. " << index << std::endl;
+                
+                level->selected = NULL;
+
+                break;
+            }
+            case PR::OBSTACLE_TYPE:
+            {
+                PR::Obstacle *obs = (PR::Obstacle *) level->selected;
+
+                int index = obs - level->obstacles;
+
+                std::memmove((void *)(level->obstacles + index),
+                             (void *)(level->obstacles + index + 1),
+                             (size_t)(level->obstacles_number - index - 1) *
+                                sizeof(PR::Obstacle));
+
+                level->obstacles_number--;
+                level->obstacles = (PR::Obstacle *)
+                    std::realloc((void *) level->obstacles,
+                                 sizeof(PR::Obstacle) *
+                                    level->obstacles_number);
+
+                std::cout << "Removed obstacle n. " << index << std::endl;
+
+                level->selected = NULL;
+
+                break;
+            }
+            default:
+                break;
+        }
     }
 
     // NOTE: This check is done so that if when an obstacle is selected and
@@ -2272,7 +2476,7 @@ void level_update(void) {
     //          position, that button is not pressed automatically
     if (level->selected != NULL &&
         level->selected == level->old_selected &&
-        !level->adding_now) {
+        !level->adding_now && !input->obj_delete.clicked) {
         switch(level->selected_type) {
             case PR::PORTAL_TYPE:
             {
@@ -2292,38 +2496,180 @@ void level_update(void) {
                     PR::LevelButton *button =
                         &level->selected_options_buttons[option_button_index];
 
-                    if (input->mouse_left.clicked &&
-                        rect_contains_point(button->body,
-                                            input->mouseX,
-                                            input->mouseY, true)) {
-                        // Something useful was indeed clicked,
-                        // so don't reset the seleciton
-                        set_selected_to_null = false;
+                    if (option_button_index <= 1) {
+                        PR::LevelButton minus1;
+                        minus1.from_center = true;
+                        minus1.body.angle = 0.f;
+                        minus1.body.triangle = false;
+                        minus1.body.dim.x = button->body.dim.x * 0.2f;
+                        minus1.body.dim.y = minus1.body.dim.x;
+                        minus1.body.pos.x = button->body.pos.x -
+                                            button->body.dim.x * 0.5f +
+                                            minus1.body.dim.x * 0.5f;
+                        minus1.body.pos.y = button->body.pos.y -
+                                            button->body.dim.y * 0.5f;
+                        minus1.col = button->col * 0.5f;
+                        minus1.col.a = 1.f;
 
-                        switch (option_button_index) {
-                            case 0:
-                                if (portal->type == PR::INVERSE) {
-                                    portal->type = PR::SHUFFLE_COLORS;
-                                } else {
-                                    portal->type = PR::INVERSE;
+                        PR::LevelButton minus5 = minus1;
+                        minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+
+                        PR::LevelButton plus1;
+                        plus1.from_center = true;
+                        plus1.body.angle = 0.f;
+                        plus1.body.triangle = false;
+                        plus1.body.dim = minus1.body.dim;
+                        plus1.body.pos.x = button->body.pos.x +
+                                           button->body.dim.x * 0.5f -
+                                           plus1.body.dim.x * 0.5f;
+                        plus1.body.pos.y = button->body.pos.y -
+                                           button->body.dim.y * 0.5f;
+                        plus1.col = button->col * 0.5f;
+                        plus1.col.a = 1.f;
+
+                        PR::LevelButton plus5 = plus1;
+                        plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+
+
+                        if (input->mouse_left.clicked) {
+                            if (rect_contains_point(button->body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                            }
+                            if (rect_contains_point(plus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        portal->body.dim.x += 1.f;
+                                        break;
+                                    case 1:
+                                        portal->body.dim.y += 1.f;
+                                        break;
+                                    default:
+                                        break;
                                 }
-                                break;
-                            case 1:
-                                portal->enable_effect = !portal->enable_effect;
-                                break;
-                            default:
-                                break;
+                            } else
+                            if (rect_contains_point(plus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        portal->body.dim.x += 5.f;
+                                        break;
+                                    case 1:
+                                        portal->body.dim.y += 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        portal->body.dim.x -= 1.f;
+                                        break;
+                                    case 1:
+                                        portal->body.dim.y -= 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        portal->body.dim.x -= 5.f;
+                                        break;
+                                    case 1:
+                                        portal->body.dim.y -= 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
                         }
-                    }
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        // TODO: Selected an appropriate font for this
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus1.body,
+                                               plus1.col,
+                                               plus1.from_center);
+                        renderer_add_queue_text(plus1.body.pos.x,
+                                                plus1.body.pos.y,
+                                                "+1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus5.body,
+                                               plus5.col,
+                                               plus5.from_center);
+                        renderer_add_queue_text(plus5.body.pos.x,
+                                                plus5.body.pos.y,
+                                                "+5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus1.body,
+                                               minus1.col,
+                                               minus1.from_center);
+                        renderer_add_queue_text(minus1.body.pos.x,
+                                                minus1.body.pos.y,
+                                                "-1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus5.body,
+                                               minus5.col,
+                                               minus5.from_center);
+                        renderer_add_queue_text(minus5.body.pos.x,
+                                                minus5.body.pos.y,
+                                                "-5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                    } else {
 
-                    renderer_add_queue_uni(button->body,
-                                           button->col,
-                                           button->from_center);
-                    // TODO: Selected an appropriate font for this
-                    renderer_add_queue_text(button->body.pos.x,
-                                            button->body.pos.y,
-                                            button->text, glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
+                        if (input->mouse_left.clicked &&
+                            rect_contains_point(button->body,
+                                                input->mouseX,
+                                                input->mouseY, true)) {
+                            // Something useful was indeed clicked,
+                            // so don't reset the seleciton
+                            set_selected_to_null = false;
+
+                            switch (option_button_index) {
+                                case 2:
+                                    if (portal->type == PR::INVERSE) {
+                                        portal->type = PR::SHUFFLE_COLORS;
+                                    } else {
+                                        portal->type = PR::INVERSE;
+                                    }
+                                    break;
+                                case 3:
+                                    portal->enable_effect =
+                                        !portal->enable_effect;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        // TODO: Selected an appropriate font for this
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                    }
 
                 }
                 break;
@@ -2346,134 +2692,200 @@ void level_update(void) {
                     PR::LevelButton *button =
                         &level->selected_options_buttons[option_button_index];
 
-                    PR::LevelButton minus1;
-                    minus1.from_center = true;
-                    minus1.body.angle = 0.f;
-                    minus1.body.triangle = false;
-                    minus1.body.dim.x = button->body.dim.x * 0.2f;
-                    minus1.body.dim.y = minus1.body.dim.x;
-                    minus1.body.pos.x = button->body.pos.x -
-                                        button->body.dim.x * 0.5f;
-                    minus1.body.pos.y = button->body.pos.y -
-                                        button->body.dim.y * 0.5f;
-                    minus1.col = button->col * 0.5f;
-                    minus1.col.a = 1.f;
-
-                    PR::LevelButton minus5 = minus1;
-                    minus5.body.pos.x += minus5.body.dim.x * 1.2f;
-
-                    PR::LevelButton plus1;
-                    plus1.from_center = true;
-                    plus1.body.angle = 0.f;
-                    plus1.body.triangle = false;
-                    plus1.body.dim = minus1.body.dim;
-                    plus1.body.pos.x = button->body.pos.x +
-                                       button->body.dim.x * 0.5f;
-                    plus1.body.pos.y = button->body.pos.y -
-                                       button->body.dim.y * 0.5f;
-                    plus1.col = button->col * 0.5f;
-                    plus1.col.a = 1.f;
-
-                    PR::LevelButton plus5 = plus1;
-                    plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
-
-                    if (input->mouse_left.clicked) {
-                        if (rect_contains_point(plus1.body,
+                    if (option_button_index == 3) {
+                        if (input->mouse_left.clicked &&
+                            rect_contains_point(button->body,
                                                 input->mouseX,
                                                 input->mouseY, true)) {
+                            // Something useful was indeed clicked,
+                            // so don't reset the seleciton
                             set_selected_to_null = false;
-                            switch(option_button_index) {
-                                case 0:
-                                    pad->boost_angle += 1.f;
-                                    break;
-                                case 1:
-                                    pad->boost_power += 1.f;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        } else
-                        if (rect_contains_point(plus5.body,
-                                                input->mouseX,
-                                                input->mouseY, true)) {
-                            set_selected_to_null = false;
-                            switch(option_button_index) {
-                                case 0:
-                                    pad->boost_angle += 5.f;
-                                    break;
-                                case 1:
-                                    pad->boost_power += 5.f;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        } else
-                        if (rect_contains_point(minus1.body,
-                                                input->mouseX,
-                                                input->mouseY, true)) {
-                            set_selected_to_null = false;
-                            switch(option_button_index) {
-                                case 0:
-                                    pad->boost_angle -= 1.f;
-                                    break;
-                                case 1:
-                                    pad->boost_power -= 1.f;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        } else
-                        if (rect_contains_point(minus5.body,
-                                                input->mouseX,
-                                                input->mouseY, true)) {
-                            set_selected_to_null = false;
-                            switch(option_button_index) {
-                                case 0:
-                                    pad->boost_angle -= 5.f;
-                                    break;
-                                case 1:
-                                    pad->boost_power -= 5.f;
+
+                            switch (option_button_index) {
+                                case 3:
+                                    pad->body.triangle = !pad->body.triangle;
                                     break;
                                 default:
                                     break;
                             }
                         }
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        // TODO: Selected an appropriate font for this
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                    } else {
+                        PR::LevelButton minus1;
+                        minus1.from_center = true;
+                        minus1.body.angle = 0.f;
+                        minus1.body.triangle = false;
+                        minus1.body.dim.x = button->body.dim.x * 0.2f;
+                        minus1.body.dim.y = minus1.body.dim.x;
+                        minus1.body.pos.x = button->body.pos.x -
+                                            button->body.dim.x * 0.5f +
+                                            minus1.body.dim.x * 0.5f;
+                        minus1.body.pos.y = button->body.pos.y -
+                                            button->body.dim.y * 0.5f;
+                        minus1.col = button->col * 0.5f;
+                        minus1.col.a = 1.f;
+
+                        PR::LevelButton minus5 = minus1;
+                        minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+
+                        PR::LevelButton plus1;
+                        plus1.from_center = true;
+                        plus1.body.angle = 0.f;
+                        plus1.body.triangle = false;
+                        plus1.body.dim = minus1.body.dim;
+                        plus1.body.pos.x = button->body.pos.x +
+                                           button->body.dim.x * 0.5f -
+                                           plus1.body.dim.x * 0.5f;
+                        plus1.body.pos.y = button->body.pos.y -
+                                           button->body.dim.y * 0.5f;
+                        plus1.col = button->col * 0.5f;
+                        plus1.col.a = 1.f;
+
+                        PR::LevelButton plus5 = plus1;
+                        plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+
+                        if (input->mouse_left.clicked) {
+                            if (rect_contains_point(plus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        pad->body.dim.x += 1.f;
+                                        break;
+                                    case 1:
+                                        pad->body.dim.y += 1.f;
+                                        break;
+                                    case 2:
+                                        pad->body.triangle += 1.f;
+                                        break;
+                                    case 4:
+                                        pad->boost_angle += 1.f;
+                                        break;
+                                    case 5:
+                                        pad->boost_power += 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(plus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        pad->body.dim.x += 5.f;
+                                        break;
+                                    case 1:
+                                        pad->body.dim.y += 5.f;
+                                        break;
+                                    case 2:
+                                        pad->body.triangle += 5.f;
+                                        break;
+                                    case 4:
+                                        pad->boost_angle += 5.f;
+                                        break;
+                                    case 5:
+                                        pad->boost_power += 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        pad->body.dim.x -= 1.f;
+                                        break;
+                                    case 1:
+                                        pad->body.dim.y -= 1.f;
+                                        break;
+                                    case 2:
+                                        pad->body.triangle -= 1.f;
+                                        break;
+                                    case 4:
+                                        pad->boost_angle -= 1.f;
+                                        break;
+                                    case 5:
+                                        pad->boost_power -= 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        pad->body.dim.x -= 5.f;
+                                        break;
+                                    case 1:
+                                        pad->body.dim.y -= 5.f;
+                                        break;
+                                    case 2:
+                                        pad->body.triangle -= 5.f;
+                                        break;
+                                    case 4:
+                                        pad->boost_angle -= 5.f;
+                                        break;
+                                    case 5:
+                                        pad->boost_power -= 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus1.body,
+                                               plus1.col,
+                                               plus1.from_center);
+                        renderer_add_queue_text(plus1.body.pos.x,
+                                                plus1.body.pos.y,
+                                                "+1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus5.body,
+                                               plus5.col,
+                                               plus5.from_center);
+                        renderer_add_queue_text(plus5.body.pos.x,
+                                                plus5.body.pos.y,
+                                                "+5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus1.body,
+                                               minus1.col,
+                                               minus1.from_center);
+                        renderer_add_queue_text(minus1.body.pos.x,
+                                                minus1.body.pos.y,
+                                                "-1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus5.body,
+                                               minus5.col,
+                                               minus5.from_center);
+                        renderer_add_queue_text(minus5.body.pos.x,
+                                                minus5.body.pos.y,
+                                                "-5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
                     }
-                    renderer_add_queue_uni(button->body,
-                                           button->col,
-                                           button->from_center);
-                    renderer_add_queue_text(button->body.pos.x,
-                                            button->body.pos.y,
-                                            button->text, glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
-                    renderer_add_queue_uni(plus1.body,
-                                           plus1.col,
-                                           plus1.from_center);
-                    renderer_add_queue_text(plus1.body.pos.x,
-                                            plus1.body.pos.y,
-                                            "+1", glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
-                    renderer_add_queue_uni(plus5.body,
-                                           plus5.col,
-                                           plus5.from_center);
-                    renderer_add_queue_text(plus5.body.pos.x,
-                                            plus5.body.pos.y,
-                                            "+5", glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
-                    renderer_add_queue_uni(minus1.body,
-                                           minus1.col,
-                                           minus1.from_center);
-                    renderer_add_queue_text(minus1.body.pos.x,
-                                            minus1.body.pos.y,
-                                            "-1", glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
-                    renderer_add_queue_uni(minus5.body,
-                                           minus5.col,
-                                           minus5.from_center);
-                    renderer_add_queue_text(minus5.body.pos.x,
-                                            minus5.body.pos.y,
-                                            "-5", glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
+
 
                 }
 
@@ -2487,7 +2899,7 @@ void level_update(void) {
                                    glob->rend_res.shaders[2]);
 
                 for(size_t option_button_index = 0;
-                    option_button_index < SELECTED_PORTAL_OPTIONS;
+                    option_button_index < SELECTED_OBSTACLE_OPTIONS;
                     ++option_button_index) {
                     assert((option_button_index <
                                 ARRAY_LENGTH(level->selected_options_buttons))
@@ -2496,34 +2908,191 @@ void level_update(void) {
                     PR::LevelButton *button =
                         &level->selected_options_buttons[option_button_index];
 
-                    if (input->mouse_left.clicked &&
-                        rect_contains_point(button->body,
-                                            input->mouseX,
-                                            input->mouseY, true)) {
-                        // Something useful was indeed clicked,
-                        // so don't reset the seleciton
-                        set_selected_to_null = false;
+                    if (option_button_index <= 2) {
+                        PR::LevelButton minus1;
+                        minus1.from_center = true;
+                        minus1.body.angle = 0.f;
+                        minus1.body.triangle = false;
+                        minus1.body.dim.x = button->body.dim.x * 0.2f;
+                        minus1.body.dim.y = minus1.body.dim.x;
+                        minus1.body.pos.x = button->body.pos.x -
+                                            button->body.dim.x * 0.5f +
+                                            minus1.body.dim.x * 0.5f;
+                        minus1.body.pos.y = button->body.pos.y -
+                                            button->body.dim.y * 0.5f;
+                        minus1.col = button->col * 0.5f;
+                        minus1.col.a = 1.f;
 
-                        switch (option_button_index) {
-                            case 0:
-                                obs->collide_plane = !obs->collide_plane;
-                                break;
-                            case 1:
-                                obs->collide_rider = !obs->collide_rider;
-                                break;
-                            default:
-                                break;
+                        PR::LevelButton minus5 = minus1;
+                        minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+
+                        PR::LevelButton plus1;
+                        plus1.from_center = true;
+                        plus1.body.angle = 0.f;
+                        plus1.body.triangle = false;
+                        plus1.body.dim = minus1.body.dim;
+                        plus1.body.pos.x = button->body.pos.x +
+                                           button->body.dim.x * 0.5f -
+                                           plus1.body.dim.x * 0.5f;
+                        plus1.body.pos.y = button->body.pos.y -
+                                           button->body.dim.y * 0.5f;
+                        plus1.col = button->col * 0.5f;
+                        plus1.col.a = 1.f;
+
+                        PR::LevelButton plus5 = plus1;
+                        plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+
+
+                        if (input->mouse_left.clicked) {
+                            if (rect_contains_point(button->body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                            }
+                            if (rect_contains_point(plus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        obs->body.dim.x += 1.f;
+                                        break;
+                                    case 1:
+                                        obs->body.dim.y += 1.f;
+                                        break;
+                                    case 2:
+                                        obs->body.angle += 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(plus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        obs->body.dim.x += 5.f;
+                                        break;
+                                    case 1:
+                                        obs->body.dim.y += 5.f;
+                                        break;
+                                    case 2:
+                                        obs->body.angle += 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        obs->body.dim.x -= 1.f;
+                                        break;
+                                    case 1:
+                                        obs->body.dim.y -= 1.f;
+                                        break;
+                                    case 2:
+                                        obs->body.angle -= 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        obs->body.dim.x -= 5.f;
+                                        break;
+                                    case 1:
+                                        obs->body.dim.y -= 5.f;
+                                        break;
+                                    case 2:
+                                        obs->body.angle -= 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
                         }
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        // TODO: Selected an appropriate font for this
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus1.body,
+                                               plus1.col,
+                                               plus1.from_center);
+                        renderer_add_queue_text(plus1.body.pos.x,
+                                                plus1.body.pos.y,
+                                                "+1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus5.body,
+                                               plus5.col,
+                                               plus5.from_center);
+                        renderer_add_queue_text(plus5.body.pos.x,
+                                                plus5.body.pos.y,
+                                                "+5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus1.body,
+                                               minus1.col,
+                                               minus1.from_center);
+                        renderer_add_queue_text(minus1.body.pos.x,
+                                                minus1.body.pos.y,
+                                                "-1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus5.body,
+                                               minus5.col,
+                                               minus5.from_center);
+                        renderer_add_queue_text(minus5.body.pos.x,
+                                                minus5.body.pos.y,
+                                                "-5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+
+                    } else {
+
+                        if (input->mouse_left.clicked &&
+                            rect_contains_point(button->body,
+                                                input->mouseX,
+                                                input->mouseY, true)) {
+                            // Something useful was indeed clicked,
+                            // so don't reset the seleciton
+                            set_selected_to_null = false;
+
+                            switch (option_button_index) {
+                                case 3:
+                                    obs->body.triangle = !obs->body.triangle;
+                                    break;
+                                case 4:
+                                    obs->collide_plane = !obs->collide_plane;
+                                    break;
+                                case 5:
+                                    obs->collide_rider = !obs->collide_rider;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        // TODO: Selected an appropriate font for this
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
                     }
 
-                    renderer_add_queue_uni(button->body,
-                                           button->col,
-                                           button->from_center);
-                    // TODO: Selected an appropriate font for this
-                    renderer_add_queue_text(button->body.pos.x,
-                                            button->body.pos.y,
-                                            button->text, glm::vec4(1.0f),
-                                            &glob->rend_res.fonts[1], true);
 
                 }
 

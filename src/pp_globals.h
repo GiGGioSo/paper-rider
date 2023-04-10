@@ -183,10 +183,10 @@ struct PR {
         void *selected;
         void *old_selected;
         ObjectType selected_type;
-#define SELECTED_PORTAL_OPTIONS 2
-#define SELECTED_BOOST_OPTIONS 2
-#define SELECTED_OBSTACLE_OPTIONS 2
-#define SELECTED_MAX_OPTIONS 2
+#define SELECTED_PORTAL_OPTIONS 4
+#define SELECTED_BOOST_OPTIONS 6
+#define SELECTED_OBSTACLE_OPTIONS 6
+#define SELECTED_MAX_OPTIONS 6
         LevelButton selected_options_buttons[SELECTED_MAX_OPTIONS];
 
         size_t obstacles_number;
