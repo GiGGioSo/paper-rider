@@ -100,6 +100,9 @@ inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
 inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
 inline void plane_update_animation(PR::Plane *p);
 inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type);
+void set_portal_option_buttons(PR::LevelButton *buttons);
+void set_boost_option_buttons(PR::LevelButton *buttons);
+void set_obstacle_option_buttons(PR::LevelButton *buttons);
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1844,61 +1847,15 @@ void level_update(void) {
 
             if (rect_contains_point(rect_in_camera_space(portal->body, cam),
                                     input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked && level->selected == NULL) {
+                if (input->mouse_left.clicked &&
+                    level->selected == NULL &&
+                    !level->adding_now) {
+
                     level->selected = (void *) portal;
                     level->selected_type = PR::PORTAL_TYPE;
                     level->adding_now = false;
 
-                    // NOTE: Set up options buttons for the selected portal
-                    for(size_t option_button_index = 0;
-                        option_button_index < SELECTED_PORTAL_OPTIONS;
-                        ++option_button_index) {
-                        assert((option_button_index <
-                                 ARRAY_LENGTH(level->selected_options_buttons))
-                                && "Selected options out of bound for portals");
-
-                        PR::LevelButton *button =
-                         &level->selected_options_buttons[option_button_index];
-
-                        button->from_center = true;
-                        button->body.pos.x = win->w * (option_button_index+1) /
-                                             (SELECTED_PORTAL_OPTIONS+1);
-                        button->body.pos.y = win->h * 9 / 10;
-                        button->body.dim.x = win->w /
-                                             (SELECTED_PORTAL_OPTIONS+2);
-                        button->body.dim.y = win->h / 10;
-
-                        switch(option_button_index) {
-                            case 0:
-                                std::snprintf(button->text,
-                                              std::strlen("WIDTH")+1,
-                                              "WIDTH");
-                                break;
-                            case 1:
-                                std::snprintf(button->text,
-                                              std::strlen("HEIGHT")+1,
-                                              "HEIGHT");
-                                break;
-                            case 2:
-                                std::snprintf(button->text,
-                                              std::strlen("TYPE")+1,
-                                              "TYPE");
-                                break;
-                            case 3:
-                                std::snprintf(button->text,
-                                              std::strlen("ENABLE_EFFECT")+1,
-                                              "ENABLE_EFFECT");
-                                break;
-                            default:
-                                std::snprintf(button->text,
-                                              std::strlen("UNDEFINED")+1,
-                                              "UNDEFINED");
-                                break;
-                        }
-
-                        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
-
-                    }
+                    set_portal_option_buttons(level->selected_options_buttons);
 
                 }
             }
@@ -1916,72 +1873,15 @@ void level_update(void) {
 
             if (rect_contains_point(rect_in_camera_space(pad->body, cam),
                                     input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked && level->selected == NULL) {
+                if (input->mouse_left.clicked &&
+                    level->selected == NULL &&
+                    !level->adding_now) {
+
                     level->selected = (void *) pad;
                     level->selected_type = PR::BOOST_TYPE;
                     level->adding_now = false;
 
-                    // NOTE: Set up options buttons for the selected boost
-                    for(size_t option_button_index = 0;
-                        option_button_index < SELECTED_BOOST_OPTIONS;
-                        ++option_button_index) {
-
-                        assert((option_button_index <
-                                 ARRAY_LENGTH(level->selected_options_buttons))
-                                && "Selected options out of bounds for boosts");
-
-                        PR::LevelButton *button =
-                         &level->selected_options_buttons[option_button_index];
-
-                        button->from_center = true;
-                        button->body.pos.x = win->w * (option_button_index+1) /
-                                             (SELECTED_BOOST_OPTIONS+1);
-                        button->body.pos.y = win->h * 9 / 10;
-                        button->body.dim.x = win->w /
-                                             (SELECTED_BOOST_OPTIONS+2);
-                        button->body.dim.y = win->h / 10;
-
-                        switch(option_button_index) {
-                            case 0:
-                                std::snprintf(button->text,
-                                              std::strlen("WIDTH")+1,
-                                              "WIDTH");
-                                break;
-                            case 1:
-                                std::snprintf(button->text,
-                                              std::strlen("HEIGHT")+1,
-                                              "HEIGHT");
-                                break;
-                            case 2:
-                                std::snprintf(button->text,
-                                              std::strlen("ANGLE")+1,
-                                              "ANGLE");
-                                break;
-                            case 3:
-                                std::snprintf(button->text,
-                                              std::strlen("TRIANGLE")+1,
-                                              "TRIANGLE");
-                                break;
-                            case 4:
-                                std::snprintf(button->text,
-                                              std::strlen("BOOST_ANGLE")+1,
-                                              "BOOST_ANGLE");
-                                break;
-                            case 5:
-                                std::snprintf(button->text,
-                                              std::strlen("BOOST_POWER")+1,
-                                              "BOOST_POWER");
-                                break;
-                            default:
-                                std::snprintf(button->text,
-                                              std::strlen("UNDEFINED")+1,
-                                              "UNDEFINED");
-                                break;
-                        }
-
-                        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
-
-                    }
+                    set_boost_option_buttons(level->selected_options_buttons);
                 }
             }
 
@@ -1996,69 +1896,15 @@ void level_update(void) {
 
             if (rect_contains_point(rect_in_camera_space(obs->body, cam),
                                     input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked && level->selected == NULL) {
+                if (input->mouse_left.clicked &&
+                    level->selected == NULL &&
+                    !level->adding_now) {
+
                     level->selected = (void *) obs;
                     level->selected_type = PR::OBSTACLE_TYPE;
                     level->adding_now = false;
 
-                    // NOTE: Set up options buttons for the selected obstacle
-                    for(size_t option_button_index = 0;
-                        option_button_index < SELECTED_OBSTACLE_OPTIONS;
-                        ++option_button_index) {
-                        assert((option_button_index <
-                                 ARRAY_LENGTH(level->selected_options_buttons))
-                                && "Selected options out of bound for obstacle");
-
-                        PR::LevelButton *button =
-                         &level->selected_options_buttons[option_button_index];
-
-                        button->from_center = true;
-                        button->body.pos.x = win->w * (option_button_index+1) /
-                                             (SELECTED_OBSTACLE_OPTIONS+1);
-                        button->body.pos.y = win->h * 9 / 10;
-                        button->body.dim.x = win->w /
-                                             (SELECTED_OBSTACLE_OPTIONS+2);
-                        button->body.dim.y = win->h / 10;
-
-                        switch(option_button_index) {
-                            case 0:
-                                std::snprintf(button->text,
-                                              std::strlen("WIDTH")+1,
-                                              "WIDTH");
-                                break;
-                            case 1:
-                                std::snprintf(button->text,
-                                              std::strlen("HEIGHT")+1,
-                                              "HEIGHT");
-                                break;
-                            case 2:
-                                std::snprintf(button->text,
-                                              std::strlen("ANGLE")+1,
-                                              "ANGLE");
-                                break;
-                            case 3:
-                                std::snprintf(button->text,
-                                              std::strlen("TRIANGLE")+1,
-                                              "TRIANGLE");
-                                break;
-                            case 4:
-                                std::snprintf(button->text,
-                                              std::strlen("COLLIDE_PLANE")+1,
-                                              "COLLIDE_PLANE");
-                                break;
-                            case 5:
-                                std::snprintf(button->text,
-                                              std::strlen("COLLIDE_RIDER")+1,
-                                              "COLLIDE_RIDER");
-                                break;
-                            default:
-                                std::snprintf(button->text,
-                                              std::strlen("UNDEFINED")+1,
-                                              "UNDEFINED");
-                                break;
-                        }
-                        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
-                    }
+                    set_obstacle_option_buttons(level->selected_options_buttons);
                 }
             }
 
@@ -2321,6 +2167,10 @@ void level_update(void) {
                 portal->type = PR::SHUFFLE_COLORS;
                 portal->enable_effect = true;
 
+                level->selected = (void *) portal;
+                level->selected_type = PR::PORTAL_TYPE;
+                set_portal_option_buttons(level->selected_options_buttons);
+
             } else
             if (rect_contains_point(add_boost.body,
                                     input->mouseX, input->mouseY,
@@ -2339,6 +2189,10 @@ void level_update(void) {
                 pad->body.angle = 0.f;
                 pad->boost_angle = 0.f;
                 pad->boost_power = 0.f;
+
+                level->selected = (void *) pad;
+                level->selected_type = PR::BOOST_TYPE;
+                set_boost_option_buttons(level->selected_options_buttons);
 
             } else
             if (rect_contains_point(add_obstacle.body,
@@ -2359,6 +2213,10 @@ void level_update(void) {
                 obs->body.angle = 0.f;
                 obs->collide_plane = false;
                 obs->collide_rider = false;
+
+                level->selected = (void *) obs;
+                level->selected_type = PR::OBSTACLE_TYPE;
+                set_obstacle_option_buttons(level->selected_options_buttons);
 
             }
         }
@@ -2752,6 +2610,11 @@ void level_update(void) {
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
 
                         if (input->mouse_left.clicked) {
+                            if (rect_contains_point(button->body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                            }
                             if (rect_contains_point(plus1.body,
                                                     input->mouseX,
                                                     input->mouseY, true)) {
@@ -2764,7 +2627,7 @@ void level_update(void) {
                                         pad->body.dim.y += 1.f;
                                         break;
                                     case 2:
-                                        pad->body.triangle += 1.f;
+                                        pad->body.angle += 1.f;
                                         break;
                                     case 4:
                                         pad->boost_angle += 1.f;
@@ -2788,7 +2651,7 @@ void level_update(void) {
                                         pad->body.dim.y += 5.f;
                                         break;
                                     case 2:
-                                        pad->body.triangle += 5.f;
+                                        pad->body.angle += 5.f;
                                         break;
                                     case 4:
                                         pad->boost_angle += 5.f;
@@ -2812,7 +2675,7 @@ void level_update(void) {
                                         pad->body.dim.y -= 1.f;
                                         break;
                                     case 2:
-                                        pad->body.triangle -= 1.f;
+                                        pad->body.angle -= 1.f;
                                         break;
                                     case 4:
                                         pad->boost_angle -= 1.f;
@@ -2836,7 +2699,7 @@ void level_update(void) {
                                         pad->body.dim.y -= 5.f;
                                         break;
                                     case 2:
-                                        pad->body.triangle -= 5.f;
+                                        pad->body.angle -= 5.f;
                                         break;
                                     case 4:
                                         pad->boost_angle -= 5.f;
@@ -3455,6 +3318,181 @@ inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type) {
             break;
     }
     return b;
+}
+
+void set_portal_option_buttons(PR::LevelButton *buttons) {
+    // NOTE: Set up options buttons for the selected portal
+    for(size_t option_button_index = 0;
+        option_button_index < SELECTED_PORTAL_OPTIONS;
+        ++option_button_index) {
+        assert((option_button_index <
+                 SELECTED_MAX_OPTIONS)
+                && "Selected options out of bound for portals");
+
+        PR::LevelButton *button = buttons + option_button_index;
+
+        button->from_center = true;
+        button->body.pos.x = glob->window.w * (option_button_index+1) /
+                             (SELECTED_PORTAL_OPTIONS+1);
+        button->body.pos.y = glob->window.h * 9 / 10;
+        button->body.dim.x = glob->window.w /
+                             (SELECTED_PORTAL_OPTIONS+2);
+        button->body.dim.y = glob->window.h / 10;
+
+        switch(option_button_index) {
+            case 0:
+                std::snprintf(button->text,
+                              std::strlen("WIDTH")+1,
+                              "WIDTH");
+                break;
+            case 1:
+                std::snprintf(button->text,
+                              std::strlen("HEIGHT")+1,
+                              "HEIGHT");
+                break;
+            case 2:
+                std::snprintf(button->text,
+                              std::strlen("TYPE")+1,
+                              "TYPE");
+                break;
+            case 3:
+                std::snprintf(button->text,
+                              std::strlen("ENABLE_EFFECT")+1,
+                              "ENABLE_EFFECT");
+                break;
+            default:
+                std::snprintf(button->text,
+                              std::strlen("UNDEFINED")+1,
+                              "UNDEFINED");
+                break;
+        }
+
+        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+
+    }
+}
+
+void set_boost_option_buttons(PR::LevelButton *buttons) {
+    // NOTE: Set up options buttons for the selected boost
+    for(size_t option_button_index = 0;
+        option_button_index < SELECTED_BOOST_OPTIONS;
+        ++option_button_index) {
+
+        assert((option_button_index <
+                    SELECTED_MAX_OPTIONS)
+                && "Selected options out of bounds for boosts");
+
+        PR::LevelButton *button = buttons + option_button_index;
+
+        button->from_center = true;
+        button->body.pos.x = glob->window.w * (option_button_index+1) /
+                             (SELECTED_BOOST_OPTIONS+1);
+        button->body.pos.y = glob->window.h * 9 / 10;
+        button->body.dim.x = glob->window.w /
+                             (SELECTED_BOOST_OPTIONS+2);
+        button->body.dim.y = glob->window.h / 10;
+
+        switch(option_button_index) {
+            case 0:
+                std::snprintf(button->text,
+                              std::strlen("WIDTH")+1,
+                              "WIDTH");
+                break;
+            case 1:
+                std::snprintf(button->text,
+                              std::strlen("HEIGHT")+1,
+                              "HEIGHT");
+                break;
+            case 2:
+                std::snprintf(button->text,
+                              std::strlen("ANGLE")+1,
+                              "ANGLE");
+                break;
+            case 3:
+                std::snprintf(button->text,
+                              std::strlen("TRIANGLE")+1,
+                              "TRIANGLE");
+                break;
+            case 4:
+                std::snprintf(button->text,
+                              std::strlen("BOOST_ANGLE")+1,
+                              "BOOST_ANGLE");
+                break;
+            case 5:
+                std::snprintf(button->text,
+                              std::strlen("BOOST_POWER")+1,
+                              "BOOST_POWER");
+                break;
+            default:
+                std::snprintf(button->text,
+                              std::strlen("UNDEFINED")+1,
+                              "UNDEFINED");
+                break;
+        }
+
+        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+
+    }
+}
+
+void set_obstacle_option_buttons(PR::LevelButton *buttons) {
+    // NOTE: Set up options buttons for the selected obstacle
+    for(size_t option_button_index = 0;
+        option_button_index < SELECTED_OBSTACLE_OPTIONS;
+        ++option_button_index) {
+        assert((option_button_index <
+                 SELECTED_MAX_OPTIONS)
+                && "Selected options out of bound for obstacle");
+
+        PR::LevelButton *button = buttons + option_button_index;
+
+        button->from_center = true;
+        button->body.pos.x = glob->window.w * (option_button_index+1) /
+                             (SELECTED_OBSTACLE_OPTIONS+1);
+        button->body.pos.y = glob->window.h * 9 / 10;
+        button->body.dim.x = glob->window.w /
+                             (SELECTED_OBSTACLE_OPTIONS+2);
+        button->body.dim.y = glob->window.h / 10;
+
+        switch(option_button_index) {
+            case 0:
+                std::snprintf(button->text,
+                              std::strlen("WIDTH")+1,
+                              "WIDTH");
+                break;
+            case 1:
+                std::snprintf(button->text,
+                              std::strlen("HEIGHT")+1,
+                              "HEIGHT");
+                break;
+            case 2:
+                std::snprintf(button->text,
+                              std::strlen("ANGLE")+1,
+                              "ANGLE");
+                break;
+            case 3:
+                std::snprintf(button->text,
+                              std::strlen("TRIANGLE")+1,
+                              "TRIANGLE");
+                break;
+            case 4:
+                std::snprintf(button->text,
+                              std::strlen("COLLIDE_PLANE")+1,
+                              "COLLIDE_PLANE");
+                break;
+            case 5:
+                std::snprintf(button->text,
+                              std::strlen("COLLIDE_RIDER")+1,
+                              "COLLIDE_RIDER");
+                break;
+            default:
+                std::snprintf(button->text,
+                              std::strlen("UNDEFINED")+1,
+                              "UNDEFINED");
+                break;
+        }
+        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+    }
 }
 
 // Particle systems
