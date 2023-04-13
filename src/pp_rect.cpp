@@ -91,51 +91,51 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
     return false;
 }
 
-bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
+bool rect_are_colliding(const Rect r1, const Rect r2, float *cx, float *cy) {
     // NOTE: check if the objects are very distant,
     //       in that case don't check the collision
-    if (glm::abs(r1->pos.x - r2->pos.x) >
-            glm::abs(r1->dim.x) + glm::abs(r1->dim.y) +
-            glm::abs(r2->dim.x) + glm::abs(r2->dim.y)
-     || glm::abs(r1->pos.y - r2->pos.y) >
-            glm::abs(r1->dim.x) + glm::abs(r1->dim.y) +
-            glm::abs(r2->dim.x) + glm::abs(r2->dim.y)
+    if (glm::abs(r1.pos.x - r2.pos.x) >
+            glm::abs(r1.dim.x) + glm::abs(r1.dim.y) +
+            glm::abs(r2.dim.x) + glm::abs(r2.dim.y)
+     || glm::abs(r1.pos.y - r2.pos.y) >
+            glm::abs(r1.dim.x) + glm::abs(r1.dim.y) +
+            glm::abs(r2.dim.x) + glm::abs(r2.dim.y)
     ) return false;
 
-    float center_x1 = r1->pos.x + r1->dim.x * 0.5f;
-    float center_y1 = r1->pos.y + r1->dim.y * 0.5f;
-    float r1_angle = glm::radians(-r1->angle);
+    float center_x1 = r1.pos.x + r1.dim.x * 0.5f;
+    float center_y1 = r1.pos.y + r1.dim.y * 0.5f;
+    float r1_angle = glm::radians(-r1.angle);
     float cos_r1 = cos(r1_angle);
     float sin_r1 = sin(r1_angle);
 
     // Top left
     float x0 = center_x1 +
-                (r1->pos.x - center_x1) * cos_r1 -
-                (r1->pos.y - center_y1) * sin_r1;
+                (r1.pos.x - center_x1) * cos_r1 -
+                (r1.pos.y - center_y1) * sin_r1;
     float y0 = center_y1 +
-                (r1->pos.x - center_x1) * sin_r1 +
-                (r1->pos.y - center_y1) * cos_r1;
+                (r1.pos.x - center_x1) * sin_r1 +
+                (r1.pos.y - center_y1) * cos_r1;
     // Top right
     float x1 = center_x1 +
-                (r1->pos.x + r1->dim.x - center_x1) * cos_r1 -
-                (r1->pos.y - center_y1) * sin_r1;
+                (r1.pos.x + r1.dim.x - center_x1) * cos_r1 -
+                (r1.pos.y - center_y1) * sin_r1;
     float y1 = center_y1 +
-                (r1->pos.x + r1->dim.x - center_x1) * sin_r1 +
-                (r1->pos.y - center_y1) * cos_r1;
+                (r1.pos.x + r1.dim.x - center_x1) * sin_r1 +
+                (r1.pos.y - center_y1) * cos_r1;
     // Bottom left
     float x2 = center_x1 +
-                (r1->pos.x - center_x1) * cos_r1 -
-                (r1->pos.y + r1->dim.y - center_y1) * sin_r1;
+                (r1.pos.x - center_x1) * cos_r1 -
+                (r1.pos.y + r1.dim.y - center_y1) * sin_r1;
     float y2 = center_y1 +
-                (r1->pos.x - center_x1) * sin_r1 +
-                (r1->pos.y + r1->dim.y - center_y1) * cos_r1;
+                (r1.pos.x - center_x1) * sin_r1 +
+                (r1.pos.y + r1.dim.y - center_y1) * cos_r1;
     // Bottom right
     float x3 = center_x1 +
-                (r1->pos.x + r1->dim.x - center_x1) * cos_r1 -
-                (r1->pos.y + r1->dim.y - center_y1) * sin_r1;
+                (r1.pos.x + r1.dim.x - center_x1) * cos_r1 -
+                (r1.pos.y + r1.dim.y - center_y1) * sin_r1;
     float y3 = center_y1 +
-                (r1->pos.x + r1->dim.x - center_x1) * sin_r1 +
-                (r1->pos.y + r1->dim.y - center_y1) * cos_r1;
+                (r1.pos.x + r1.dim.x - center_x1) * sin_r1 +
+                (r1.pos.y + r1.dim.y - center_y1) * cos_r1;
 
     //std::cout << "----------------------"
     //          << "\nx0: " << x0 << ", y0: " << y0
@@ -145,40 +145,40 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
     //          << std::endl;
 
 
-    float center_x2 = r2->pos.x + r2->dim.x * 0.5f;
-    float center_y2 = r2->pos.y + r2->dim.y * 0.5f;
-    float r2_angle = glm::radians(-r2->angle);
+    float center_x2 = r2.pos.x + r2.dim.x * 0.5f;
+    float center_y2 = r2.pos.y + r2.dim.y * 0.5f;
+    float r2_angle = glm::radians(-r2.angle);
     float cos_r2 = cos(r2_angle);
     float sin_r2 = sin(r2_angle);
 
     // Top left
     float s0 = center_x2 +
-                (r2->pos.x - center_x2) * cos_r2 -
-                (r2->pos.y - center_y2) * sin_r2;
+                (r2.pos.x - center_x2) * cos_r2 -
+                (r2.pos.y - center_y2) * sin_r2;
     float t0 = center_y2 +
-                (r2->pos.x - center_x2) * sin_r2 +
-                (r2->pos.y - center_y2) * cos_r2;
+                (r2.pos.x - center_x2) * sin_r2 +
+                (r2.pos.y - center_y2) * cos_r2;
     // Top right
     float s1 = center_x2 +
-                (r2->pos.x + r2->dim.x - center_x2) * cos_r2 -
-                (r2->pos.y - center_y2) * sin_r2;
+                (r2.pos.x + r2.dim.x - center_x2) * cos_r2 -
+                (r2.pos.y - center_y2) * sin_r2;
     float t1 = center_y2 +
-                (r2->pos.x + r2->dim.x - center_x2) * sin_r2 +
-                (r2->pos.y - center_y2) * cos_r2;
+                (r2.pos.x + r2.dim.x - center_x2) * sin_r2 +
+                (r2.pos.y - center_y2) * cos_r2;
     // Bottom left
     float s2 = center_x2 +
-                (r2->pos.x - center_x2) * cos_r2 -
-                (r2->pos.y + r2->dim.y - center_y2) * sin_r2;
+                (r2.pos.x - center_x2) * cos_r2 -
+                (r2.pos.y + r2.dim.y - center_y2) * sin_r2;
     float t2 = center_y2 +
-                (r2->pos.x - center_x2) * sin_r2 +
-                (r2->pos.y + r2->dim.y - center_y2) * cos_r2;
+                (r2.pos.x - center_x2) * sin_r2 +
+                (r2.pos.y + r2.dim.y - center_y2) * cos_r2;
     // Bottom right
     float s3 = center_x2 +
-                (r2->pos.x + r2->dim.x - center_x2) * cos_r2 -
-                (r2->pos.y + r2->dim.y - center_y2) * sin_r2;
+                (r2.pos.x + r2.dim.x - center_x2) * cos_r2 -
+                (r2.pos.y + r2.dim.y - center_y2) * sin_r2;
     float t3 = center_y2 +
-                (r2->pos.x + r2->dim.x - center_x2) * sin_r2 +
-                (r2->pos.y + r2->dim.y - center_y2) * cos_r2;
+                (r2.pos.x + r2.dim.x - center_x2) * sin_r2 +
+                (r2.pos.y + r2.dim.y - center_y2) * cos_r2;
 
 
     /* std::cout << "---------------------\n" */
@@ -207,7 +207,7 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
             s2, t2,
             cx, cy
         )) return true;
-    if (r2->triangle) {
+    if (r2.triangle) {
         if (lines_are_colliding(
                 x0, y0,
                 x1, y1,
@@ -247,7 +247,7 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
             s2, t2,
             cx, cy
         )) return true;
-    if (r2->triangle) {
+    if (r2.triangle) {
         if (lines_are_colliding(
                 x0, y0,
                 x2, y2,
@@ -272,7 +272,7 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
             )) return true;
     }
 
-    if (r1->triangle) {
+    if (r1.triangle) {
         // NOTE: line x2,y2:x1,y1 collision with all r2 lines
         if (lines_are_colliding(
                 x2, y2,
@@ -288,7 +288,7 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
                 s2, t2,
                 cx, cy
             )) return true;
-        if (r2->triangle) {
+        if (r2.triangle) {
             if (lines_are_colliding(
                     x2, y2,
                     x1, y1,
@@ -328,7 +328,7 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
                 s2, t2,
                 cx, cy
             )) return true;
-        if (r2->triangle) {
+        if (r2.triangle) {
             if (lines_are_colliding(
                     x2, y2,
                     x3, y3,
@@ -368,7 +368,7 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
                 s2, t2,
                 cx, cy
             )) return true;
-        if (r2->triangle) {
+        if (r2.triangle) {
             if (lines_are_colliding(
                     x3, y3,
                     x1, y1,
@@ -394,9 +394,9 @@ bool rect_are_colliding(const Rect* r1, const Rect* r2, float *cx, float *cy) {
         }
     }
 
-    if (rect_contains_point(*r2, x0, y0, false)) return true;
+    if (rect_contains_point(r2, x0, y0, false)) return true;
 
-    if (rect_contains_point(*r1, s0, t0, false)) return true;
+    if (rect_contains_point(r1, s0, t0, false)) return true;
 
     return false;
 }

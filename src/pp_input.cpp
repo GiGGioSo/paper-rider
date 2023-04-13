@@ -33,6 +33,7 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     key_reset(&input->save_map);
     key_reset(&input->obj_delete);
     key_reset(&input->obj_add);
+    key_reset(&input->reset_pos);
 
     // Menu
     key_reset(&input->level1);
@@ -174,5 +175,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     }
     if(IS_KEY_PRESSED(GLFW_KEY_V)) {
         key_pressed(&input->obj_add);
+    }
+    if(IS_KEY_PRESSED(GLFW_KEY_R)) {
+        key_pressed(&input->reset_pos);
     }
 }

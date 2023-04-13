@@ -18,14 +18,8 @@
 #    include <dirent.h>
 #endif // _WIN32
 
-// TODO(editor):
-//      - Adding obstacles/portals/boosts
-//      - Deleting obstacles/portals/boosts
-//      - Changing properties of selected item
-
-// TODO(before starting game editor):
+// TODO:
 //      - Proper gamepad support
-// TODO(after finishing game editor):
 //      - Update the README
 //      - Alphabetic order of the levels
 //      - Better way to signal boost direction in boost pads
@@ -106,6 +100,10 @@ void set_portal_option_buttons(PR::LevelButton *buttons);
 void set_boost_option_buttons(PR::LevelButton *buttons);
 void set_obstacle_option_buttons(PR::LevelButton *buttons);
 void set_start_pos_option_buttons(PR::LevelButton *buttons);
+inline Rect rect_in_camera_space(Rect r, PR::Camera *cam);
+inline TexCoords texcoords_in_texture_space(float x, float y,
+                                            float w, float h,
+                                            Texture *tex, bool inverse);
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1526,7 +1524,7 @@ void level_update(void) {
 
                 PR::BoostPad *pad = boosts + boost_index;
 
-                if (rect_are_colliding(&p->body, &pad->body, NULL, NULL)) {
+                if (rect_are_colliding(p->body, pad->body, NULL, NULL)) {
 
                     p->acc.x += pad->boost_power *
                                 cos(glm::radians(pad->boost_angle));
@@ -1649,7 +1647,7 @@ void level_update(void) {
                 rid->jump_time_elapsed += dt;
 
                 // NOTE: Check if rider remounts the plane
-                if (rect_are_colliding(&p->body, &rid->body, NULL, NULL) &&
+                if (rect_are_colliding(p->body, rid->body, NULL, NULL) &&
                     rid->jump_time_elapsed > 0.5f) {
                     rid->attached = true;
                     p->vel += (rid->vel - p->vel) * 0.5f;
@@ -1746,28 +1744,11 @@ void level_update(void) {
     }
 
 
-    if (!p->crashed && !level->editing_now &&
-        p->body.pos.x + p->body.dim.x*0.5f > level->goal_line.pos.x) {
+    if (!rid->crashed && !level->editing_now &&
+        rid->body.pos.x + rid->body.dim.x*0.5f > level->goal_line.pos.x) {
         CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
-    // NOTE: Loop over window edged pacman style,
-    //       but only on the top and bottom
-    if (p->body.pos.y + p->body.dim.y/2 > win->h) {
-        p->body.pos.y -= win->h;
-    }
-    if (p->body.pos.y + p->body.dim.y/2 < 0) {
-        p->body.pos.y += win->h;
-    }
-
-    if (!rid->attached) {
-        if (rid->body.pos.y + rid->body.dim.y * 0.5f > win->h) {
-            rid->body.pos.y -= win->h;
-        }
-        if (rid->body.pos.y + rid->body.dim.y * 0.5f < 0) {
-            rid->body.pos.y += win->h;
-        }
-    }
 
     // NOTE: Update the `render_zone`s based on the `body`s
     p->render_zone.pos.x = p->body.pos.x;
@@ -1892,6 +1873,20 @@ void level_update(void) {
             level->adding_now = true;
             level->selected = NULL;
         }
+
+        if (level->selected == NULL && input->reset_pos.clicked) {
+            p->body.pos = level->start_pos.pos;
+            p->body.angle = level->start_pos.angle;
+        }
+
+        // NOTE: Loop over window edged pacman style,
+        //       but only on the top and bottom
+        if (p->body.pos.y + p->body.dim.y/2 > win->h) {
+            p->body.pos.y -= win->h;
+        }
+        if (p->body.pos.y + p->body.dim.y/2 < 0) {
+            p->body.pos.y += win->h;
+        }
         
     } else { // PLAYING
         // NOTE: The portal can be activated only by the rider.
@@ -1908,9 +1903,9 @@ void level_update(void) {
             portal_render(portal);
 
             if (!rid->crashed &&
-                (rect_are_colliding(&rid->body, &portal->body, NULL, NULL) ||
-                 (rid->attached && rect_are_colliding(&p->body,
-                                                      &portal->body,
+                (rect_are_colliding(rid->body, portal->body, NULL, NULL) ||
+                 (rid->attached && rect_are_colliding(p->body,
+                                                      portal->body,
                                                       NULL, NULL)))) {
                 // std::cout << "------------------------"
                 //           << "\nCollided with portal"
@@ -1980,7 +1975,7 @@ void level_update(void) {
             obstacle_render(obs);
 
             if (!p->crashed && obs->collide_plane &&
-                rect_are_colliding(&p->body, &obs->body,
+                rect_are_colliding(p->body, obs->body,
                                    &p->crash_position.x,
                                    &p->crash_position.y)) {
                 // NOTE: Plane colliding with an obstacle
@@ -1999,7 +1994,7 @@ void level_update(void) {
                           << obstacle_index << std::endl;
             }
             if (!rid->crashed && obs->collide_rider &&
-                rect_are_colliding(&rid->body, &obs->body,
+                rect_are_colliding(rid->body, obs->body,
                                    &rid->crash_position.x,
                                    &rid->crash_position.y)) {
                 // NOTE: Rider colliding with an obstacle
@@ -2014,6 +2009,100 @@ void level_update(void) {
                 std::cout << "Rider collided with "
                           << obstacle_index << std::endl;
             }
+        }
+
+        // NOTE: Collide with the ceiling and the floor
+        Rect ceiling;
+        ceiling.pos.x = -((float) win->w);
+        ceiling.pos.y = -((float) win->h);
+        ceiling.dim.x = win->w*3.f;
+        ceiling.dim.y = win->h;
+        ceiling.angle = 0.f;
+        ceiling.triangle = false;
+        Rect floor;
+        floor.pos.x = -((float) win->w);
+        floor.pos.y = (float) win->h;
+        floor.dim.x = win->w*3.f;
+        floor.dim.y = win->h;
+        floor.angle = 0.f;
+        floor.triangle = false;
+
+        // NOTE: Collisions with the ceiling
+        if (!p->crashed &&
+            rect_are_colliding(rect_in_camera_space(p->body, cam), ceiling,
+                               &p->crash_position.x,
+                               &p->crash_position.y)) {
+
+            p->crash_position +=
+                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+
+            if (rid->attached) {
+                rid->vel *= 0.f;
+                rid->base_velocity = 0.f;
+                rid->input_velocity = 0.f;
+            }
+            p->crashed = true;
+            p->acc *= 0.f;
+            p->vel *= 0.f;
+
+            // TODO: Debug flag
+            std::cout << "Plane collided with the ceiling" << std::endl;
+        }
+        if (!rid->crashed &&
+            rect_are_colliding(rect_in_camera_space(rid->body, cam), ceiling,
+                               &rid->crash_position.x,
+                               &rid->crash_position.y)) {
+
+            rid->crash_position +=
+                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+
+            rid->crashed = true;
+            rid->attached = false;
+            rid->vel *= 0.f;
+            rid->base_velocity = 0.f;
+            rid->input_velocity = 0.f;
+
+            // TODO: Debug flag
+            std::cout << "Rider collided with the ceiling" << std::endl;
+        }
+
+        // NOTE: Collisions with the floor
+        if (!p->crashed &&
+            rect_are_colliding(rect_in_camera_space(p->body, cam), floor,
+                               &p->crash_position.x,
+                               &p->crash_position.y)) {
+
+            p->crash_position +=
+                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+
+            if (rid->attached) {
+                rid->vel *= 0.f;
+                rid->base_velocity = 0.f;
+                rid->input_velocity = 0.f;
+            }
+            p->crashed = true;
+            p->acc *= 0.f;
+            p->vel *= 0.f;
+
+            // TODO: Debug flag
+            std::cout << "Plane collided with the floor" << std::endl;
+        }
+        if (!rid->crashed &&
+            rect_are_colliding(rect_in_camera_space(rid->body, cam), floor,
+                               &rid->crash_position.x,
+                               &rid->crash_position.y)) {
+
+            rid->crash_position +=
+                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+
+            rid->crashed = true;
+            rid->attached = false;
+            rid->vel *= 0.f;
+            rid->base_velocity = 0.f;
+            rid->input_velocity = 0.f;
+
+            // TODO: Debug flag
+            std::cout << "Rider collided with the floor" << std::endl;
         }
     }
 
@@ -3710,6 +3799,43 @@ void set_start_pos_option_buttons(PR::LevelButton *buttons) {
         button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
 
     }
+}
+
+inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
+    Rect res;
+
+    res.pos = r.pos - cam->pos +
+        glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+    res.dim = r.dim;
+    res.angle = r.angle;
+    res.triangle = r.triangle;
+
+    return res;
+}
+
+inline TexCoords texcoords_in_texture_space(float x, float y,
+                                     float w, float h,
+                                     Texture *tex, bool inverse) {
+    TexCoords res;
+
+    res.tx = x / tex->width;
+    res.tw = w / tex->width;
+    if (inverse) {
+        res.th = -(h / tex->height);
+        res.ty = (1.f - (y + h) / tex->height) - res.th;
+    } else {
+        res.ty = 1.f - (y + h) / tex->height;
+        res.th = (h / tex->height);
+    }
+
+    /*std::cout << "--------------------"
+              << "\ntx: " << res.tx
+              << "\ntw: " << res.tw
+              << "\nty: " << res.ty
+              << "\nth: " << res.th
+              << std::endl;*/
+    
+    return res;
 }
 
 // Particle systems

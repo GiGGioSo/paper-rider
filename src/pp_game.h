@@ -56,44 +56,6 @@ float horizontal_drag_coefficient(float angle) {
 }
 
 inline
-Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
-    Rect res;
-
-    res.pos = r.pos - cam->pos + glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
-    res.dim = r.dim;
-    res.angle = r.angle;
-    res.triangle = r.triangle;
-
-    return res;
-}
-
-inline
-TexCoords texcoords_in_texture_space(float x, float y,
-                                     float w, float h,
-                                     Texture *tex, bool inverse) {
-    TexCoords res;
-
-    res.tx = x / tex->width;
-    res.tw = w / tex->width;
-    if (inverse) {
-        res.th = -(h / tex->height);
-        res.ty = (1.f - (y + h) / tex->height) - res.th;
-    } else {
-        res.ty = 1.f - (y + h) / tex->height;
-        res.th = (h / tex->height);
-    }
-
-    /*std::cout << "--------------------"
-              << "\ntx: " << res.tx
-              << "\ntw: " << res.tw
-              << "\nty: " << res.ty
-              << "\nth: " << res.th
-              << std::endl;*/
-    
-    return res;
-}
-
-inline
 const char *get_case_name(PR::GameCase c) {
     switch (c) {
         case PR::MENU:
