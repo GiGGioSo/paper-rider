@@ -98,11 +98,14 @@ inline void obstacle_render(PR::Obstacle *obs);
 inline void portal_render_info(PR::Portal *portal, float tx, float ty);
 inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
 inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
+inline void goal_line_render_info(Rect *rect, float tx, float ty);
+inline void start_pos_render_info(Rect *rect, float tx, float ty);
 inline void plane_update_animation(PR::Plane *p);
 inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type);
 void set_portal_option_buttons(PR::LevelButton *buttons);
 void set_boost_option_buttons(PR::LevelButton *buttons);
 void set_obstacle_option_buttons(PR::LevelButton *buttons);
+void set_start_pos_option_buttons(PR::LevelButton *buttons);
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -190,6 +193,7 @@ int load_map_from_file(const char *file_path,
                        PR::Portal **portals,
                        size_t *number_of_portals,
                        float *start_x, float *start_y,
+                       float *start_angle,
                        float *goal_line,
                        const float width, const float height) {
 
@@ -403,7 +407,7 @@ int load_map_from_file(const char *file_path,
                   << *goal_line
                   << std::endl;
 
-        std::fscanf(map_file, " %f %f", start_x, start_y);
+        std::fscanf(map_file, " %f %f %f", start_x, start_y, start_angle);
         if (std::ferror(map_file)) return_defer(1);
         *start_x = *start_x * proportion_x;
         *start_y = *start_y * proportion_y;
@@ -411,6 +415,7 @@ int load_map_from_file(const char *file_path,
         std::cout << "[LOADING] player start position set to"
                   << " x: " << *start_x
                   << " y: " << *start_y
+                  << " with angle of: " << *start_angle
                   << std::endl;
     }
 
@@ -502,14 +507,15 @@ int save_map_to_file(const char *file_path,
         // Goal line
         std::fprintf(map_file,
                      "%f\n",
-                     level->goal_line * inv_proportion_x);
+                     level->goal_line.pos.x * inv_proportion_x);
         if (std::ferror(map_file)) return_defer(1);
 
         // Player start position
         std::fprintf(map_file,
-                     "%f %f",
-                     level->start_pos.x * inv_proportion_x,
-                     level->start_pos.y * inv_proportion_y);
+                     "%f %f %f",
+                     level->start_pos.pos.x * inv_proportion_x,
+                     level->start_pos.pos.y * inv_proportion_y,
+                     level->start_pos.angle);
         if (std::ferror(map_file)) return_defer(1);
 
     }
@@ -1087,9 +1093,78 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
 
     level->selected = NULL;
 
+    level->goal_line.pos.y = 0.f;
+    level->goal_line.dim.x =  30.f;
+    level->goal_line.dim.y = win->h;
+    level->goal_line.triangle = false;
+    level->goal_line.angle = 0.f;
+
+    p->crashed = false;
+    p->crash_position.x = 0.f;
+    p->crash_position.y = 0.f;
+    p->body.dim.y = 23.f;
+    p->body.dim.x = p->body.dim.y * 3.f;
+    p->body.angle = 0.f;
+    p->body.triangle = true;
+    p->render_zone.dim.y = 25.f;
+    p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
+    p->render_zone.pos = p->body.pos;
+    /*p->render_zone.pos = p->body.pos +
+                         (p->body.dim - p->render_zone.dim) * 0.5f;*/
+    p->render_zone.angle = p->body.angle;
+    p->render_zone.triangle = false;
+    p->vel.x = 0.f;
+    p->vel.y = 0.f;
+    p->acc.x = 0.f;
+    p->acc.y = 0.f;
+    p->mass = 0.003f; // kg
+    // TODO: The alar surface should be somewhat proportional
+    //       to the dimension of the actual rectangle
+    p->alar_surface = 0.12f; // m squared
+    p->current_animation = PR::Plane::IDLE_ACC;
+    p->animation_countdown = 0.f;
+    p->inverse = false;
+
+    rid->crashed = false;
+    rid->crash_position.x = 0.f;
+    rid->crash_position.y = 0.f;
+    rid->body.dim.x = 30.f;
+    rid->body.dim.y = 50.f;
+    rid->body.triangle = false;
+    //move_rider_to_plane(rid, p);
+    rid->body.angle = p->render_zone.angle;
+    rid->body.pos.x =
+        p->render_zone.pos.x +
+        (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
+        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+            sin(glm::radians(rid->body.angle)) -
+        (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+    rid->body.pos.y =
+        p->render_zone.pos.y +
+        (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
+        (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
+            cos(glm::radians(rid->body.angle)) +
+        (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+    rid->render_zone.dim = rid->body.dim;
+    rid->render_zone.pos = rid->body.pos +
+                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->vel.x = 0.0f;
+    rid->vel.y = 0.0f;
+    rid->body.angle = p->body.angle;
+    rid->attached = true;
+    rid->mass = 0.010f;
+    rid->jump_time_elapsed = 0.f;
+    rid->air_friction_acc = 100.f;
+    rid->base_velocity = 0.f;
+    rid->input_velocity = 0.f;
+    rid->input_max_accelleration = 5000.f;
+    rid->inverse = false;
     std::snprintf(level->file_path,
                   std::strlen(mapfile_path)+1,
                   "%s", mapfile_path);
+
+    level->start_pos.dim = p->body.dim;
+    level->start_pos.triangle = false;
 
     if (std::strcmp(mapfile_path, "")) {
 
@@ -1104,153 +1179,29 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
                 &level->boosts_number,
                 &level->portals,
                 &level->portals_number,
-                &level->start_pos.x, &level->start_pos.y,
-                &level->goal_line,
+                &level->start_pos.pos.x, &level->start_pos.pos.y,
+                &level->start_pos.angle,
+                &level->goal_line.pos.x,
                 win->w, win->h);
         if (loading_result != 0) return loading_result;
 
-        // Hardcoding the fuck out of everything,
-        // except for what is set in the mapfile
-        {
+        p->body.pos = level->start_pos.pos;
+        p->body.angle = level->start_pos.angle;
+        cam->pos.x = p->body.pos.x;
 
-            p->body.pos = level->start_pos;
-            p->crashed = false;
-            p->crash_position.x = 0.f;
-            p->crash_position.y = 0.f;
-            p->body.dim.y = 23.f;
-            p->body.dim.x = p->body.dim.y * 3.f;
-            p->body.angle = 0.f;
-            p->body.triangle = true;
-            p->render_zone.dim.y = 25.f;
-            p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-            p->render_zone.pos = p->body.pos;
-            /*p->render_zone.pos = p->body.pos +
-                                 (p->body.dim - p->render_zone.dim) * 0.5f;*/
-            p->render_zone.angle = p->body.angle;
-            p->render_zone.triangle = false;
-            p->vel.x = 0.f;
-            p->vel.y = 0.f;
-            p->acc.x = 0.f;
-            p->acc.y = 0.f;
-            p->mass = 0.003f; // kg
-            // TODO: The alar surface should be somewhat proportional
-            //       to the dimension of the actual rectangle
-            p->alar_surface = 0.12f; // m squared
-            p->current_animation = PR::Plane::IDLE_ACC;
-            p->animation_countdown = 0.f;
-            p->inverse = false;
-
-            cam->pos.x = p->body.pos.x;
-
-            rid->crashed = false;
-            rid->crash_position.x = 0.f;
-            rid->crash_position.y = 0.f;
-            rid->body.dim.x = 30.f;
-            rid->body.dim.y = 50.f;
-            rid->body.triangle = false;
-            //move_rider_to_plane(rid, p);
-            rid->body.angle = p->render_zone.angle;
-            rid->body.pos.x =
-                p->render_zone.pos.x +
-                (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-                    sin(glm::radians(rid->body.angle)) -
-                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-            rid->body.pos.y =
-                p->render_zone.pos.y +
-                (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-                    cos(glm::radians(rid->body.angle)) +
-                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
-            rid->render_zone.dim = rid->body.dim;
-            rid->render_zone.pos = rid->body.pos +
-                                   (rid->body.dim - rid->render_zone.dim) * 0.5f;
-            rid->vel.x = 0.0f;
-            rid->vel.y = 0.0f;
-            rid->body.angle = p->body.angle;
-            rid->attached = true;
-            rid->mass = 0.010f;
-            rid->jump_time_elapsed = 0.f;
-            rid->air_friction_acc = 100.f;
-            rid->base_velocity = 0.f;
-            rid->input_velocity = 0.f;
-            rid->input_max_accelleration = 5000.f;
-            rid->inverse = false;
-        }
     } else {
 
         std::cout << "[WARNING] Loading fallback map information!"
                   << std::endl;
 
         // Hardcoding the fuck out of everything
-        {
-            level->goal_line = 1000.f;
+        level->goal_line.pos.x = 1000.f;
 
-            p->crashed = false;
-            p->crash_position.x = 0.f;
-            p->crash_position.y = 0.f;
-            p->body.pos.x = 200.0f;
-            p->body.pos.y = 350.0f;
-            p->body.dim.y = 23.f;
-            p->body.dim.x = p->body.dim.y * 3.f;
-            p->body.angle = 0.f;
-            p->body.triangle = true;
-            p->render_zone.dim.y = 25.f;
-            p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-            p->render_zone.pos = p->body.pos;
-            /*p->render_zone.pos = p->body.pos +
-                                 (p->body.dim - p->render_zone.dim) * 0.5f;*/
-            p->render_zone.angle = p->body.angle;
-            p->render_zone.triangle = false;
-            p->vel.x = 0.f;
-            p->vel.y = 0.f;
-            p->acc.x = 0.f;
-            p->acc.y = 0.f;
-            p->mass = 0.003f; // kg
-            // TODO: The alar surface should be somewhat proportional
-            //       to the dimension of the actual rectangle
-            p->alar_surface = 0.12f; // m squared
-            p->current_animation = PR::Plane::IDLE_ACC;
-            p->animation_countdown = 0.f;
-            p->inverse = false;
+        p->body.pos.x = 200.0f;
+        p->body.pos.y = 350.0f;
+        cam->pos.x = p->body.pos.x;
 
-            cam->pos.x = p->body.pos.x;
-
-            rid->crashed = false;
-            rid->crash_position.x = 0.f;
-            rid->crash_position.y = 0.f;
-            rid->body.dim.x = 30.f;
-            rid->body.dim.y = 50.f;
-            rid->body.triangle = false;
-            //move_rider_to_plane(rid, p);
-            rid->body.angle = p->render_zone.angle;
-            rid->body.pos.x =
-                p->render_zone.pos.x +
-                (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-                    sin(glm::radians(rid->body.angle)) -
-                (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
-            rid->body.pos.y =
-                p->render_zone.pos.y +
-                (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
-                (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-                    cos(glm::radians(rid->body.angle)) +
-                (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
-            rid->render_zone.dim = rid->body.dim;
-            rid->render_zone.pos = rid->body.pos +
-                                   (rid->body.dim - rid->render_zone.dim) * 0.5f;
-            rid->vel.x = 0.0f;
-            rid->vel.y = 0.0f;
-            rid->body.angle = p->body.angle;
-            rid->attached = true;
-            rid->mass = 0.010f;
-            rid->jump_time_elapsed = 0.f;
-            rid->air_friction_acc = 100.f;
-            rid->base_velocity = 0.f;
-            rid->input_velocity = 0.f;
-            rid->input_max_accelleration = 5000.f;
-            rid->inverse = false;
-        }
+        level->start_pos.angle = 0.f;
 
         level->portals_number = 2;
 
@@ -1548,8 +1499,10 @@ void level_update(void) {
                 Rect *b = get_selected_body(level->selected,
                                             level->selected_type);
                 if (b) {
-                    if (input->up.pressed) b->pos.y -= vely * dt;
-                    if (input->down.pressed) b->pos.y += vely * dt;
+                    if (level->selected_type != PR::GOAL_LINE_TYPE) {
+                        if (input->up.pressed) b->pos.y -= vely * dt;
+                        if (input->down.pressed) b->pos.y += vely * dt;
+                    }
                     if (input->left.pressed) b->pos.x -= velx * dt;
                     if (input->right.pressed) b->pos.x += velx * dt;
                 } else {
@@ -1794,7 +1747,7 @@ void level_update(void) {
 
 
     if (!p->crashed && !level->editing_now &&
-        p->body.pos.x + p->body.dim.x*0.5f > level->goal_line) {
+        p->body.pos.x + p->body.dim.x*0.5f > level->goal_line.pos.x) {
         CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
@@ -1845,19 +1798,17 @@ void level_update(void) {
 
             PR::Portal *portal = portals + portal_index;
 
-            if (rect_contains_point(rect_in_camera_space(portal->body, cam),
+            if (input->mouse_left.clicked &&
+                level->selected == NULL &&
+                !level->adding_now &&
+                rect_contains_point(rect_in_camera_space(portal->body, cam),
                                     input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked &&
-                    level->selected == NULL &&
-                    !level->adding_now) {
 
-                    level->selected = (void *) portal;
-                    level->selected_type = PR::PORTAL_TYPE;
-                    level->adding_now = false;
+                level->selected = (void *) portal;
+                level->selected_type = PR::PORTAL_TYPE;
+                level->adding_now = false;
 
-                    set_portal_option_buttons(level->selected_options_buttons);
-
-                }
+                set_portal_option_buttons(level->selected_options_buttons);
             }
 
 
@@ -1871,18 +1822,17 @@ void level_update(void) {
 
             PR::BoostPad *pad = boosts + boost_index;
 
-            if (rect_contains_point(rect_in_camera_space(pad->body, cam),
+            if (input->mouse_left.clicked &&
+                level->selected == NULL &&
+                !level->adding_now &&
+                rect_contains_point(rect_in_camera_space(pad->body, cam),
                                     input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked &&
-                    level->selected == NULL &&
-                    !level->adding_now) {
 
-                    level->selected = (void *) pad;
-                    level->selected_type = PR::BOOST_TYPE;
-                    level->adding_now = false;
+                level->selected = (void *) pad;
+                level->selected_type = PR::BOOST_TYPE;
+                level->adding_now = false;
 
-                    set_boost_option_buttons(level->selected_options_buttons);
-                }
+                set_boost_option_buttons(level->selected_options_buttons);
             }
 
             boostpad_render(pad);
@@ -1894,23 +1844,49 @@ void level_update(void) {
 
             PR::Obstacle *obs = obstacles + obstacle_index;
 
-            if (rect_contains_point(rect_in_camera_space(obs->body, cam),
+            if (input->mouse_left.clicked &&
+                level->selected == NULL &&
+                !level->adding_now &&
+                rect_contains_point(rect_in_camera_space(obs->body, cam),
                                     input->mouseX, input->mouseY, false)) {
-                if (input->mouse_left.clicked &&
-                    level->selected == NULL &&
-                    !level->adding_now) {
 
-                    level->selected = (void *) obs;
-                    level->selected_type = PR::OBSTACLE_TYPE;
-                    level->adding_now = false;
+                level->selected = (void *) obs;
+                level->selected_type = PR::OBSTACLE_TYPE;
+                level->adding_now = false;
 
-                    set_obstacle_option_buttons(level->selected_options_buttons);
-                }
+                set_obstacle_option_buttons(level->selected_options_buttons);
             }
 
             obstacle_render(obs);
 
         }
+
+        if (input->mouse_left.clicked &&
+            level->selected == NULL &&
+            !level->adding_now &&
+            rect_contains_point(rect_in_camera_space(level->goal_line, cam),
+                                input->mouseX, input->mouseY, false)) {
+
+            level->selected = (void *) &level->goal_line;
+            level->selected_type = PR::GOAL_LINE_TYPE;
+            level->adding_now = false;
+
+        }
+
+        if (input->mouse_left.clicked &&
+            level->selected == NULL &&
+            !level->adding_now &&
+            rect_contains_point(rect_in_camera_space(level->start_pos, cam),
+                                input->mouseX, input->mouseY, false)) {
+
+            level->selected = (void *) &level->start_pos;
+            level->selected_type = PR::P_START_POS_TYPE;
+            level->adding_now = false;
+
+            set_start_pos_option_buttons(level->selected_options_buttons);
+        }
+        renderer_add_queue_uni(rect_in_camera_space(level->start_pos, cam),
+                               glm::vec4(0.9f, 0.3f, 0.7f, 1.f), false);
 
         if (input->obj_add.clicked) {
             level->adding_now = true;
@@ -2097,9 +2073,8 @@ void level_update(void) {
                           false);
 
     // NOTE: Rendering goal line
-    renderer_add_queue_uni(level->goal_line - cam->pos.x + win->w*0.5f, 0.f,
-                           30.f, win->h,
-                           0.f, glm::vec4(1.0f,1.0f,1.0f,1.0f), false, false);
+    renderer_add_queue_uni(rect_in_camera_space(level->goal_line, cam),
+                           glm::vec4(1.0f), false);
 
     // Actually issuing the render calls
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -2961,6 +2936,164 @@ void level_update(void) {
 
                 break;
             }
+            case PR::GOAL_LINE_TYPE:
+            {
+                Rect *rect = (Rect *) level->selected;
+                goal_line_render_info(rect, 5.f, 0.f);
+                renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                                   glob->rend_res.shaders[2]);
+                break;
+            }
+            case PR::P_START_POS_TYPE:
+            {
+                Rect *rect = (Rect *) level->selected;
+                start_pos_render_info(rect, 5.f, 0.f);
+                renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
+                                   glob->rend_res.shaders[2]);
+
+                for(size_t option_button_index = 0;
+                    option_button_index < SELECTED_START_POS_OPTIONS;
+                    ++option_button_index) {
+                    assert((option_button_index <
+                                ARRAY_LENGTH(level->selected_options_buttons))
+                            && "Selected options out of bound for obstacles");
+
+                    PR::LevelButton *button =
+                        &level->selected_options_buttons[option_button_index];
+
+                    if (option_button_index == 0) {
+                        PR::LevelButton minus1;
+                        minus1.from_center = true;
+                        minus1.body.angle = 0.f;
+                        minus1.body.triangle = false;
+                        minus1.body.dim.x = button->body.dim.x * 0.2f;
+                        minus1.body.dim.y = minus1.body.dim.x;
+                        minus1.body.pos.x = button->body.pos.x -
+                                            button->body.dim.x * 0.5f +
+                                            minus1.body.dim.x * 0.5f;
+                        minus1.body.pos.y = button->body.pos.y -
+                                            button->body.dim.y * 0.5f;
+                        minus1.col = button->col * 0.5f;
+                        minus1.col.a = 1.f;
+
+                        PR::LevelButton minus5 = minus1;
+                        minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+
+                        PR::LevelButton plus1;
+                        plus1.from_center = true;
+                        plus1.body.angle = 0.f;
+                        plus1.body.triangle = false;
+                        plus1.body.dim = minus1.body.dim;
+                        plus1.body.pos.x = button->body.pos.x +
+                                           button->body.dim.x * 0.5f -
+                                           plus1.body.dim.x * 0.5f;
+                        plus1.body.pos.y = button->body.pos.y -
+                                           button->body.dim.y * 0.5f;
+                        plus1.col = button->col * 0.5f;
+                        plus1.col.a = 1.f;
+
+                        PR::LevelButton plus5 = plus1;
+                        plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+
+
+                        if (input->mouse_left.clicked) {
+                            if (rect_contains_point(button->body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                            }
+                            if (rect_contains_point(plus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        rect->angle += 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(plus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        rect->angle += 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus1.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        rect->angle -= 1.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            } else
+                            if (rect_contains_point(minus5.body,
+                                                    input->mouseX,
+                                                    input->mouseY, true)) {
+                                set_selected_to_null = false;
+                                switch(option_button_index) {
+                                    case 0:
+                                        rect->angle -= 5.f;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        renderer_add_queue_uni(button->body,
+                                               button->col,
+                                               button->from_center);
+                        // TODO: Selected an appropriate font for this
+                        renderer_add_queue_text(button->body.pos.x,
+                                                button->body.pos.y,
+                                                button->text, glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus1.body,
+                                               plus1.col,
+                                               plus1.from_center);
+                        renderer_add_queue_text(plus1.body.pos.x,
+                                                plus1.body.pos.y,
+                                                "+1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(plus5.body,
+                                               plus5.col,
+                                               plus5.from_center);
+                        renderer_add_queue_text(plus5.body.pos.x,
+                                                plus5.body.pos.y,
+                                                "+5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus1.body,
+                                               minus1.col,
+                                               minus1.from_center);
+                        renderer_add_queue_text(minus1.body.pos.x,
+                                                minus1.body.pos.y,
+                                                "-1", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                        renderer_add_queue_uni(minus5.body,
+                                               minus5.col,
+                                               minus5.from_center);
+                        renderer_add_queue_text(minus5.body.pos.x,
+                                                minus5.body.pos.y,
+                                                "-5", glm::vec4(1.0f),
+                                                &glob->rend_res.fonts[1], true);
+                    } else {
+                        // UNREACHABLE
+                    }
+                }
+
+                break;
+            }
         }
         renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
@@ -3114,6 +3247,7 @@ inline void obstacle_render(PR::Obstacle *obs) {
 
 inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
     char buffer[99];
+    std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "PORTAL INFO:");
@@ -3139,6 +3273,7 @@ inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
 
 inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty) {
     char buffer[99];
+    std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "BOOST INFO:");
@@ -3168,6 +3303,7 @@ inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty) {
 
 inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty) {
     char buffer[99];
+    std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "OBSTACLE INFO:");
@@ -3191,6 +3327,46 @@ inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "collide_rider: %s",
                  (obstacle)->collide_rider ? "true" : "false");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+}
+
+inline void goal_line_render_info(Rect *rect, float tx, float ty) {
+    char buffer[99];
+    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    size_t index = 1;
+    float spacing = OBJECT_INFO_FONT_SIZE;
+    std::sprintf(buffer, "GOAL LINE INFO:");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "pos: (%f, %f)",
+                 rect->pos.x, rect->pos.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "dim: (%f, %f)",
+                 rect->dim.x, rect->dim.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+}
+
+inline void start_pos_render_info(Rect *rect, float tx, float ty) {
+    char buffer[99];
+    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    size_t index = 1;
+    float spacing = OBJECT_INFO_FONT_SIZE;
+    std::sprintf(buffer, "START POS INFO:");
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "pos: (%f, %f)",
+                 rect->pos.x, rect->pos.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "dim: (%f, %f)",
+                 rect->dim.x, rect->dim.y);
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "angle: %f",
+                 rect->angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
@@ -3312,6 +3488,12 @@ inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type) {
             break;
         case PR::OBSTACLE_TYPE:
             b = &((PR::Obstacle *)selected)->body;
+            break;
+        case PR::GOAL_LINE_TYPE:
+            b = (Rect *) selected;
+            break;
+        case PR::P_START_POS_TYPE:
+            b = (Rect *) selected;
             break;
         default:
             b = NULL;
@@ -3492,6 +3674,41 @@ void set_obstacle_option_buttons(PR::LevelButton *buttons) {
                 break;
         }
         button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+    }
+}
+
+void set_start_pos_option_buttons(PR::LevelButton *buttons) {
+    for(size_t option_button_index = 0;
+        option_button_index < SELECTED_START_POS_OPTIONS;
+        ++option_button_index) {
+        assert((option_button_index <
+                 SELECTED_MAX_OPTIONS)
+                && "Selected options out of bound for start_position");
+
+        PR::LevelButton *button = buttons + option_button_index;
+
+        button->from_center = true;
+        button->body.pos.x = glob->window.w * (option_button_index+1) /
+                             (SELECTED_START_POS_OPTIONS+1);
+        button->body.pos.y = glob->window.h * 9 / 10;
+        button->body.dim.x = glob->window.w /
+                             (SELECTED_START_POS_OPTIONS+2);
+        button->body.dim.y = glob->window.h / 10;
+
+        switch(option_button_index) {
+            case 0:
+                std::snprintf(button->text,
+                              std::strlen("ANGLE")+1,
+                              "ANGLE");
+                break;
+            default:
+                std::snprintf(button->text,
+                              std::strlen("UNDEFINED")+1,
+                              "UNDEFINED");
+                break;
+        }
+        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+
     }
 }
 
