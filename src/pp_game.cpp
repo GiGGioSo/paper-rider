@@ -2398,7 +2398,7 @@ void level_update(void) {
     //          position, that button is not pressed automatically
     if (level->selected != NULL &&
         level->selected == level->old_selected &&
-        !level->adding_now && !input->obj_delete.clicked) {
+        !level->adding_now) {
         switch(level->selected_type) {
             case PR::PORTAL_TYPE:
             {
