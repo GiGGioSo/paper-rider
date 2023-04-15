@@ -78,13 +78,6 @@
     level->current_white = PR::WHITE;\
 } while(0)
 
-#define DEACTIVATE_EDIT_MODE(level) do {\
-    std::cout << "Deactivating edit mode!" << std::endl;\
-    (level)->selected = NULL;\
-    (level)->editing_now = false;\
-    (level)->camera.pos.x = (level)->plane.body.pos.x;\
-} while(0)
-
 // Utilities functions for code reuse
 inline void portal_render(PR::Portal *portal);
 inline void boostpad_render(PR::BoostPad *pad);
@@ -104,6 +97,8 @@ inline Rect rect_in_camera_space(Rect r, PR::Camera *cam);
 inline TexCoords texcoords_in_texture_space(float x, float y,
                                             float w, float h,
                                             Texture *tex, bool inverse);
+void deactivate_level_edit_mode(PR::Level *level);
+void activate_level_edit_mode(PR::Level *level);
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1404,31 +1399,13 @@ void level_update(void) {
     }
 
     level->old_selected = level->selected;
-
     if (level->editing_available &&
-        input->edit.clicked) {
-
+            input->edit.clicked) {
         if (level->editing_now) {
-            DEACTIVATE_EDIT_MODE(level);
+            deactivate_level_edit_mode(level);
             glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         } else {
-            std::cout << "Activating edit mode!" << std::endl;
-            level->editing_now = true;
-            if (p->inverse) {
-                p->body.pos.y += p->body.dim.y;
-                p->body.dim.y = -p->body.dim.y;
-            }
-            p->inverse = false;
-            p->crashed = false;
-            p->vel = glm::vec2(0.f);
-            if (rid->inverse) {
-                rid->body.dim.y = -rid->body.dim.y;
-            }
-            rid->inverse = false;
-            rid->crashed = false;
-            rid->attached = true;
-            rid->vel = glm::vec2(0.f);
-            level->colors_shuffled = false;
+            activate_level_edit_mode(level);
             RESET_LEVEL_COLORS(level);
             glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
@@ -1746,7 +1723,11 @@ void level_update(void) {
 
     if (!rid->crashed && !level->editing_now &&
         rid->body.pos.x + rid->body.dim.x*0.5f > level->goal_line.pos.x) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
+        if (level->editing_available) {
+            activate_level_edit_mode(level);
+        } else {
+            CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
+        }
     }
 
 
@@ -2453,7 +2434,16 @@ void level_update(void) {
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
 
 
-                        if (input->mouse_left.clicked) {
+                        if (input->mouse_left.clicked ||
+                            input->mouse_right.pressed) {
+
+                            float one = input->mouse_right.pressed ?
+                                        20.f * dt :
+                                        1.f;
+                            float five = input->mouse_right.pressed ?
+                                        200.f * dt :
+                                        5.f;
+
                             if (rect_contains_point(button->body,
                                                     input->mouseX,
                                                     input->mouseY, true)) {
@@ -2465,10 +2455,10 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.dim.x += 1.f;
+                                        portal->body.dim.x += one;
                                         break;
                                     case 1:
-                                        portal->body.dim.y += 1.f;
+                                        portal->body.dim.y += one;
                                         break;
                                     default:
                                         break;
@@ -2480,10 +2470,10 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.dim.x += 5.f;
+                                        portal->body.dim.x += five;
                                         break;
                                     case 1:
-                                        portal->body.dim.y += 5.f;
+                                        portal->body.dim.y += five;
                                         break;
                                     default:
                                         break;
@@ -2495,10 +2485,10 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.dim.x -= 1.f;
+                                        portal->body.dim.x -= one;
                                         break;
                                     case 1:
-                                        portal->body.dim.y -= 1.f;
+                                        portal->body.dim.y -= one;
                                         break;
                                     default:
                                         break;
@@ -2510,10 +2500,10 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.dim.x -= 5.f;
+                                        portal->body.dim.x -= five;
                                         break;
                                     case 1:
-                                        portal->body.dim.y -= 5.f;
+                                        portal->body.dim.y -= five;
                                         break;
                                     default:
                                         break;
@@ -2673,7 +2663,16 @@ void level_update(void) {
                         PR::LevelButton plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
 
-                        if (input->mouse_left.clicked) {
+                        if (input->mouse_left.clicked ||
+                            input->mouse_right.pressed) {
+
+                            float one = input->mouse_right.pressed ?
+                                        20.f * dt :
+                                        1.f;
+                            float five = input->mouse_right.pressed ?
+                                        200.f * dt :
+                                        5.f;
+
                             if (rect_contains_point(button->body,
                                                     input->mouseX,
                                                     input->mouseY, true)) {
@@ -2685,19 +2684,19 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.dim.x += 1.f;
+                                        pad->body.dim.x += one;
                                         break;
                                     case 1:
-                                        pad->body.dim.y += 1.f;
+                                        pad->body.dim.y += one;
                                         break;
                                     case 2:
-                                        pad->body.angle += 1.f;
+                                        pad->body.angle += one;
                                         break;
                                     case 4:
-                                        pad->boost_angle += 1.f;
+                                        pad->boost_angle += one;
                                         break;
                                     case 5:
-                                        pad->boost_power += 1.f;
+                                        pad->boost_power += one;
                                         break;
                                     default:
                                         break;
@@ -2709,19 +2708,19 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.dim.x += 5.f;
+                                        pad->body.dim.x += five;
                                         break;
                                     case 1:
-                                        pad->body.dim.y += 5.f;
+                                        pad->body.dim.y += five;
                                         break;
                                     case 2:
-                                        pad->body.angle += 5.f;
+                                        pad->body.angle += five;
                                         break;
                                     case 4:
-                                        pad->boost_angle += 5.f;
+                                        pad->boost_angle += five;
                                         break;
                                     case 5:
-                                        pad->boost_power += 5.f;
+                                        pad->boost_power += five;
                                         break;
                                     default:
                                         break;
@@ -2733,19 +2732,19 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.dim.x -= 1.f;
+                                        pad->body.dim.x -= one;
                                         break;
                                     case 1:
-                                        pad->body.dim.y -= 1.f;
+                                        pad->body.dim.y -= one;
                                         break;
                                     case 2:
-                                        pad->body.angle -= 1.f;
+                                        pad->body.angle -= one;
                                         break;
                                     case 4:
-                                        pad->boost_angle -= 1.f;
+                                        pad->boost_angle -= one;
                                         break;
                                     case 5:
-                                        pad->boost_power -= 1.f;
+                                        pad->boost_power -= one;
                                         break;
                                     default:
                                         break;
@@ -2757,19 +2756,19 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.dim.x -= 5.f;
+                                        pad->body.dim.x -= five;
                                         break;
                                     case 1:
-                                        pad->body.dim.y -= 5.f;
+                                        pad->body.dim.y -= five;
                                         break;
                                     case 2:
-                                        pad->body.angle -= 5.f;
+                                        pad->body.angle -= five;
                                         break;
                                     case 4:
-                                        pad->boost_angle -= 5.f;
+                                        pad->boost_angle -= five;
                                         break;
                                     case 5:
-                                        pad->boost_power -= 5.f;
+                                        pad->boost_power -= five;
                                         break;
                                     default:
                                         break;
@@ -2870,7 +2869,16 @@ void level_update(void) {
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
 
 
-                        if (input->mouse_left.clicked) {
+                        if (input->mouse_left.clicked ||
+                            input->mouse_right.pressed) {
+
+                            float one = input->mouse_right.pressed ?
+                                        20.f * dt :
+                                        1.f;
+                            float five = input->mouse_right.pressed ?
+                                        200.f * dt :
+                                        5.f;
+
                             if (rect_contains_point(button->body,
                                                     input->mouseX,
                                                     input->mouseY, true)) {
@@ -2882,13 +2890,13 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.dim.x += 1.f;
+                                        obs->body.dim.x += one;
                                         break;
                                     case 1:
-                                        obs->body.dim.y += 1.f;
+                                        obs->body.dim.y += one;
                                         break;
                                     case 2:
-                                        obs->body.angle += 1.f;
+                                        obs->body.angle += one;
                                         break;
                                     default:
                                         break;
@@ -2900,13 +2908,13 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.dim.x += 5.f;
+                                        obs->body.dim.x += five;
                                         break;
                                     case 1:
-                                        obs->body.dim.y += 5.f;
+                                        obs->body.dim.y += five;
                                         break;
                                     case 2:
-                                        obs->body.angle += 5.f;
+                                        obs->body.angle += five;
                                         break;
                                     default:
                                         break;
@@ -2918,13 +2926,13 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.dim.x -= 1.f;
+                                        obs->body.dim.x -= one;
                                         break;
                                     case 1:
-                                        obs->body.dim.y -= 1.f;
+                                        obs->body.dim.y -= one;
                                         break;
                                     case 2:
-                                        obs->body.angle -= 1.f;
+                                        obs->body.angle -= one;
                                         break;
                                     default:
                                         break;
@@ -2936,13 +2944,13 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.dim.x -= 5.f;
+                                        obs->body.dim.x -= five;
                                         break;
                                     case 1:
-                                        obs->body.dim.y -= 5.f;
+                                        obs->body.dim.y -= five;
                                         break;
                                     case 2:
-                                        obs->body.angle -= 5.f;
+                                        obs->body.angle -= five;
                                         break;
                                     default:
                                         break;
@@ -3085,7 +3093,16 @@ void level_update(void) {
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
 
 
-                        if (input->mouse_left.clicked) {
+                        if (input->mouse_left.clicked ||
+                            input->mouse_right.pressed) {
+
+                            float one = input->mouse_right.pressed ?
+                                        20.f * dt :
+                                        1.f;
+                            float five = input->mouse_right.pressed ?
+                                        200.f * dt :
+                                        5.f;
+
                             if (rect_contains_point(button->body,
                                                     input->mouseX,
                                                     input->mouseY, true)) {
@@ -3097,7 +3114,7 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        rect->angle += 1.f;
+                                        rect->angle += one;
                                         break;
                                     default:
                                         break;
@@ -3109,7 +3126,7 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        rect->angle += 5.f;
+                                        rect->angle += five;
                                         break;
                                     default:
                                         break;
@@ -3121,7 +3138,7 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        rect->angle -= 1.f;
+                                        rect->angle -= one;
                                         break;
                                     default:
                                         break;
@@ -3133,7 +3150,7 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        rect->angle -= 5.f;
+                                        rect->angle -= five;
                                         break;
                                     default:
                                         break;
@@ -3836,6 +3853,33 @@ inline TexCoords texcoords_in_texture_space(float x, float y,
               << std::endl;*/
     
     return res;
+}
+
+void activate_level_edit_mode(PR::Level *level) {
+    std::cout << "Activating edit mode!" << std::endl;
+    level->editing_now = true;
+    if (level->plane.inverse) {
+        level->plane.body.pos.y += level->plane.body.dim.y;
+        level->plane.body.dim.y = -level->plane.body.dim.y;
+    }
+    level->plane.inverse = false;
+    level->plane.crashed = false;
+    level->plane.vel = glm::vec2(0.f);
+    if (level->rider.inverse) {
+        level->rider.body.dim.y = -level->rider.body.dim.y;
+    }
+    level->rider.inverse = false;
+    level->rider.crashed = false;
+    level->rider.attached = true;
+    level->rider.vel = glm::vec2(0.f);
+    level->colors_shuffled = false;
+}
+
+void deactivate_level_edit_mode(PR::Level *level) {
+    std::cout << "Deactivating edit mode!" << std::endl;
+    level->selected = NULL;
+    level->editing_now = false;
+    level->camera.pos.x = level->plane.body.pos.x;
 }
 
 // Particle systems
