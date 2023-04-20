@@ -1403,11 +1403,9 @@ void level_update(void) {
             input->edit.clicked) {
         if (level->editing_now) {
             deactivate_level_edit_mode(level);
-            glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         } else {
             activate_level_edit_mode(level);
             RESET_LEVEL_COLORS(level);
-            glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
     }
 
@@ -3873,6 +3871,7 @@ void activate_level_edit_mode(PR::Level *level) {
     level->rider.attached = true;
     level->rider.vel = glm::vec2(0.f);
     level->colors_shuffled = false;
+    glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 void deactivate_level_edit_mode(PR::Level *level) {
@@ -3880,6 +3879,7 @@ void deactivate_level_edit_mode(PR::Level *level) {
     level->selected = NULL;
     level->editing_now = false;
     level->camera.pos.x = level->plane.body.pos.x;
+    glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
 
 // Particle systems
