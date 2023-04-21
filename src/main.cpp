@@ -202,6 +202,12 @@ void glob_init(void) {
     shaderer_set_mat4(*s3, "projection",
                       glob->rend_res.ortho_proj);
 
+    Shader *s4 = &glob->rend_res.shaders[3];
+    shaderer_create_program(s4, "./res/shaders/text_wave.vs",
+                            "./res/shaders/text_default.fs");
+    shaderer_set_mat4(*s4, "projection",
+                      glob->rend_res.ortho_proj);
+
     // NOTE: Initializing the global_sprite
     renderer_create_texture(&glob->rend_res.global_sprite,
                             "res/paper-rider_sprite.png");

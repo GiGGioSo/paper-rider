@@ -1062,10 +1062,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     // Have to set to NULL if I don't use it
     menu_set_to_null(menu);
 
-    std::cout << "Is the level editable? "
-              << level->editing_available
-              << std::endl;
-
     PR::Camera *cam = &level->camera;
     // cam->pos.x is set afterwards
     cam->pos.y = win->h * 0.5f;
@@ -1083,6 +1079,12 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     level->editing_now = false;
 
     level->adding_now = false;
+
+    level->game_over = false;
+    level->game_won = false;
+
+    level->pause_now = false;
+    level->finish_time = 0;
 
     level->selected = NULL;
 
@@ -1392,10 +1394,16 @@ void level_update(void) {
     InputController *input = &glob->input;
     float dt = glob->state.delta_time;
 
-    assert(-360.f <= p->body.angle && p->body.angle <= 360.f);
-
-    if (input->menu.clicked) {
-        CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
+    if (input->menu.clicked && !level->game_over) {
+        level->pause_now = !level->pause_now;
+        if (level->pause_now) {
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        }
+        //CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
 
     level->old_selected = level->selected;
@@ -1410,9 +1418,7 @@ void level_update(void) {
     }
 
     #if 0
-    // Do I want the plane to keep going if the rider crashes?
-
-    // Structure of the update loop of level1
+    // Structure of the update loop of the level
     if (!p->crashed) {
         p->update();
         if (!rid->crashed) {
@@ -1460,7 +1466,7 @@ void level_update(void) {
     plane_crash_ps->active = false;
     rider_crash_ps->active = false;
 
-    if (!p->crashed) {
+    if (!p->crashed && !level->pause_now && !level->game_over) {
         // #### START PLANE STUFF
         // NOTE: Reset the accelleration for it to be recalculated
         p->acc *= 0;
@@ -1633,7 +1639,6 @@ void level_update(void) {
                 lerp_camera_x_to_rect(cam, &rid->body, true);
             }
         } else { // rid->crashed
-            rider_crash_ps->active = true;
             if (rid->attached) {
                 // NOTE: Making the camera move to the plane
                 lerp_camera_x_to_rect(cam, &p->body, true);
@@ -1642,8 +1647,7 @@ void level_update(void) {
                 lerp_camera_x_to_rect(cam, &rid->body, true);
             }
         }
-    } else { // p->crashed
-        plane_crash_ps->active = true;
+    } else if (!level->pause_now && !level->game_over) { // p->crashed
 
         if (!rid->crashed) {
             if (rid->attached) {
@@ -1707,7 +1711,6 @@ void level_update(void) {
                 lerp_camera_x_to_rect(cam, &rid->body, true);
             }
         } else { // rid->crashed
-            rider_crash_ps->active = true;
             if (rid->attached) {
                 // NOTE: Making the camera move to the plane
                 lerp_camera_x_to_rect(cam, &p->body, true);
@@ -1719,12 +1722,17 @@ void level_update(void) {
     }
 
 
-    if (!rid->crashed && !level->editing_now &&
+    if (!rid->crashed && !level->editing_now && !level->game_over &&
         rid->body.pos.x + rid->body.dim.x*0.5f > level->goal_line.pos.x) {
         if (level->editing_available) {
             activate_level_edit_mode(level);
         } else {
-            CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
+            level->game_over = true;
+            level->game_won = true;
+            level->text_wave_time = 0.f;
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            // CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
         }
     }
 
@@ -1740,6 +1748,10 @@ void level_update(void) {
     rid->render_zone.angle = rid->body.angle;
 
     plane_update_animation(p);
+
+    if (!level->editing_available && !level->pause_now && !level->game_over) {
+        level->finish_time += dt;
+    }
 
     // NOTE: If you click the left mouse button when you have something
     //          selected and you are not clicking on an option
@@ -1963,6 +1975,9 @@ void level_update(void) {
                     rid->vel *= 0.f;
                     rid->base_velocity = 0.f;
                     rid->input_velocity = 0.f;
+                    level->game_over = true;
+                    glfwSetInputMode(glob->window.glfw_win,
+                                     GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 }
                 p->crashed = true;
                 p->acc *= 0.f;
@@ -1978,6 +1993,9 @@ void level_update(void) {
                                    &rid->crash_position.y)) {
                 // NOTE: Rider colliding with an obstacle
 
+                level->game_over = true;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 rid->crashed = true;
                 rid->attached = false;
                 rid->vel *= 0.f;
@@ -2019,6 +2037,9 @@ void level_update(void) {
                 rid->vel *= 0.f;
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
+                level->game_over = true;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
             p->crashed = true;
             p->acc *= 0.f;
@@ -2084,6 +2105,9 @@ void level_update(void) {
             std::cout << "Rider collided with the floor" << std::endl;
         }
     }
+
+    if (p->crashed) plane_crash_ps->active = true;
+    if (rid->crashed) rider_crash_ps->active = true;
 
     // NOTE: Updating and rendering all the particle systems
     // Set the time_between_particles for the boost based on the velocity
@@ -2375,7 +2399,7 @@ void level_update(void) {
     // NOTE: This check is done so that if when an obstacle is selected and
     //          a button (to modify the selected object) appears on the cursor
     //          position, that button is not pressed automatically
-    if (level->selected != NULL &&
+    if (level->selected != NULL && level->editing_now &&
         level->selected == level->old_selected &&
         !level->adding_now) {
         switch(level->selected_type) {
@@ -3206,6 +3230,193 @@ void level_update(void) {
 
     if (set_selected_to_null) level->selected = NULL;
 
+
+    if (level->game_over) {
+        // NOTE: Game is over
+        PR::LevelButton b_restart = {
+            .from_center = true,
+            .body = {
+                .pos = glm::vec2(win->w * 0.5f, win->h * 0.4f),
+                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = LEVEL_BUTTON_DEFAULT_COLOR,
+            .text = "RESTART",
+        };
+        PR::LevelButton b_quit = {
+            .from_center = true,
+            .body = {
+                .pos = glm::vec2(win->w * 0.5f, win->h * 0.7f),
+                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = LEVEL_BUTTON_DEFAULT_COLOR,
+            .text = "QUIT",
+        };
+
+        if (rect_contains_point(b_restart.body,
+                                input->mouseX, input->mouseY,
+                                b_restart.from_center)) {
+            b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
+
+            if (input->mouse_left.clicked) {
+                CHANGE_CASE_TO(PR::LEVEL, level_prepare, level->file_path,
+                               level->editing_available);
+            }
+        }
+
+        if (rect_contains_point(b_quit.body,
+                                input->mouseX, input->mouseY,
+                                b_quit.from_center)) {
+            b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
+
+            if (input->mouse_left.clicked) {
+                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
+            }
+        }
+
+        if (level->game_won) {
+            level->text_wave_time += dt;
+            shaderer_set_float(glob->rend_res.shaders[3], "time",
+                               level->text_wave_time);
+            char congratulations[] = "CONGRATULATIONS!";
+            renderer_add_queue_text(win->w * 0.5f, win->h * 0.1f,
+                                    congratulations,
+                                    glm::vec4(0.f, 0.f, 0.f, 1.f),
+                                    &glob->rend_res.fonts[0], true);
+            renderer_draw_text(&glob->rend_res.fonts[0],
+                               glob->rend_res.shaders[3]);
+            char time_recap[99];
+            int size = std::snprintf(nullptr, 0,
+                                     "You finished the level in %.3f seconds!",
+                                     level->finish_time);
+            std::snprintf(time_recap, size+1,
+                          "You finished the level in %.3f seconds!",
+                          level->finish_time);
+            renderer_add_queue_text(win->w * 0.5f, win->h * 0.2f,
+                                    time_recap,
+                                    glm::vec4(0.f, 0.f, 0.f, 1.f),
+                                    &glob->rend_res.fonts[1], true);
+            renderer_draw_text(&glob->rend_res.fonts[1],
+                               glob->rend_res.shaders[2]);
+        }
+        renderer_add_queue_uni(b_restart.body,
+                               b_restart.col,
+                               b_restart.from_center);
+        renderer_add_queue_text(b_restart.body.pos.x,
+                                b_restart.body.pos.y,
+                                b_restart.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+        renderer_add_queue_uni(b_quit.body,
+                               b_quit.col,
+                               b_quit.from_center);
+        renderer_add_queue_text(b_quit.body.pos.x,
+                                b_quit.body.pos.y,
+                                b_quit.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_text(&glob->rend_res.fonts[DEFAULT_FONT],
+                           glob->rend_res.shaders[2]);
+
+    } else if (level->pause_now) {
+        // NOTE: Game in pause mode
+        PR::LevelButton b_resume = {
+            .from_center = true,
+            .body = {
+                .pos = glm::vec2(win->w * 0.5f, win->h * 0.2f),
+                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = LEVEL_BUTTON_DEFAULT_COLOR,
+            .text = "RESUME",
+        };
+        PR::LevelButton b_restart = {
+            .from_center = true,
+            .body = {
+                .pos = glm::vec2(win->w * 0.5f, win->h * 0.5f),
+                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = LEVEL_BUTTON_DEFAULT_COLOR,
+            .text = "RESTART",
+        };
+        PR::LevelButton b_quit = {
+            .from_center = true,
+            .body = {
+                .pos = glm::vec2(win->w * 0.5f, win->h * 0.8f),
+                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = LEVEL_BUTTON_DEFAULT_COLOR,
+            .text = "QUIT",
+        };
+
+        if (rect_contains_point(b_resume.body,
+                                input->mouseX, input->mouseY,
+                                b_resume.from_center)) {
+            b_resume.col = LEVEL_BUTTON_SELECTED_COLOR;
+
+            if (input->mouse_left.clicked) {
+                level->pause_now = false;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            }
+        }
+
+        if (rect_contains_point(b_restart.body,
+                                input->mouseX, input->mouseY,
+                                b_restart.from_center)) {
+            b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
+
+            if (input->mouse_left.clicked) {
+                CHANGE_CASE_TO(PR::LEVEL, level_prepare, level->file_path,
+                               level->editing_available);
+            }
+        }
+
+        if (rect_contains_point(b_quit.body,
+                                input->mouseX, input->mouseY,
+                                b_quit.from_center)) {
+            b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
+
+            if (input->mouse_left.clicked) {
+                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
+            }
+        }
+
+        renderer_add_queue_uni(b_resume.body,
+                               b_resume.col,
+                               b_resume.from_center);
+        renderer_add_queue_text(b_resume.body.pos.x,
+                                b_resume.body.pos.y,
+                                b_resume.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+        renderer_add_queue_uni(b_restart.body,
+                               b_restart.col,
+                               b_restart.from_center);
+        renderer_add_queue_text(b_restart.body.pos.x,
+                                b_restart.body.pos.y,
+                                b_restart.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+        renderer_add_queue_uni(b_quit.body,
+                               b_quit.col,
+                               b_quit.from_center);
+        renderer_add_queue_text(b_quit.body.pos.x,
+                                b_quit.body.pos.y,
+                                b_quit.text, glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_text(&glob->rend_res.fonts[DEFAULT_FONT],
+                           glob->rend_res.shaders[2]);
+    }
+
     if (input->save_map.clicked) {
         if (save_map_to_file(level->file_path, level, win->w, win->h)) {
             std::cout << "[ERROR] Could not save the map in the file: "
@@ -3856,6 +4067,7 @@ inline TexCoords texcoords_in_texture_space(float x, float y,
 void activate_level_edit_mode(PR::Level *level) {
     std::cout << "Activating edit mode!" << std::endl;
     level->editing_now = true;
+    level->game_over = false;
     if (level->plane.inverse) {
         level->plane.body.pos.y += level->plane.body.dim.y;
         level->plane.body.dim.y = -level->plane.body.dim.y;

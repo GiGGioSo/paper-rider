@@ -123,9 +123,9 @@ struct PR {
         float time_elapsed;
     };
     struct LevelButton {
+        bool from_center;
         Rect body;
         glm::vec4 col;
-        bool from_center;
         char text[99];
 
         char mapfile_path[99];
@@ -182,6 +182,15 @@ struct PR {
 
         bool adding_now;
 
+        bool pause_now;
+
+        bool game_over;
+        bool game_won;
+
+        float finish_time;
+
+        float text_wave_time;
+
         void *selected;
         void *old_selected;
         ObjectType selected_type;
@@ -210,7 +219,7 @@ struct PR {
 
     struct RenderResources {
         glm::mat4 ortho_proj;
-        Shader shaders[3];
+        Shader shaders[4];
         Font fonts[2];
         Texture global_sprite;
     };
