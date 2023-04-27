@@ -107,6 +107,7 @@ struct PR {
         Rect body;
         glm::vec2 vel;
         glm::vec4 color;
+        bool active;
     };
     struct ParticleSystem {
         Particle *particles;
@@ -115,6 +116,7 @@ struct PR {
         size_t current_particle;
 
         bool active;
+        bool all_inactive;
 
         void (*create_particle)(PR::ParticleSystem *, PR::Particle *);
         void (*update_particle)(PR::ParticleSystem *, PR::Particle *);

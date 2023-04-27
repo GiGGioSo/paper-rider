@@ -1288,7 +1288,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
 
 
     PR::ParticleSystem *boost_ps = &level->particle_systems[0];
-    boost_ps->particles_number = 150;
+    boost_ps->particles_number = 200;
     if (boost_ps->particles_number) {
         boost_ps->particles =
             (PR::Particle *) std::malloc(sizeof(PR::Particle) *
@@ -1299,9 +1299,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
         }
     }
     boost_ps->current_particle = 0;
-    boost_ps->time_between_particles = 0.f;
+    boost_ps->time_between_particles = 0.01f;
     boost_ps->time_elapsed = 0.f;
     boost_ps->active = false;
+    boost_ps->all_inactive = true;
     boost_ps->create_particle = create_particle_plane_boost;
     boost_ps->update_particle = update_particle_plane_boost;
     for(size_t particle_index = 0;
@@ -1313,7 +1314,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     }
 
     PR::ParticleSystem *plane_crash_ps = &level->particle_systems[1];
-    plane_crash_ps->particles_number = 30;
+    plane_crash_ps->particles_number = 100;
     if (plane_crash_ps->particles_number) {
         plane_crash_ps->particles =
             (PR::Particle *) std::malloc(sizeof(PR::Particle) *
@@ -1324,9 +1325,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
         }
     }
     plane_crash_ps->current_particle = 0;
-    plane_crash_ps->time_between_particles = 0.10f;
+    plane_crash_ps->time_between_particles = 0.02f;
     plane_crash_ps->time_elapsed = 0.f;
     plane_crash_ps->active = false;
+    plane_crash_ps->all_inactive = true;
     plane_crash_ps->create_particle = create_particle_plane_crash;
     plane_crash_ps->update_particle = update_particle_plane_crash;
     for(size_t particle_index = 0;
@@ -1338,7 +1340,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     }
 
     PR::ParticleSystem *rider_crash_ps = &level->particle_systems[2];
-    rider_crash_ps->particles_number = 30;
+    rider_crash_ps->particles_number = 100;
     if (rider_crash_ps->particles_number) {
         rider_crash_ps->particles =
             (PR::Particle *) std::malloc(sizeof(PR::Particle) *
@@ -1349,9 +1351,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
         }
     }
     rider_crash_ps->current_particle = 0;
-    rider_crash_ps->time_between_particles = 0.10f;
+    rider_crash_ps->time_between_particles = 0.02f;
     rider_crash_ps->time_elapsed = 0.f;
     rider_crash_ps->active = false;
+    rider_crash_ps->all_inactive = true;
     rider_crash_ps->create_particle = create_particle_rider_crash;
     rider_crash_ps->update_particle = update_particle_rider_crash;
     for(size_t particle_index = 0;
@@ -2058,6 +2061,9 @@ void level_update(void) {
 
             rid->crashed = true;
             rid->attached = false;
+            level->game_over = true;
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             rid->vel *= 0.f;
             rid->base_velocity = 0.f;
             rid->input_velocity = 0.f;
@@ -2097,6 +2103,9 @@ void level_update(void) {
 
             rid->crashed = true;
             rid->attached = false;
+            level->game_over = true;
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             rid->vel *= 0.f;
             rid->base_velocity = 0.f;
             rid->input_velocity = 0.f;
@@ -2121,6 +2130,33 @@ void level_update(void) {
             &glob->current_level.particle_systems[ps_index];
 
         if (ps->particles_number == 0) continue;
+
+        if (ps->active) ps->all_inactive = false;
+
+        if (!ps->active && !ps->all_inactive) {
+
+            ps->all_inactive = true;
+            for(size_t particle_index = 0;
+                particle_index < ps->particles_number;
+                ++particle_index) {
+
+                PR::Particle *particle = ps->particles +
+                                         ps->current_particle;
+
+                if (particle->active) {
+                    ps->all_inactive = false;
+                    break;
+                }
+
+            }
+        }
+
+        if (ps->all_inactive) {
+            // std::cout << "Skipped PS " << ps_index
+            //           << " because all particles were inactive"
+            //           << std::endl;
+            continue;
+        }
 
         ps->time_elapsed += dt;
         if (ps->time_elapsed > ps->time_between_particles) {
@@ -4115,6 +4151,7 @@ void create_particle_plane_boost(PR::ParticleSystem *ps,
         particle->vel.y =
             -(glm::length(p->vel) - 400.f) * sin(movement_angle) +
             (float)((rand() % 101) - 50);
+        particle->active = true;
     } else {
         // NOTE: If the particle system is not active,
         //       the new particles should just delete the old ones
@@ -4129,6 +4166,7 @@ void create_particle_plane_boost(PR::ParticleSystem *ps,
         particle->color.g = 0.0f;
         particle->color.b = 0.0f;
         particle->color.a = 0.0f;
+        particle->active = false;
     }
 }
 void update_particle_plane_boost(PR::ParticleSystem *ps,
@@ -4155,6 +4193,7 @@ void create_particle_plane_crash(PR::ParticleSystem *ps,
         particle->color.g = 0.0f;
         particle->color.b = 0.0f;
         particle->color.a = 1.0f;
+        particle->active = true;
     } else {
         particle->body.pos.x = 0.f;
         particle->body.pos.y = 0.f;
@@ -4167,6 +4206,7 @@ void create_particle_plane_crash(PR::ParticleSystem *ps,
         particle->color.g = 0.0f;
         particle->color.b = 0.0f;
         particle->color.a = 0.0f;
+        particle->active = false;
     }
 }
 void update_particle_plane_crash(PR::ParticleSystem *ps,
@@ -4197,6 +4237,7 @@ void create_particle_rider_crash(PR::ParticleSystem *ps,
         particle->color.g = 0.5f;
         particle->color.b = 0.5f;
         particle->color.a = 1.0f;
+        particle->active = true;
     } else {
         particle->body.pos.x = 0.f;
         particle->body.pos.y = 0.f;
@@ -4210,6 +4251,7 @@ void create_particle_rider_crash(PR::ParticleSystem *ps,
         particle->color.g = 0.0f;
         particle->color.b = 0.0f;
         particle->color.a = 0.0f;
+        particle->active = false;
     }
 }
 void update_particle_rider_crash(PR::ParticleSystem *ps,
