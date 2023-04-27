@@ -99,6 +99,7 @@ inline TexCoords texcoords_in_texture_space(float x, float y,
                                             Texture *tex, bool inverse);
 void deactivate_level_edit_mode(PR::Level *level);
 void activate_level_edit_mode(PR::Level *level);
+void update_plane_physics_n_boost_collisions(PR::Level *level);
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1473,8 +1474,6 @@ void level_update(void) {
 
     if (!p->crashed && !level->pause_now && !level->game_over) {
         // #### START PLANE STUFF
-        // NOTE: Reset the accelleration for it to be recalculated
-        p->acc *= 0;
 
         if (level->editing_now) { // EDITING
             float velx = 1000.f;
@@ -1501,26 +1500,7 @@ void level_update(void) {
                 if (input->right.pressed) p->body.pos.x += velx * dt;
             }
         } else { // PLAYING
-            apply_air_resistances(p);
-
-            // NOTE: Checking collision with boost_pads
-            for (size_t boost_index = 0;
-                 boost_index < boosts_number;
-                 ++boost_index) {
-
-                PR::BoostPad *pad = boosts + boost_index;
-
-                if (rect_are_colliding(p->body, pad->body, NULL, NULL)) {
-
-                    boost_ps->active = true;
-                    
-                    p->acc.x += pad->boost_power *
-                                cos(glm::radians(pad->boost_angle));
-                    p->acc.y += pad->boost_power *
-                                -sin(glm::radians(pad->boost_angle));
-
-                }
-            }
+            update_plane_physics_n_boost_collisions(level);
             // Propulsion
             // TODO: Could this be a "powerup" or something?
             //if (glob->input.boost.pressed &&
@@ -1530,20 +1510,6 @@ void level_update(void) {
             //    p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
             //    boost_ps->active = true;
             //}
-            // NOTE: The mass is greater if the rider is attached
-            if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
-            else p->acc *= 1.f/p->mass;
-
-            // NOTE: Gravity is already an accelleration so it doesn't need to be divided
-            p->acc.y += p->inverse ? -GRAVITY : GRAVITY;
-
-            // NOTE: Motion of the plane
-            p->vel += p->acc * dt;
-            // NOTE: Limit velocities
-            if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
-                p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
-            }
-            p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
         }
 
         // #### END PLANE STUFF
@@ -1769,7 +1735,6 @@ void level_update(void) {
     }
 
     if (level->editing_now) { // EDITING
-
 
         for(size_t portal_index = 0;
             portal_index < portals_number;
@@ -2089,6 +2054,9 @@ void level_update(void) {
                 rid->vel *= 0.f;
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
+                level->game_over = true;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
             p->crashed = true;
             p->acc *= 0.f;
@@ -2105,11 +2073,11 @@ void level_update(void) {
             rid->crash_position +=
                 cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
 
-            rid->crashed = true;
-            rid->attached = false;
             level->game_over = true;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            rid->crashed = true;
+            rid->attached = false;
             rid->vel *= 0.f;
             rid->base_velocity = 0.f;
             rid->input_velocity = 0.f;
@@ -2154,7 +2122,6 @@ void level_update(void) {
                     break;
                 }
             }
-            exit;
         }
 
         if (ps->all_inactive) {
@@ -2165,7 +2132,7 @@ void level_update(void) {
         }
 
         ps->time_elapsed += dt;
-        if (ps->time_elapsed > ps->time_between_particles) {
+        while(ps->time_elapsed > ps->time_between_particles) {
             ps->time_elapsed -= ps->time_between_particles;
 
             PR::Particle *particle = ps->particles +
@@ -3274,6 +3241,20 @@ void level_update(void) {
 
 
     if (level->game_over) {
+        if (rid->attached) {
+            // NOTE: Making the camera move to the plane
+            lerp_camera_x_to_rect(cam, &p->body, true);
+        } else { // !rid->attached
+            // NOTE: Make the camera follow the rider
+            lerp_camera_x_to_rect(cam, &rid->body, true);
+        }
+        
+        // NOTE: If the rider crashes I still want to simulate
+        //       the plane physics
+        if (!p->crashed) {
+            update_plane_physics_n_boost_collisions(level);
+        }
+
         // NOTE: Game is over
         PR::LevelButton b_restart = {
             .from_center = true,
@@ -4136,6 +4117,60 @@ void deactivate_level_edit_mode(PR::Level *level) {
     level->editing_now = false;
     level->camera.pos.x = level->plane.body.pos.x;
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+}
+
+void update_plane_physics_n_boost_collisions(PR::Level *level) {
+    PR::ParticleSystem *boost_ps =
+        &glob->current_level.particle_systems[0];
+
+    PR::Plane *p = &level->plane;
+    PR::Rider *rid = &level->rider;
+    float dt = glob->state.delta_time;
+
+    // NOTE: Reset the accelleration for it to be recalculated
+    p->acc *= 0;
+    apply_air_resistances(p);
+    // NOTE: Checking collision with boost_pads
+    for (size_t boost_index = 0;
+         boost_index < level->boosts_number;
+         ++boost_index) {
+
+        PR::BoostPad *pad = level->boosts + boost_index;
+
+        if (rect_are_colliding(p->body, pad->body, NULL, NULL)) {
+
+            boost_ps->active = true;
+            
+            p->acc.x += pad->boost_power *
+                        cos(glm::radians(pad->boost_angle));
+            p->acc.y += pad->boost_power *
+                        -sin(glm::radians(pad->boost_angle));
+
+        }
+    }
+    // Propulsion
+    // TODO: Could this be a "powerup" or something?
+    //if (glob->input.boost.pressed &&
+    //    !rid->crashed && rid->attached) {
+    //    float propulsion = 8.f;
+    //    p->acc.x += propulsion * cos(glm::radians(p->body.angle));
+    //    p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+    //    boost_ps->active = true;
+    //}
+    // NOTE: The mass is greater if the rider is attached
+    if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
+    else p->acc *= 1.f/p->mass;
+
+    // NOTE: Gravity is already an accelleration so it doesn't need to be divided
+    p->acc.y += p->inverse ? -GRAVITY : GRAVITY;
+
+    // NOTE: Motion of the plane
+    p->vel += p->acc * dt;
+    // NOTE: Limit velocities
+    if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
+        p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
+    }
+    p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
 }
 
 // Particle systems
