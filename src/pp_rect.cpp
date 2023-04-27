@@ -80,7 +80,8 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
             return true;
         }
     } else {
-        if (rx > x && ry > y &&
+        if (x < rx && rx < x + w &&
+            y < ry && ry < y + h &&
             lines_are_colliding(
                 rx, ry, x+w, y+h,
                 x, y+h, x+w, y,

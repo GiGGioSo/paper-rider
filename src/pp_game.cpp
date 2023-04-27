@@ -1403,8 +1403,10 @@ void level_update(void) {
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
-            glfwSetInputMode(glob->window.glfw_win,
-                             GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            if (!level->editing_now) {
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            }
         }
         //CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
     }
@@ -1510,6 +1512,8 @@ void level_update(void) {
 
                 if (rect_are_colliding(p->body, pad->body, NULL, NULL)) {
 
+                    boost_ps->active = true;
+                    
                     p->acc.x += pad->boost_power *
                                 cos(glm::radians(pad->boost_angle));
                     p->acc.y += pad->boost_power *
@@ -1519,13 +1523,13 @@ void level_update(void) {
             }
             // Propulsion
             // TODO: Could this be a "powerup" or something?
-            if (glob->input.boost.pressed &&
-                !rid->crashed && rid->attached) {
-                float propulsion = 8.f;
-                p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-                p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
-                boost_ps->active = true;
-            }
+            //if (glob->input.boost.pressed &&
+            //    !rid->crashed && rid->attached) {
+            //    float propulsion = 8.f;
+            //    p->acc.x += propulsion * cos(glm::radians(p->body.angle));
+            //    p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+            //    boost_ps->active = true;
+            //}
             // NOTE: The mass is greater if the rider is attached
             if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
             else p->acc *= 1.f/p->mass;
@@ -2143,12 +2147,14 @@ void level_update(void) {
                 PR::Particle *particle = ps->particles +
                                          ps->current_particle;
 
+                std::cout << "Particle activated: "
+                          << particle->active << std::endl;
                 if (particle->active) {
                     ps->all_inactive = false;
                     break;
                 }
-
             }
+            exit;
         }
 
         if (ps->all_inactive) {
@@ -3400,8 +3406,10 @@ void level_update(void) {
 
             if (input->mouse_left.clicked) {
                 level->pause_now = false;
-                glfwSetInputMode(glob->window.glfw_win,
-                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+                if (!level->editing_now) {
+                    glfwSetInputMode(glob->window.glfw_win,
+                                     GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+                }
             }
         }
 
