@@ -1694,9 +1694,9 @@ void level_update(void) {
         }
     }
 
-
+    // NOTE: Checking collision with the goal line
     if (!rid->crashed && !level->editing_now && !level->game_over &&
-        rid->body.pos.x + rid->body.dim.x*0.5f > level->goal_line.pos.x) {
+        rect_are_colliding(rid->body, level->goal_line, NULL, NULL)) {
         if (level->editing_available) {
             activate_level_edit_mode(level);
         } else {
@@ -2087,6 +2087,16 @@ void level_update(void) {
         }
     }
 
+    // NOTE: Rendering goal line
+    renderer_add_queue_uni(rect_in_camera_space(level->goal_line, cam),
+                           glm::vec4(1.0f), false);
+
+    // Actually issuing the render calls
+    renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_tex(glob->rend_res.shaders[1],
+                      &glob->rend_res.global_sprite);
+    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+
     if (p->crashed) plane_crash_ps->active = true;
     if (rid->crashed) rider_crash_ps->active = true;
 
@@ -2113,10 +2123,8 @@ void level_update(void) {
                 ++particle_index) {
 
                 PR::Particle *particle = ps->particles +
-                                         ps->current_particle;
+                                         particle_index;
 
-                std::cout << "Particle activated: "
-                          << particle->active << std::endl;
                 if (particle->active) {
                     ps->all_inactive = false;
                     break;
@@ -2125,9 +2133,6 @@ void level_update(void) {
         }
 
         if (ps->all_inactive) {
-            // std::cout << "Skipped PS " << ps_index
-            //           << " because all particles were inactive"
-            //           << std::endl;
             continue;
         }
 
@@ -2154,7 +2159,6 @@ void level_update(void) {
                                  particle->color, true);
         }
     }
-
     // NOTE: Rendering the plane
     renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
                            glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
@@ -2172,16 +2176,10 @@ void level_update(void) {
     renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
                           glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
                           false);
-
-    // NOTE: Rendering goal line
-    renderer_add_queue_uni(rect_in_camera_space(level->goal_line, cam),
-                           glm::vec4(1.0f), false);
-
-    // Actually issuing the render calls
+    // NOTE: Issuing draw call for plane/rider and particles
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_tex(glob->rend_res.shaders[1],
                       &glob->rend_res.global_sprite);
-    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
     if (level->adding_now) {
         PR::LevelButton add_portal;
