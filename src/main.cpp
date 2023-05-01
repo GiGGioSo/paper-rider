@@ -210,7 +210,14 @@ void glob_init(void) {
 
     // NOTE: Initializing the global_sprite
     renderer_create_texture(&glob->rend_res.global_sprite,
-                            "res/paper-rider_sprite.png");
+                            "res/paper-rider_sprite2.png");
+
+    std::cout << "Loaded the spritesheet of size: "
+              << glob->rend_res.global_sprite.width
+              << "x"
+              << glob->rend_res.global_sprite.height
+              << std::endl;
+
 
     int error = 0;
     Font *f1 = &glob->rend_res.fonts[DEFAULT_FONT];

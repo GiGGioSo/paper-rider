@@ -1709,6 +1709,28 @@ void level_update(void) {
         }
     }
 
+    Rect parallax1 = {
+        .pos = glm::vec2(-(win->w * 0.5f), win->h * 0.75f),
+        .dim = glm::vec2(win->w, win->h * 0.25f),
+        .angle = 0.f,
+        .triangle = false,
+    };
+    renderer_add_queue_tex(parallax1,
+                           texcoords_in_texture_space(
+                               0.f, 810.f, 1920.f, 270.f,
+                               &glob->rend_res.global_sprite, false
+                            ),
+                           false);
+    parallax1.pos.x += parallax1.dim.x;
+    renderer_add_queue_tex(parallax1,
+                           texcoords_in_texture_space(
+                               0.f, 810.f, 1920.f, 270.f,
+                               &glob->rend_res.global_sprite, false
+                            ),
+                           false);
+    renderer_draw_tex(glob->rend_res.shaders[1], 
+                      &glob->rend_res.global_sprite);
+
 
     // NOTE: Update the `render_zone`s based on the `body`s
     p->render_zone.pos.x = p->body.pos.x;
@@ -4063,8 +4085,8 @@ inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
 }
 
 inline TexCoords texcoords_in_texture_space(float x, float y,
-                                     float w, float h,
-                                     Texture *tex, bool inverse) {
+                                            float w, float h,
+                                            Texture *tex, bool inverse) {
     TexCoords res;
 
     res.tx = x / tex->width;
