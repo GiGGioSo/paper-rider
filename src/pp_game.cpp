@@ -1737,9 +1737,11 @@ void level_update(void) {
         }
     }
 
-    parallax_update_n_queue_render(&level->parallaxs[0], cam->pos.x);
-    parallax_update_n_queue_render(&level->parallaxs[1], cam->pos.x);
-    parallax_update_n_queue_render(&level->parallaxs[2], cam->pos.x);
+    for(size_t px_index = 0;
+        px_index < ARRAY_LENGTH(level->parallaxs);
+        ++px_index) {
+        parallax_update_n_queue_render(&level->parallaxs[px_index], cam->pos.x);
+    }
     renderer_draw_tex(glob->rend_res.shaders[1], 
                       &glob->rend_res.global_sprite);
 
