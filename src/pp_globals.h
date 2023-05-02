@@ -124,6 +124,16 @@ struct PR {
         float time_between_particles;
         float time_elapsed;
     };
+    struct ParallaxPiece {
+        float base_pos_x;
+        Rect body;
+    };
+    struct Parallax {
+        float reference_point;
+        float follow_coeff;
+        ParallaxPiece pieces[3];
+        TexCoords tex_coords;
+    };
     struct LevelButton {
         bool from_center;
         Rect body;
@@ -172,6 +182,7 @@ struct PR {
         Rect start_pos;
 
         ParticleSystem particle_systems[3];
+        Parallax parallaxs[3];
 
         bool colors_shuffled;
         ObstacleColorIndex current_red;

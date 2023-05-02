@@ -94,12 +94,15 @@ void set_boost_option_buttons(PR::LevelButton *buttons);
 void set_obstacle_option_buttons(PR::LevelButton *buttons);
 void set_start_pos_option_buttons(PR::LevelButton *buttons);
 inline Rect rect_in_camera_space(Rect r, PR::Camera *cam);
-inline TexCoords texcoords_in_texture_space(float x, float y,
-                                            float w, float h,
-                                            Texture *tex, bool inverse);
+inline TexCoords texcoords_in_texture_space(float x, float y, float w, float h, Texture *tex, bool inverse);
 void deactivate_level_edit_mode(PR::Level *level);
 void activate_level_edit_mode(PR::Level *level);
 void update_plane_physics_n_boost_collisions(PR::Level *level);
+
+// Parallax stuff
+void parallax_init(PR::Parallax *px, float fc, TexCoords tc, float p_start_x, float p_start_y, float p_w, float p_h);
+void parallax_update_n_queue_render(PR::Parallax *px, float current_x);
+
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -1054,6 +1057,10 @@ void menu_draw(void) {
     return;
 }
 
+
+PR::Parallax parallax1;
+// Parallax parallax2;
+
 int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
     PR::WinInfo *win = &glob->window;
 
@@ -1168,7 +1175,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
         level->portals_number = 0;
 
         int loading_result =
-            load_map_from_file(mapfile_path,
+            load_map_from_file(
+                mapfile_path,
                 &level->obstacles,
                 &level->obstacles_number,
                 &level->boosts,
@@ -1366,6 +1374,26 @@ int level_prepare(PR::Menu *menu, PR::Level *level, const char *mapfile_path) {
                                  particle_index;
         (rider_crash_ps->create_particle)(rider_crash_ps, particle);
     }
+
+    // Initializing the parallaxes
+    parallax_init(&level->parallaxs[0], 0.9f,
+                   texcoords_in_texture_space(
+                       0.f, 275.f, 1920.f, 265.f,
+                       &glob->rend_res.global_sprite, false),
+                  -((float)win->w), 0.f,
+                  win->w, win->h * 0.25f);
+    parallax_init(&level->parallaxs[1], 0.85f,
+                  texcoords_in_texture_space(
+                      0.f, 815.f, 1920.f, 265.f,
+                      &glob->rend_res.global_sprite, false),
+                  -((float)win->w), win->h * 0.75f,
+                  win->w, win->h * 0.25f);
+    parallax_init(&level->parallaxs[2], 0.75f,
+                   texcoords_in_texture_space(
+                       0.f, 545.f, 1920.f, 265.f,
+                       &glob->rend_res.global_sprite, false),
+                  -((float)win->w), win->h * 0.75f,
+                  win->w, win->h * 0.25f);
 
     // NOTE: Hide the cursor only if it succeded in doing everything else
     glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -1709,28 +1737,11 @@ void level_update(void) {
         }
     }
 
-    Rect parallax1 = {
-        .pos = glm::vec2(-(win->w * 0.5f), win->h * 0.75f),
-        .dim = glm::vec2(win->w, win->h * 0.25f),
-        .angle = 0.f,
-        .triangle = false,
-    };
-    renderer_add_queue_tex(parallax1,
-                           texcoords_in_texture_space(
-                               0.f, 810.f, 1920.f, 270.f,
-                               &glob->rend_res.global_sprite, false
-                            ),
-                           false);
-    parallax1.pos.x += parallax1.dim.x;
-    renderer_add_queue_tex(parallax1,
-                           texcoords_in_texture_space(
-                               0.f, 810.f, 1920.f, 270.f,
-                               &glob->rend_res.global_sprite, false
-                            ),
-                           false);
+    parallax_update_n_queue_render(&level->parallaxs[0], cam->pos.x);
+    parallax_update_n_queue_render(&level->parallaxs[1], cam->pos.x);
+    parallax_update_n_queue_render(&level->parallaxs[2], cam->pos.x);
     renderer_draw_tex(glob->rend_res.shaders[1], 
                       &glob->rend_res.global_sprite);
-
 
     // NOTE: Update the `render_zone`s based on the `body`s
     p->render_zone.pos.x = p->body.pos.x;
@@ -4191,6 +4202,61 @@ void update_plane_physics_n_boost_collisions(PR::Level *level) {
         p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
     }
     p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
+}
+
+void parallax_init(PR::Parallax *px, float fc, TexCoords tc,
+                   float p_start_x, float p_start_y,
+                   float p_w, float p_h) {
+
+    px->tex_coords = tc;
+    px->follow_coeff = fc;
+    // NOTE: The reference is the middle of the middle piece at the start
+    px->reference_point = p_start_x + p_w * 1.5f;
+
+    for(size_t piece_index = 0;
+        piece_index < ARRAY_LENGTH(px->pieces);
+        ++piece_index) {
+
+        PR::ParallaxPiece *piece = px->pieces + piece_index;
+
+        *piece = {
+            .base_pos_x = p_start_x + (p_w * piece_index),
+            .body = {
+                .pos = glm::vec2(p_start_x + (p_w * piece_index), p_start_y),
+                .dim = glm::vec2(p_w, p_h),
+                .angle = 0.f,
+                .triangle = false,
+            }
+        };
+    }
+}
+
+void parallax_update_n_queue_render(PR::Parallax *px, float current_x) {
+    for(size_t piece_index = 0;
+        piece_index < ARRAY_LENGTH(px->pieces);
+        ++piece_index) {
+
+        PR::ParallaxPiece *piece = px->pieces + piece_index;
+        piece->body.pos.x = piece->base_pos_x +
+                            (px->reference_point - current_x) *
+                            (1.f - px->follow_coeff);
+
+        // NOTE: px->reference_point - piece->body.dim.x * 1.5f
+        //          would be the starting pos.x of the first piece.
+        //       px->reference_point - piece->body.dim.x * 1.2f
+        //          means half the width to the left of the first piece
+        //       In that case we change that piece so that piece
+        //          becomes the last one
+        if (piece->body.pos.x <
+                px->reference_point - piece->body.dim.x * 2.f) {
+            piece->base_pos_x += piece->body.dim.x * 3.f;
+        }
+        if (piece->body.pos.x + piece->body.dim.x >
+                px->reference_point + piece->body.dim.x * 2.f) {
+            piece->base_pos_x -= piece->body.dim.x * 3.f;
+        }
+        renderer_add_queue_tex(piece->body, px->tex_coords, false);
+    }
 }
 
 // Particle systems
