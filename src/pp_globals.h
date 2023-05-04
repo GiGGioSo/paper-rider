@@ -134,13 +134,17 @@ struct PR {
         ParallaxPiece pieces[3];
         TexCoords tex_coords;
     };
-    struct LevelButton {
+    struct Button {
         bool from_center;
         Rect body;
         glm::vec4 col;
         char text[99];
+    };
+    struct LevelButton {
+        Button button;
 
         char mapfile_path[99];
+        bool is_new_level;
     };
 
     #define CAMPAIGN_LEVELS_NUMBER 2
@@ -149,14 +153,16 @@ struct PR {
         float camera_goal_position;
 
         bool showing_campaign_buttons;
-        LevelButton show_campaign_button;
-        LevelButton show_custom_button;
+        Button show_campaign_button;
+        Button show_custom_button;
 
         LevelButton campaign_buttons[CAMPAIGN_LEVELS_NUMBER];
 
         size_t custom_buttons_number;
         LevelButton *custom_buttons;
         LevelButton *custom_edit_buttons;
+        
+        Button add_custom_button;
     };
     Menu current_menu;
 
@@ -169,8 +175,8 @@ struct PR {
     };
 
     struct Level {
-
         char file_path[99];
+        bool is_new;
 
         Plane plane;
         Camera camera;
@@ -212,8 +218,7 @@ struct PR {
 #define SELECTED_OBSTACLE_OPTIONS 6
 #define SELECTED_START_POS_OPTIONS 1
 #define SELECTED_MAX_OPTIONS 6
-        LevelButton selected_options_buttons[SELECTED_MAX_OPTIONS];
-
+        Button selected_options_buttons[SELECTED_MAX_OPTIONS];
 
         size_t obstacles_number;
         Obstacle *obstacles;

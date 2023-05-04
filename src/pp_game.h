@@ -4,11 +4,11 @@
 #include "../include/glm/trigonometric.hpp"
 #include "pp_globals.h"
 
-int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path);
+int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path, bool is_new);
 void menu_update(void);
 void menu_draw(void);
 
-int level_prepare(PR::Menu *menu, PR::Level *leve, const char* mapfile_path);
+int level_prepare(PR::Menu *menu, PR::Level *leve, const char* mapfile_path, bool is_new);
 void level_update(void);
 
 #define POW2(x) (x * x)

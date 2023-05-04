@@ -172,7 +172,7 @@ void glob_init(void) {
     //       it when preparing the menu, so that the player comes back to
     //       where he was before
     glob->current_menu.showing_campaign_buttons = true;
-    menu_prepare(&glob->current_menu, &glob->current_level, "");
+    menu_prepare(&glob->current_menu, &glob->current_level, "", false);
 
     PR::WinInfo* win = &glob->window;
 
@@ -291,6 +291,7 @@ void callback_joystick(int joystick_id, int event) {
 
 void callback_framebuffer_size(GLFWwindow* window,
                                int width, int height) {
+    UNUSED(window);
     glViewport(0, 0, width, height);
     glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)width,
                                        (float)height, 0.0f);
@@ -309,6 +310,10 @@ void callback_debug(GLenum source,
                     GLuint id, GLenum severity,
                     GLsizei length, const GLchar* message,
                     const void* user) {
+    UNUSED(id);
+    UNUSED(severity);
+    UNUSED(length);
+    UNUSED(user);
 
     std::cout << "------------------------------"
               << "\nSource: " << source

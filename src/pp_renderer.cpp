@@ -135,7 +135,7 @@ void renderer_add_queue_uni(float x, float y,
     float center_x = x + w/2;
     float center_y = y + h/2;
 
-    for(int i = 0; i < vertices_number; i++) {
+    for(size_t i = 0; i < vertices_number; i++) {
         float vx = vertices[i*6 + 0];
         float vy = vertices[i*6 + 1];
 
@@ -342,7 +342,7 @@ void renderer_add_queue_text(float x, float y,
 
     Renderer *renderer = &glob->renderer;
 
-    int length = strlen(text);
+    size_t length = strlen(text);
 
     float vertices[length * 6][8];
 
@@ -374,7 +374,7 @@ void renderer_add_queue_text(float x, float y,
         maxY = q.y1;
     }
 
-    for(int i = 0; i < length; i++) {
+    for(size_t i = 0; i < length; i++) {
         if (text[i] >= font->first_char &&
             text[i] < font->first_char+font->num_chars) {
 
