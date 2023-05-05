@@ -3969,6 +3969,7 @@ void set_portal_option_buttons(PR::Button *buttons) {
         PR::Button *button = buttons + option_button_index;
 
         button->from_center = true;
+        button->body.triangle = false;
         button->body.pos.x = glob->window.w * (option_button_index+1) /
                              (SELECTED_PORTAL_OPTIONS+1);
         button->body.pos.y = glob->window.h * 9 / 10;
@@ -4022,6 +4023,7 @@ void set_boost_option_buttons(PR::Button *buttons) {
         PR::Button *button = buttons + option_button_index;
 
         button->from_center = true;
+        button->body.triangle = false;
         button->body.pos.x = glob->window.w * (option_button_index+1) /
                              (SELECTED_BOOST_OPTIONS+1);
         button->body.pos.y = glob->window.h * 9 / 10;
@@ -4068,7 +4070,6 @@ void set_boost_option_buttons(PR::Button *buttons) {
         }
 
         button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
-
     }
 }
 
@@ -4084,6 +4085,7 @@ void set_obstacle_option_buttons(PR::Button *buttons) {
         PR::Button *button = buttons + option_button_index;
 
         button->from_center = true;
+        button->body.triangle = false;
         button->body.pos.x = glob->window.w * (option_button_index+1) /
                              (SELECTED_OBSTACLE_OPTIONS+1);
         button->body.pos.y = glob->window.h * 9 / 10;
@@ -4163,7 +4165,6 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
                 break;
         }
         button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
-
     }
 }
 
