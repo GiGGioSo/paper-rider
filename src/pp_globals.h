@@ -160,7 +160,8 @@ struct PR {
 
         size_t custom_buttons_number;
         LevelButton *custom_buttons;
-        LevelButton *custom_edit_buttons;
+        Button *custom_edit_buttons;
+        Button *custom_del_buttons;
         
         Button add_custom_button;
     };

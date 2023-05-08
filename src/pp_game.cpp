@@ -66,6 +66,9 @@
 #define EDIT_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
 #define EDIT_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
 
+#define DEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
+#define DEL_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
+
 #define LEVEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define LEVEL_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
@@ -91,6 +94,8 @@ inline void start_pos_render_info(Rect *rect, float tx, float ty);
 inline void plane_update_animation(PR::Plane *p);
 inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type);
 void button_set_position(PR::Button *button, size_t index);
+void button_edit_del_to_lb(PR::Button *reference, PR::Button *edit, PR::Button *del);
+void button_add_custom_edit_del(PR::LevelButton *lb, size_t button_index, PR::Button **edit_buttons, PR::Button **del_buttons);
 void set_portal_option_buttons(PR::Button *buttons);
 void set_boost_option_buttons(PR::Button *buttons);
 void set_obstacle_option_buttons(PR::Button *buttons);
@@ -130,6 +135,10 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
         std::free(menu->custom_edit_buttons);
         menu->custom_edit_buttons = NULL;
     }
+    if (menu->custom_del_buttons) {
+        std::free(menu->custom_del_buttons);
+        menu->custom_del_buttons = NULL;
+    }
 
     // Level freeing
     if (level->portals) {
@@ -159,6 +168,7 @@ void menu_set_to_null(PR::Menu *menu) {
     menu->custom_buttons_number = 0;
     menu->custom_buttons = NULL;
     menu->custom_edit_buttons = NULL;
+    menu->custom_del_buttons = NULL;
 }
 
 inline
@@ -518,37 +528,10 @@ int save_map_to_file(const char *file_path,
     return result;
 }
 
-void button_add_custom_edit(PR::LevelButton *lb,
-                            size_t button_index,
-                            PR::LevelButton **edit_buttons) {
-
-    *edit_buttons = (button_index == 0) ?
-        (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
-        (PR::LevelButton *) std::realloc(*edit_buttons,
-                                         sizeof(PR::LevelButton) *
-                                          (button_index+1));
-    PR::LevelButton *edit = *edit_buttons + button_index;
-
-    edit->button.body.pos.x = lb->button.body.pos.x +
-                              lb->button.body.dim.x * 0.05f;
-    edit->button.body.pos.y = lb->button.body.pos.y +
-                              lb->button.body.dim.y * 0.25f;
-    edit->button.body.dim.x = lb->button.body.dim.x * 0.4f;
-    edit->button.body.dim.y = lb->button.body.dim.y * 0.5f;
-    edit->button.body.angle = 0.f;
-    edit->button.body.triangle = false;
-    edit->button.col = EDIT_BUTTON_DEFAULT_COLOR;
-    edit->button.from_center = false;
-    std::snprintf(edit->button.text, std::strlen("EDIT")+1, "EDIT");
-
-    std::snprintf(edit->mapfile_path,
-                  std::strlen(lb->mapfile_path)+1,
-                  "%s", lb->mapfile_path);
-}
-
 int load_custom_buttons_from_dir(const char *dir_path,
                                  PR::LevelButton **buttons,
-                                 PR::LevelButton **edit_buttons,
+                                 PR::Button **edit_buttons,
+                                 PR::Button **del_buttons,
                                  size_t *buttons_number) {
 
     // PR::WinInfo *win = &glob->window;
@@ -557,6 +540,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     DIR *dir = NULL;
     *buttons = NULL;
     *edit_buttons = NULL;
+    *del_buttons = NULL;
     *buttons_number = 0;
 
     {
@@ -625,7 +609,8 @@ int load_custom_buttons_from_dir(const char *dir_path,
                               "%s", map_path);
 
                 // Creating the little custom level edit button
-                button_add_custom_edit(lb, button_index, edit_buttons);
+                button_add_custom_edit_del(lb, button_index,
+                                           edit_buttons, del_buttons);
 
                 ++button_index;
                 
@@ -636,6 +621,8 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
     defer:
     if (result != 0 && *buttons) std::free(*buttons);
+    if (result != 0 && *edit_buttons) std::free(*edit_buttons);
+    if (result != 0 && *del_buttons) std::free(*del_buttons);
     if (dir) {
         if (closedir(dir) < 0) {
             std::cout << "[ERROR] Could not close directory: "
@@ -675,6 +662,19 @@ glm::vec4 get_portal_color(PR::Portal *portal) {
     }
 }
 
+void remove_element_of_index(void *base, size_t length,
+                             size_t index, size_t type_size) {
+    
+    // std::assert((index < length) &&
+    //             "The index is greater or equal to the array size!");
+
+    std::memmove((uint8_t *)(base) + index * type_size,
+                 (uint8_t *)(base) + (index+1) * type_size,
+                 (length - index - 1) * type_size);
+
+    base = std::realloc(base, type_size * (length - 1));
+
+}
 
 const char *campaign_levels_filepath[1] = {
     "./campaign_maps/level2.prmap"
@@ -755,12 +755,14 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
         menu->custom_buttons_number = 0;
         menu->custom_buttons = NULL;
         menu->custom_edit_buttons = NULL;
+        menu->custom_del_buttons = NULL;
     } else {
         int result = 0;
         result =
             load_custom_buttons_from_dir("./custom_maps/",
                                          &menu->custom_buttons,
                                          &menu->custom_edit_buttons,
+                                         &menu->custom_del_buttons,
                                          &menu->custom_buttons_number);
         if (result != 0) {
             std::cout << "[ERROR] Could not load custom map files"
@@ -859,12 +861,14 @@ void menu_update(void) {
         if (input->mouse_left.clicked) {
             int result = 0;
             PR::LevelButton *temp_custom_buttons = NULL;
-            PR::LevelButton *temp_custom_edit_buttons = NULL;
+            PR::Button *temp_custom_edit_buttons = NULL;
+            PR::Button *temp_custom_del_buttons = NULL;
             size_t temp_custom_buttons_number = 0;
             result =
                 load_custom_buttons_from_dir("./custom_maps/",
                                              &temp_custom_buttons,
                                              &temp_custom_edit_buttons,
+                                             &temp_custom_del_buttons,
                                              &temp_custom_buttons_number);
             if (result == 0) {
                 // NOTE: Free the previous present custom buttons
@@ -876,9 +880,14 @@ void menu_update(void) {
                     std::free(menu->custom_edit_buttons);
                     menu->custom_edit_buttons = NULL;
                 }
+                if (menu->custom_del_buttons) {
+                    std::free(menu->custom_del_buttons);
+                    menu->custom_del_buttons = NULL;
+                }
                 // NOTE: Reassing the updated and checked values
                 menu->custom_buttons = temp_custom_buttons;
                 menu->custom_edit_buttons = temp_custom_edit_buttons;
+                menu->custom_del_buttons = temp_custom_del_buttons;
                 menu->custom_buttons_number = temp_custom_buttons_number;
                 menu->showing_campaign_buttons = false;
                 menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
@@ -924,27 +933,81 @@ void menu_update(void) {
             custombutton_index < menu->custom_buttons_number;
             ++custombutton_index) {
 
-            PR::LevelButton *edit_lb =
+            PR::Button *edit_lb =
                 menu->custom_edit_buttons + custombutton_index;
-
+            PR::Button *del_lb =
+                menu->custom_del_buttons + custombutton_index;
             PR::LevelButton *lb =
                 menu->custom_buttons + custombutton_index;
 
             if (rect_contains_point(
-                        rect_in_camera_space(edit_lb->button.body, cam),
+                        rect_in_camera_space(del_lb->body, cam),
                         input->mouseX, input->mouseY,
-                        edit_lb->button.from_center)) {
+                        del_lb->from_center)) {
+                del_lb->col = DEL_BUTTON_SELECTED_COLOR;
+                edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
+                lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
+
+                // TODO: IMPLEMENT
+                if (input->mouse_left.clicked) {
+                    std::cout << "REMOVED LEVEL "
+                              << custombutton_index << std::endl;
+                    remove_element_of_index(menu->custom_buttons,
+                                            menu->custom_buttons_number,
+                                            custombutton_index,
+                                            sizeof(PR::LevelButton));
+                    remove_element_of_index(menu->custom_edit_buttons,
+                                            menu->custom_buttons_number,
+                                            custombutton_index,
+                                            sizeof(PR::Button));
+                    remove_element_of_index(menu->custom_del_buttons,
+                                            menu->custom_buttons_number,
+                                            custombutton_index,
+                                            sizeof(PR::Button));
+
+                    menu->custom_buttons_number--;
+
+                    for(size_t repos_index = 0;
+                        repos_index < menu->custom_buttons_number;
+                        ++repos_index) {
+
+                        PR::Button *edit =
+                            menu->custom_edit_buttons + custombutton_index;
+                        PR::Button *del =
+                            menu->custom_del_buttons + custombutton_index;
+                        PR::LevelButton *but =
+                            menu->custom_buttons + custombutton_index;
+
+                        button_set_position(&but->button, repos_index);
+                        std::cout << "Button: " << but->button.text
+                                  << " set to index: " << repos_index
+                                  << std::endl;
+                        button_edit_del_to_lb(&but->button, edit, del);
+                    }
+
+                    PR::Button *add_level = &menu->add_custom_button;
+                    button_set_position(add_level, menu->custom_buttons_number);
+
+                }
                 
-                edit_lb->button.col = EDIT_BUTTON_SELECTED_COLOR;
+            } else
+            if (rect_contains_point(
+                        rect_in_camera_space(edit_lb->body, cam),
+                        input->mouseX, input->mouseY,
+                        edit_lb->from_center)) {
+                
+                edit_lb->col = EDIT_BUTTON_SELECTED_COLOR;
+                del_lb->col = DEL_BUTTON_DEFAULT_COLOR;
                 lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
                 if (input->mouse_left.clicked) {
                     CHANGE_CASE_TO(PR::LEVEL,
                                    level_prepare,
-                                   edit_lb->mapfile_path, true,
+                                   lb->mapfile_path, true,
                                    lb->is_new_level);
                 }
             } else {
-                edit_lb->button.col = EDIT_BUTTON_DEFAULT_COLOR;
+                edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
+                del_lb->col = DEL_BUTTON_DEFAULT_COLOR;
 
                 // NOTE: Don't even check if it's inside the edit button
                 if (rect_contains_point(
@@ -1001,9 +1064,10 @@ void menu_update(void) {
                               "./custom_maps/level%zu.prmap",
                               menu->custom_buttons_number);
 
-                button_add_custom_edit(new_lb,
-                                       menu->custom_buttons_number - 1,
-                                       &menu->custom_edit_buttons);
+                button_add_custom_edit_del(new_lb,
+                                           menu->custom_buttons_number - 1,
+                                           &menu->custom_edit_buttons,
+                                           &menu->custom_del_buttons);
 
                 button_set_position(add_level,
                                     menu->custom_buttons_number);
@@ -1079,19 +1143,32 @@ void menu_draw(void) {
                                     &glob->rend_res.fonts[0], true);
 
 
-            PR::LevelButton *edit_lb =
+            PR::Button *edit_lb =
                 menu->custom_edit_buttons + custombutton_index;
 
-            button_rend_rect = rect_in_camera_space(edit_lb->button.body, cam);
+            button_rend_rect = rect_in_camera_space(edit_lb->body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
-                                   edit_lb->button.col,
-                                   edit_lb->button.from_center);
+                                   edit_lb->col,
+                                   edit_lb->from_center);
             renderer_add_queue_text(button_rend_rect.pos.x+
                                         button_rend_rect.dim.x*0.5f,
                                     button_rend_rect.pos.y+
                                         button_rend_rect.dim.y*0.5f,
-                                    edit_lb->button.text, glm::vec4(1.0f),
+                                    edit_lb->text, glm::vec4(1.0f),
+                                    &glob->rend_res.fonts[0], true);
+
+            PR::Button *del_lb =
+                menu->custom_del_buttons + custombutton_index;
+
+            button_rend_rect = rect_in_camera_space(del_lb->body, cam);
+
+            renderer_add_queue_uni(button_rend_rect,
+                                   del_lb->col,
+                                   del_lb->from_center);
+            renderer_add_queue_text(button_rend_rect.pos.x,
+                                    button_rend_rect.pos.y,
+                                    del_lb->text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
         }
 
@@ -2435,17 +2512,19 @@ void level_update(void) {
 
                 int index = portal - level->portals;
 
-                std::memmove((void *)(level->portals + index),
-                             (void *)(level->portals + index + 1),
-                             (size_t)(level->portals_number - index - 1) *
-                                sizeof(PR::Portal));
+                // std::memmove((void *)(level->portals + index),
+                //              (void *)(level->portals + index + 1),
+                //              (size_t)(level->portals_number - index - 1) *
+                //                 sizeof(PR::Portal));
 
+                // level->portals = (PR::Portal *)
+                //     std::realloc((void *) level->portals,
+                //                  sizeof(PR::Portal) *
+                //                     level->portals_number);
+                remove_element_of_index(level->portals,
+                                        level->portals_number,
+                                        index, sizeof(PR::Portal));
                 level->portals_number--;
-                level->portals = (PR::Portal *)
-                    std::realloc((void *) level->portals,
-                                 sizeof(PR::Portal) *
-                                    level->portals_number);
-
                 std::cout << "Removed portal n. " << index << std::endl;
                 
                 level->selected = NULL;
@@ -2458,17 +2537,10 @@ void level_update(void) {
 
                 int index = pad - level->boosts;
 
-                std::memmove((void *)(level->boosts + index),
-                             (void *)(level->boosts + index + 1),
-                             (size_t)(level->boosts_number - index - 1) *
-                                sizeof(PR::BoostPad));
-
+                remove_element_of_index(level->boosts,
+                                        level->boosts_number,
+                                        index, sizeof(PR::BoostPad));
                 level->boosts_number--;
-                level->boosts = (PR::BoostPad *)
-                    std::realloc((void *) level->boosts,
-                                 sizeof(PR::BoostPad) *
-                                    level->boosts_number);
-
                 std::cout << "Removed boost n. " << index << std::endl;
                 
                 level->selected = NULL;
@@ -2481,17 +2553,11 @@ void level_update(void) {
 
                 int index = obs - level->obstacles;
 
-                std::memmove((void *)(level->obstacles + index),
-                             (void *)(level->obstacles + index + 1),
-                             (size_t)(level->obstacles_number - index - 1) *
-                                sizeof(PR::Obstacle));
+                remove_element_of_index(level->obstacles,
+                                        level->obstacles_number,
+                                        index, sizeof(PR::Obstacle));
 
                 level->obstacles_number--;
-                level->obstacles = (PR::Obstacle *)
-                    std::realloc((void *) level->obstacles,
-                                 sizeof(PR::Obstacle) *
-                                    level->obstacles_number);
-
                 std::cout << "Removed obstacle n. " << index << std::endl;
 
                 level->selected = NULL;
@@ -3955,6 +4021,56 @@ void button_set_position(PR::Button *button, size_t index) {
     button->body.triangle = false;
     button->col = LEVEL_BUTTON_DEFAULT_COLOR;
     button->from_center = true;
+}
+
+void button_edit_del_to_lb(PR::Button *reference,
+                           PR::Button *edit, PR::Button *del) {
+
+    edit->body.pos.x = reference->body.pos.x +
+                       reference->body.dim.x * 0.05f;
+    edit->body.pos.y = reference->body.pos.y +
+                       reference->body.dim.y * 0.25f;
+    edit->body.dim.x = reference->body.dim.x * 0.4f;
+    edit->body.dim.y = reference->body.dim.y * 0.5f;
+    edit->body.angle = 0.f;
+    edit->body.triangle = false;
+    edit->col = EDIT_BUTTON_DEFAULT_COLOR;
+    edit->from_center = false;
+    std::snprintf(edit->text, std::strlen("EDIT")+1, "EDIT");
+
+    del->body.pos.x = reference->body.pos.x +
+                        reference->body.dim.x * 0.5f;
+    del->body.pos.y = reference->body.pos.y -
+                        reference->body.dim.y * 0.5f;
+    del->body.dim.x = reference->body.dim.y * 0.3f;
+    del->body.dim.y = reference->body.dim.y * 0.3f;
+    del->body.angle = 0.f;
+    del->body.triangle = false;
+    del->col = DEL_BUTTON_DEFAULT_COLOR;
+    del->from_center = true;
+    std::snprintf(del->text, std::strlen("-")+1, "-");
+}
+
+void button_add_custom_edit_del(PR::LevelButton *lb,
+                                size_t button_index,
+                                PR::Button **edit_buttons,
+                                PR::Button **del_buttons) {
+
+    *edit_buttons = (button_index == 0) ?
+        (PR::Button *) std::malloc(sizeof(PR::LevelButton)) :
+        (PR::Button *) std::realloc(*edit_buttons,
+                                         sizeof(PR::LevelButton) *
+                                          (button_index+1));
+    PR::Button *edit = *edit_buttons + button_index;
+
+    *del_buttons = (button_index == 0) ?
+        (PR::Button *) std::malloc(sizeof(PR::LevelButton)) :
+        (PR::Button *) std::realloc(*del_buttons,
+                                         sizeof(PR::LevelButton) *
+                                          (button_index+1));
+    PR::Button *del = *del_buttons + button_index;
+
+    button_edit_del_to_lb(&lb->button, edit, del);
 }
 
 void set_portal_option_buttons(PR::Button *buttons) {
