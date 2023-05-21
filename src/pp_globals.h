@@ -164,6 +164,12 @@ struct PR {
         Button *custom_del_buttons;
         
         Button add_custom_button;
+
+        bool deleting_level;
+        Button delete_yes;
+        Button delete_no;
+        size_t deleting_index;
+        Rect deleting_frame;
     };
     Menu current_menu;
 
