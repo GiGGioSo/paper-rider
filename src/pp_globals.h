@@ -183,6 +183,7 @@ struct PR {
 
     struct Level {
         char file_path[99];
+        char name[99];
         bool is_new;
 
         Plane plane;

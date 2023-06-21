@@ -35,7 +35,7 @@ int fps_counter;
 float time_from_last_fps_update;
 
 int main() {
-    srand(time(NULL));
+    std::srand(std::time(nullptr));
 
     glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";

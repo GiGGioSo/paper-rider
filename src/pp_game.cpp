@@ -44,12 +44,13 @@
 
 #define CAMERA_MAX_VELOCITY (1500.f)
 
-#define CHANGE_CASE_TO(new_case, prepare_func, map_path, edit, is_new)  do {\
+#define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
     PR::Level t_level = glob->current_level;\
-    t_level.editing_available = edit;\
+    t_level.editing_available = (edit);\
+    std::snprintf(t_level.name, std::strlen(level_name)+1, "%s", (level_name));\
     PR::Menu t_menu = glob->current_menu;\
     int preparation_result = (prepare_func)(&t_menu, &t_level,\
-                                            map_path, is_new);\
+                                            (map_path), (is_new));\
     if (preparation_result == 0) {\
         free_menu_level(&glob->current_menu, &glob->current_level);\
         glob->current_level = t_level;\
@@ -109,7 +110,6 @@ void update_plane_physics_n_boost_collisions(PR::Level *level);
 // Parallax stuff
 void parallax_init(PR::Parallax *px, float fc, TexCoords tc, float p_start_x, float p_start_y, float p_w, float p_h);
 void parallax_update_n_queue_render(PR::Parallax *px, float current_x);
-
 
 inline void apply_air_resistances(PR::Plane* p);
 inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
@@ -205,11 +205,15 @@ int load_map_from_file(const char *file_path,
     float proportion_y = height / SCREEN_HEIGHT_PROPORTION;
     
     int result = 0;
-    FILE *map_file;
+    FILE *map_file = NULL;
 
     {
-        map_file = std::fopen(file_path, "r");
+        map_file = std::fopen(file_path, "rb");
         if (map_file == NULL) return_defer(1);
+
+        char tmp[99];
+        std::fscanf(map_file, " %s ", tmp);
+        if (std::ferror(map_file)) return_defer(1);
 
         std::fscanf(map_file, " %zu", number_of_obstacles);
         if (std::ferror(map_file)) return_defer(1);
@@ -440,6 +444,9 @@ int save_map_to_file(const char *file_path,
         map_file = std::fopen(file_path, "wb");
         if (map_file == NULL) return_defer(1);
 
+        std::fprintf(map_file, "%s\n", level->name);
+        if (std::ferror(map_file)) return_defer(1);
+
         std::fprintf(map_file, "%zu\n", level->obstacles_number);
         if (std::ferror(map_file)) return_defer(1);
 
@@ -542,6 +549,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     *edit_buttons = NULL;
     *del_buttons = NULL;
     *buttons_number = 0;
+    FILE *map_file = NULL;
 
     {
         dir = opendir(dir_path);
@@ -560,18 +568,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
             if (std::strcmp(extension, ".prmap") == 0) {
 
-                char map_name[99] = "";
-                assert((std::strlen(dp->d_name)-std::strlen(extension)+1 <=
-                            ARRAY_LENGTH(map_name)) &&
-                        "File name bigger than temporary buffer");
-                std::snprintf(map_name,
-                             std::strlen(dp->d_name)-std::strlen(extension)+1,
-                             "%s", dp->d_name);
-
-                std::cout << "Found map_file: "
-                          << map_name << " length: " << std::strlen(map_name)
-                          << std::endl;
-
                 char map_path[99] = "";
                 assert((std::strlen(dir_path)+std::strlen(dp->d_name)+1 <=
                             ARRAY_LENGTH(map_path))
@@ -583,6 +579,27 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << " length: "
                           << std::strlen(map_path)
                           << std::endl;
+
+                char map_name[99] = "";
+
+                map_file = std::fopen(map_path, "rb");
+                if (std::ferror(map_file)) return_defer(1);
+
+                std::fscanf(map_file, " %s", map_name);
+                if (std::ferror(map_file)) return_defer(1);
+
+                std::cout << "Found map_file: "
+                          << map_name << " length: " << std::strlen(map_name)
+                          << std::endl;
+
+                // TODO: Read first string from file
+                // assert((std::strlen(dp->d_name)-std::strlen(extension)+1 <=
+                //             ARRAY_LENGTH(map_name)) &&
+                //         "File name bigger than temporary buffer");
+                // std::snprintf(map_name,
+                //              std::strlen(dp->d_name)-std::strlen(extension)+1,
+                //              "%s", dp->d_name);
+
 
                 // Creating the custom level button
                 // NOTE: If it's the first button, malloc, otherwise just realloc
@@ -620,6 +637,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     }
 
     defer:
+    if (map_file) std::fclose(map_file);
     if (result != 0 && *buttons) std::free(*buttons);
     if (result != 0 && *edit_buttons) std::free(*edit_buttons);
     if (result != 0 && *del_buttons) std::free(*del_buttons);
@@ -946,8 +964,8 @@ void menu_update(void) {
                 lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
                 if (input->mouse_left.clicked) {
                     CHANGE_CASE_TO(PR::LEVEL,
-                                   level_prepare,
-                                   lb->mapfile_path, false, lb->is_new_level);
+                                   level_prepare, lb->mapfile_path,
+                                   lb->button.text, false, lb->is_new_level);
                 }
             } else {
                 lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -968,7 +986,7 @@ void menu_update(void) {
 
                     if (!deleted_lb->is_new_level &&
                             std::remove(deleted_lb->mapfile_path)) {
-                        std::cout << "[ERROR]: Could not delete the mapfile"
+                        std::cout << "[ERROR]: Could not delete the mapfile: "
                                   << deleted_lb->mapfile_path
                                   << std::endl;
                     }
@@ -1061,7 +1079,9 @@ void menu_update(void) {
                     if (input->mouse_left.clicked) {
                         CHANGE_CASE_TO(PR::LEVEL,
                                        level_prepare,
-                                       lb->mapfile_path, true,
+                                       lb->mapfile_path,
+                                       lb->button.text,
+                                       true,
                                        lb->is_new_level);
                     }
                 } else {
@@ -1078,7 +1098,8 @@ void menu_update(void) {
                         if (input->mouse_left.clicked) {
                             CHANGE_CASE_TO(PR::LEVEL,
                                            level_prepare,
-                                           lb->mapfile_path, false,
+                                           lb->mapfile_path, lb->button.text,
+                                           false,
                                            lb->is_new_level);
                         }
                     } else {
@@ -1094,42 +1115,66 @@ void menu_update(void) {
                                     add_level->from_center)) {
                 add_level->col = LEVEL_BUTTON_SELECTED_COLOR;
                 if (input->mouse_left.clicked) {
-                    menu->custom_buttons = (menu->custom_buttons_number == 0) ?
-                        (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
-                        (PR::LevelButton *) std::realloc(menu->custom_buttons,
-                                                sizeof(PR::LevelButton) *
-                                                (menu->custom_buttons_number+1));
-                    menu->custom_buttons_number++;
-                    PR::LevelButton *new_lb = menu->custom_buttons +
-                                              menu->custom_buttons_number - 1;
-                    button_set_position(&new_lb->button,
-                                        menu->custom_buttons_number - 1);
-                    new_lb->is_new_level = true;
                     // Level button display text
-                    int text_size = std::snprintf(nullptr, 0,
-                                             "level %zu",
-                                             menu->custom_buttons_number);
-                    assert((text_size+1 <= ARRAY_LENGTH(new_lb->button.text))
-                            && "Text buffer is too little!");
-                    std::snprintf(new_lb->button.text, text_size+1,
-                                  "level %zu", menu->custom_buttons_number);
-                    // Level map file path
-                    int path_size = std::snprintf(nullptr, 0,
-                                             "./custom_maps/level%zu.prmap",
-                                             menu->custom_buttons_number);
-                    assert((path_size+1 <= ARRAY_LENGTH(new_lb->mapfile_path))
-                            && "Mapfile path buffer is too little!");
-                    std::snprintf(new_lb->mapfile_path, path_size+1,
-                                  "./custom_maps/level%zu.prmap",
-                                  menu->custom_buttons_number);
+                    
+                    bool found = true;
+                    size_t map_number = 0;
+                    int map_name_size;
+                    char map_name[99];
+                    do {
+                        found = true;
+                        map_name_size =
+                            std::snprintf(nullptr, 0, "map_%zu", map_number);
+                        std::snprintf(map_name, map_name_size+1,
+                                      "map_%zu", map_number);
+                        for(size_t lb_index = 0;
+                            lb_index < menu->custom_buttons_number;
+                            ++lb_index) {
 
-                    button_add_custom_edit_del(new_lb,
-                                               menu->custom_buttons_number - 1,
-                                               &menu->custom_edit_buttons,
-                                               &menu->custom_del_buttons);
+                            if (std::strcmp(map_name,
+                                 menu->custom_buttons[lb_index].button.text) == 0) {
+                                found = false;
+                                break;
+                            }
+                        }
+                    } while (!found && map_number < 1000);
 
-                    button_set_position(add_level,
-                                        menu->custom_buttons_number);
+                    if (map_number < 1000) {
+                        menu->custom_buttons = (menu->custom_buttons_number == 0) ?
+                            (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
+                            (PR::LevelButton *) std::realloc(menu->custom_buttons,
+                                                    sizeof(PR::LevelButton) *
+                                                    (menu->custom_buttons_number+1));
+                        menu->custom_buttons_number++;
+                        PR::LevelButton *new_lb = menu->custom_buttons +
+                                                  menu->custom_buttons_number - 1;
+                        button_set_position(&new_lb->button,
+                                            menu->custom_buttons_number - 1);
+                        new_lb->is_new_level = true;
+
+                        std::snprintf(new_lb->button.text, map_name_size+1,
+                                      "%s", map_name);
+
+                        uint32_t random_id = (uint32_t)(((float)std::rand() / RAND_MAX) *999999) +1;
+
+                        // Level map file path
+                        int path_size = std::snprintf(nullptr, 0,
+                                                 "./custom_maps/map%zu-%.06u.prmap",
+                                                 map_number, random_id);
+                        assert((path_size+1 <= ARRAY_LENGTH(new_lb->mapfile_path))
+                                && "Mapfile path buffer is too little!");
+                        std::snprintf(new_lb->mapfile_path, path_size+1,
+                                      "./custom_maps/map%zu-%.06u.prmap",
+                                      map_number, random_id);
+
+                        button_add_custom_edit_del(new_lb,
+                                                   menu->custom_buttons_number - 1,
+                                                   &menu->custom_edit_buttons,
+                                                   &menu->custom_del_buttons);
+
+                        button_set_position(add_level,
+                                            menu->custom_buttons_number);
+                    }
                 }
             } else {
                 add_level->col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -3539,7 +3584,8 @@ void level_update(void) {
             b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
 
             if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::LEVEL, level_prepare, level->file_path,
+                CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                               level->file_path, level->name,
                                level->editing_available, level->is_new);
             }
         }
@@ -3550,7 +3596,7 @@ void level_update(void) {
             b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
 
             if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false, false);
+                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
             }
         }
 
@@ -3654,7 +3700,8 @@ void level_update(void) {
             b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
 
             if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::LEVEL, level_prepare, level->file_path,
+                CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                               level->file_path, level->name,
                                level->editing_available, level->is_new);
             }
         }
@@ -3665,7 +3712,7 @@ void level_update(void) {
             b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
 
             if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false, false);
+                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
             }
         }
 
