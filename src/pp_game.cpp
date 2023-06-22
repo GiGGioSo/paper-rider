@@ -561,8 +561,10 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
         size_t button_index = 0;
 
+        size_t ordered_indexes[1024];
+
         dirent *dp = NULL;
-        while ((dp = readdir(dir))) {
+        while ((dp = readdir(dir)) && button_index < 1024) {
 
             const char *extension = std::strrchr(dp->d_name, '.');
 
@@ -592,15 +594,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << map_name << " length: " << std::strlen(map_name)
                           << std::endl;
 
-                // TODO: Read first string from file
-                // assert((std::strlen(dp->d_name)-std::strlen(extension)+1 <=
-                //             ARRAY_LENGTH(map_name)) &&
-                //         "File name bigger than temporary buffer");
-                // std::snprintf(map_name,
-                //              std::strlen(dp->d_name)-std::strlen(extension)+1,
-                //              "%s", dp->d_name);
-
-
                 // Creating the custom level button
                 // NOTE: If it's the first button, malloc, otherwise just realloc
                 *buttons = (button_index == 0) ?
@@ -608,6 +601,31 @@ int load_custom_buttons_from_dir(const char *dir_path,
                     (PR::LevelButton *) std::realloc(*buttons,
                                                      sizeof(PR::LevelButton) *
                                                       (button_index+1));
+                // Insertion sort on the indexes
+                // 1 2 5 7 9
+                //
+                //  cmp(3, 1) > 0
+                //  cmp(3, 2) > 0
+                //  cmp(3, 5) <= 0 <-
+                //
+                // 1 2 3 5 7 9
+                if (button_index == 0) {
+                    ordered_indexes[0] = 0;
+                } else {
+                    for(size_t i = 0; i < button_index; ++i) {
+                        if (std::strcmp(map_name,
+                                        (*buttons)[i].button.text) <= 0) {
+                            for(int k = button_index; k > i; --k) {
+                                ordered_indexes[k] = ordered_indexes[k-1];
+                            }
+                            ordered_indexes[i] = button_index;
+
+                            // move other right by one, then insert
+                        } else if (i == button_index-1) {
+                            ordered_indexes[button_index] = button_index;
+                        }
+                    }
+                }
 
                 PR::LevelButton *lb = *buttons + button_index;
                 button_set_position(&lb->button, button_index);
@@ -630,9 +648,20 @@ int load_custom_buttons_from_dir(const char *dir_path,
                                            edit_buttons, del_buttons);
 
                 ++button_index;
+
+                if (map_file) std::fclose(map_file);
                 
             }
         }
+
+
+        for(size_t i = 0; i < button_index; ++i) {
+            button_set_position(&(*buttons)[i].button, ordered_indexes[i]);
+            button_edit_del_to_lb(&(*buttons)[i].button,
+                                  &(*edit_buttons)[i],
+                                  &(*del_buttons)[i]);
+        }
+
         *buttons_number = button_index;
     }
 
@@ -1067,8 +1096,7 @@ void menu_update(void) {
                         menu->deleting_index = custombutton_index;
                     }
                     
-                } else
-                if (rect_contains_point(
+                } else if (rect_contains_point(
                             rect_in_camera_space(edit_lb->body, cam),
                             input->mouseX, input->mouseY,
                             edit_lb->from_center)) {
@@ -1118,7 +1146,7 @@ void menu_update(void) {
                     // Level button display text
                     
                     bool found = true;
-                    size_t map_number = 0;
+                    size_t map_number = 1;
                     int map_name_size;
                     char map_name[99];
                     do {
@@ -1137,7 +1165,7 @@ void menu_update(void) {
                                 break;
                             }
                         }
-                    } while (!found && map_number < 1000);
+                    } while (!found && map_number++ < 1000);
 
                     if (map_number < 1000) {
                         menu->custom_buttons = (menu->custom_buttons_number == 0) ?
