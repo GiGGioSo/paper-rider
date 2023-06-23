@@ -723,7 +723,8 @@ void remove_element_of_index(void *base, size_t length,
 
 }
 
-const char *campaign_levels_filepath[1] = {
+const char *campaign_levels_filepath[2] = {
+    "./campaign_maps/level1.prmap",
     "./campaign_maps/level2.prmap"
 };
 
@@ -1400,15 +1401,15 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     p->crashed = false;
     p->crash_position.x = 0.f;
     p->crash_position.y = 0.f;
-    p->body.dim.y = 23.f;
+    p->body.dim.y = 21.f;
     p->body.dim.x = p->body.dim.y * 3.f;
     p->body.angle = 0.f;
     p->body.triangle = true;
     p->render_zone.dim.y = 25.f;
     p->render_zone.dim.x = p->render_zone.dim.y * 3.f;
-    p->render_zone.pos = p->body.pos;
-    /*p->render_zone.pos = p->body.pos +
-                         (p->body.dim - p->render_zone.dim) * 0.5f;*/
+    // p->render_zone.pos = p->body.pos;
+    p->render_zone.pos = p->body.pos +
+                         (p->body.dim - p->render_zone.dim) * 0.5f;
     p->render_zone.angle = p->body.angle;
     p->render_zone.triangle = false;
     p->vel.x = 0.f;
@@ -2051,9 +2052,13 @@ void level_update(void) {
                       &glob->rend_res.global_sprite);
 
     // NOTE: Update the `render_zone`s based on the `body`s
-    p->render_zone.pos.x = p->body.pos.x;
-    p->render_zone.pos.y = p->inverse ? p->body.pos.y+p->body.dim.y :
-                                        p->body.pos.y;
+    // p->render_zone.pos.x = p->body.pos.x;
+    // p->render_zone.pos.y = p->inverse ? p->body.pos.y+p->body.dim.y :
+    //                                     p->body.pos.y;
+
+    p->render_zone.pos = p->body.pos +
+                           (p->body.dim - p->render_zone.dim) * 0.5f;
+
     p->render_zone.angle = p->body.angle;
 
     rid->render_zone.pos = rid->body.pos +
@@ -2500,9 +2505,9 @@ void level_update(void) {
         }
     }
     // NOTE: Rendering the plane
-    renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
-                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
-                           false);
+    // renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
+    //                        glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
+    //                        false);
 
     // NOTE: Rendering plane texture
     renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
