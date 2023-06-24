@@ -59,7 +59,7 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         key_pressed(&input->right);
     }
 
-    if(IS_KEY_PRESSED(GLFW_KEY_ESCAPE)) {
+    if(IS_KEY_PRESSED(GLFW_KEY_F4)) {
         key_pressed(&input->exit);
     }
 
@@ -140,7 +140,7 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     if (IS_KEY_PRESSED(GLFW_KEY_2)) {
         key_pressed(&input->level2);
     }
-    if (IS_KEY_PRESSED(GLFW_KEY_0)) {
+    if (IS_KEY_PRESSED(GLFW_KEY_ESCAPE)) {
         key_pressed(&input->menu);
     }
 

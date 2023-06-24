@@ -147,16 +147,19 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
         level->portals.items = NULL;
     }
     level->portals.capacity = 0;
+    level->portals.count = 0;
     if (level->obstacles.items) {
         std::free(level->obstacles.items);
         level->obstacles.items = NULL;
     }
     level->obstacles.capacity = 0;
+    level->obstacles.count = 0;
     if (level->boosts.items) {
         std::free(level->boosts.items);
         level->boosts.items = NULL;
     }
     level->boosts.capacity = 0;
+    level->boosts.count = 0;
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(level->particle_systems);
         ++ps_index) {
