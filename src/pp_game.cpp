@@ -6,6 +6,7 @@
 #include <cerrno>
 
 #include "pp_game.h"
+#include "pr_common.h"
 #include "pp_globals.h"
 #include "pp_input.h"
 #include "pp_renderer.h"
@@ -141,18 +142,21 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
     }
 
     // Level freeing
-    if (level->portals) {
-        std::free(level->portals);
-        level->portals = NULL;
+    if (level->portals.items) {
+        std::free(level->portals.items);
+        level->portals.items = NULL;
     }
-    if (level->obstacles) {
-        std::free(level->obstacles);
-        level->obstacles = NULL;
+    level->portals.capacity = 0;
+    if (level->obstacles.items) {
+        std::free(level->obstacles.items);
+        level->obstacles.items = NULL;
     }
-    if (level->boosts) {
-        std::free(level->boosts);
-        level->boosts = NULL;
+    level->obstacles.capacity = 0;
+    if (level->boosts.items) {
+        std::free(level->boosts.items);
+        level->boosts.items = NULL;
     }
+    level->boosts.capacity = 0;
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(level->particle_systems);
         ++ps_index) {
@@ -173,12 +177,9 @@ void menu_set_to_null(PR::Menu *menu) {
 
 inline
 void level_set_to_null(PR::Level *level) {
-    level->portals_number = 0;
-    level->portals = NULL;
-    level->obstacles_number = 0;
-    level->obstacles = NULL;
-    level->boosts_number = 0;
-    level->boosts = NULL;
+    level->portals = {0};
+    level->obstacles = {0};
+    level->boosts = {0};
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(level->particle_systems);
         ++ps_index) {
@@ -189,12 +190,12 @@ void level_set_to_null(PR::Level *level) {
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 int load_map_from_file(const char *file_path,
-                       PR::Obstacle **obstacles,
-                       size_t *number_of_obstacles,
-                       PR::BoostPad **boosts,
-                       size_t *number_of_boosts,
-                       PR::Portal **portals,
-                       size_t *number_of_portals,
+                       PR::Obstacles *obstacles,
+                       // size_t *number_of_obstacles,
+                       PR::BoostPads *boosts,
+                       // size_t *number_of_boosts,
+                       PR::Portals *portals,
+                       // size_t *number_of_portals,
                        float *start_x, float *start_y,
                        float *start_angle,
                        float *goal_line,
@@ -215,22 +216,23 @@ int load_map_from_file(const char *file_path,
         std::fscanf(map_file, " %s ", tmp);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::fscanf(map_file, " %zu", number_of_obstacles);
+        size_t number_of_obstacles;
+        std::fscanf(map_file, " %zu", &number_of_obstacles);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::cout << "[LOADING] " << *number_of_obstacles
+        std::cout << "[LOADING] " << number_of_obstacles
                   << " obstacles from the file " << file_path
                   << std::endl;
 
-        *obstacles = (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
-                                                  *number_of_obstacles);
-        if (*obstacles == NULL) {
-            std::cout << "[ERROR] Buy more RAM!" << std::endl;
-            return_defer(2);
-        }
+        // *obstacles = (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
+        //                                           *number_of_obstacles);
+        // if (*obstacles == NULL) {
+        //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
+        //     return_defer(2);
+        // }
 
         for (size_t obstacle_index = 0;
-             obstacle_index < *number_of_obstacles;
+             obstacle_index < number_of_obstacles;
              ++obstacle_index) {
 
             int collide_plane, collide_rider, triangle;
@@ -245,22 +247,23 @@ int load_map_from_file(const char *file_path,
             // TODO: You cannot check feof on the obstacles
             //       because after them there are the boosts
             if (std::feof(map_file)) {
-                *number_of_obstacles = obstacle_index;
                 std::cout << "[WARNING] Found only " << obstacle_index
                           << " obstacles in the map file" << std::endl;
                 return_defer(1);
             }
 
-            PR::Obstacle *obs = *obstacles + obstacle_index;
-            obs->body.pos.x = x * proportion_x;
-            obs->body.pos.y = y * proportion_y;
-            obs->body.dim.x = w * proportion_x;
-            obs->body.dim.y = h * proportion_y;
-            obs->body.angle = r;
-            obs->body.triangle = triangle;
+            PR::Obstacle obs;
+            obs.body.pos.x = x * proportion_x;
+            obs.body.pos.y = y * proportion_y;
+            obs.body.dim.x = w * proportion_x;
+            obs.body.dim.y = h * proportion_y;
+            obs.body.angle = r;
+            obs.body.triangle = triangle;
 
-            obs->collide_plane = collide_plane;
-            obs->collide_rider = collide_rider;
+            obs.collide_plane = collide_plane;
+            obs.collide_rider = collide_rider;
+
+            da_append(obstacles, obs, PR::Obstacle);
 
             std::cout << "x: " << x * proportion_x
                       << " y: " << y * proportion_y
@@ -275,22 +278,23 @@ int load_map_from_file(const char *file_path,
         }
 
         // NOTE: Loading the boosts from memory
-        std::fscanf(map_file, " %zu", number_of_boosts);
+        size_t number_of_boosts;
+        std::fscanf(map_file, " %zu", &number_of_boosts);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::cout << "[LOADING] " << *number_of_boosts
+        std::cout << "[LOADING] " << number_of_boosts
                   << " boost pads from file " << file_path
                   << std::endl;
 
-        *boosts = (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
-                                   *number_of_boosts);
-        if (*boosts == NULL) {
-            std::cout << "[ERROR] Buy more RAM!" << std::endl;
-            return_defer(2);
-        }
+        // *boosts = (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
+        //                            *number_of_boosts);
+        // if (*boosts == NULL) {
+        //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
+        //     return_defer(2);
+        // }
 
         for(size_t boost_index = 0;
-            boost_index < *number_of_boosts;
+            boost_index < number_of_boosts;
             ++boost_index) {
             
             int triangle;
@@ -302,21 +306,22 @@ int load_map_from_file(const char *file_path,
 
             if (std::ferror(map_file)) return_defer(1);
             if (std::feof(map_file)) {
-                *number_of_boosts = boost_index;
                 std::cout << "[WARNING] Found only " << boost_index
                           << " boosts in the map file" << std::endl;
                 break;
             }
 
-            PR::BoostPad *pad = *boosts + boost_index;
-            pad->body.pos.x = x * proportion_x;
-            pad->body.pos.y = y * proportion_y;
-            pad->body.dim.x = w * proportion_x;
-            pad->body.dim.y = h * proportion_y;
-            pad->body.angle = r;
-            pad->body.triangle = triangle;
-            pad->boost_angle = ba;
-            pad->boost_power = bp;
+            PR::BoostPad pad;
+            pad.body.pos.x = x * proportion_x;
+            pad.body.pos.y = y * proportion_y;
+            pad.body.dim.x = w * proportion_x;
+            pad.body.dim.y = h * proportion_y;
+            pad.body.angle = r;
+            pad.body.triangle = triangle;
+            pad.boost_angle = ba;
+            pad.boost_power = bp;
+
+            da_append(boosts, pad, PR::BoostPad);
 
             std::cout << "x: " << x * proportion_x
                       << " y: " << y * proportion_y
@@ -332,22 +337,23 @@ int load_map_from_file(const char *file_path,
         }
 
         // NOTE: Loading the portals from memory
-        std::fscanf(map_file, " %zu", number_of_portals);
+        size_t number_of_portals;
+        std::fscanf(map_file, " %zu", &number_of_portals);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::cout << "[LOADING] " << *number_of_portals
+        std::cout << "[LOADING] " << number_of_portals
                   << " portals from file " << file_path
                   << std::endl;
 
-        *portals = (PR::Portal *) std::malloc(sizeof(PR::Portal) *
-                                   *number_of_portals);
-        if (*portals == NULL) {
-            std::cout << "[ERROR] Buy more RAM!" << std::endl;
-            return_defer(2);
-        }
+        // *portals = (PR::Portal *) std::malloc(sizeof(PR::Portal) *
+        //                            *number_of_portals);
+        // if (*portals == NULL) {
+        //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
+        //     return_defer(2);
+        // }
 
         for(size_t portal_index = 0;
-            portal_index < *number_of_portals;
+            portal_index < number_of_portals;
             ++portal_index) {
 
             float x, y, w, h;
@@ -359,23 +365,21 @@ int load_map_from_file(const char *file_path,
                         &type, &enable, &x, &y, &w, &h);
             if (std::ferror(map_file)) return_defer(1);
             if (std::feof(map_file)) {
-                *number_of_portals = portal_index;
                 std::cout << "[WARNING] Found only " << portal_index
                           << " portals in the map file" << std::endl;
                 break;
             }
 
-            PR::Portal *portal = *portals + portal_index;
-
+            PR::Portal portal;
             switch(type) {
                 case PR::INVERSE:
                 {
-                    portal->type = PR::INVERSE;
+                    portal.type = PR::INVERSE;
                     break;
                 }
                 case PR::SHUFFLE_COLORS:
                 {
-                    portal->type = PR::SHUFFLE_COLORS;
+                    portal.type = PR::SHUFFLE_COLORS;
                     break;
                 }
                 default:
@@ -389,13 +393,15 @@ int load_map_from_file(const char *file_path,
 
             }
 
-            portal->enable_effect = enable;
-            portal->body.pos.x = x * proportion_x;
-            portal->body.pos.y = y * proportion_y;
-            portal->body.dim.x = w * proportion_x;
-            portal->body.dim.y = h * proportion_y;
-            portal->body.angle = 0.f;
-            portal->body.triangle = false;
+            portal.enable_effect = enable;
+            portal.body.pos.x = x * proportion_x;
+            portal.body.pos.y = y * proportion_y;
+            portal.body.dim.x = w * proportion_x;
+            portal.body.dim.y = h * proportion_y;
+            portal.body.angle = 0.f;
+            portal.body.triangle = false;
+
+            da_append(portals, portal, PR::Portal);
 
             std::cout << "x: " << x * proportion_x
                       << " y: " << y * proportion_y
@@ -447,15 +453,15 @@ int save_map_to_file(const char *file_path,
         std::fprintf(map_file, "%s\n", level->name);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::fprintf(map_file, "%zu\n", level->obstacles_number);
+        std::fprintf(map_file, "%zu\n", level->obstacles.count);
         if (std::ferror(map_file)) return_defer(1);
 
         for(size_t obs_index = 0;
-            obs_index < level->obstacles_number;
+            obs_index < level->obstacles.count;
             ++obs_index) {
 
-            PR::Obstacle *obs = level->obstacles + obs_index;
-            Rect b = obs->body;
+            PR::Obstacle obs = level->obstacles.items[obs_index];
+            Rect b = obs.body;
             b.pos.x *= inv_proportion_x;
             b.pos.y *= inv_proportion_y;
             b.dim.x *= inv_proportion_x;
@@ -463,22 +469,22 @@ int save_map_to_file(const char *file_path,
 
             std::fprintf(map_file,
                          "%i %i %i %f %f %f %f %f\n",
-                         obs->collide_plane, obs->collide_rider,
+                         obs.collide_plane, obs.collide_rider,
                          b.triangle, b.pos.x, b.pos.y,
                          b.dim.x, b.dim.y, b.angle);
             if (std::ferror(map_file)) return_defer(1);
 
         }
 
-        std::fprintf(map_file, "%zu\n", level->boosts_number);
+        std::fprintf(map_file, "%zu\n", level->boosts.count);
         if (std::ferror(map_file)) return_defer(1);
 
         for(size_t boost_index = 0;
-            boost_index < level->boosts_number;
+            boost_index < level->boosts.count;
             ++boost_index) {
 
-            PR::BoostPad *pad = level->boosts + boost_index;
-            Rect b = pad->body;
+            PR::BoostPad pad = level->boosts.items[boost_index];
+            Rect b = pad.body;
             b.pos.x *= inv_proportion_x;
             b.pos.y *= inv_proportion_y;
             b.dim.x *= inv_proportion_x;
@@ -488,19 +494,19 @@ int save_map_to_file(const char *file_path,
                          "%i %f %f %f %f %f %f %f\n",
                          b.triangle, b.pos.x, b.pos.y,
                          b.dim.x, b.dim.y, b.angle,
-                         pad->boost_angle, pad->boost_power);
+                         pad.boost_angle, pad.boost_power);
             if (std::ferror(map_file)) return_defer(1);
         }
 
-        std::fprintf(map_file, "%zu\n", level->portals_number);
+        std::fprintf(map_file, "%zu\n", level->portals.count);
         if (std::ferror(map_file)) return_defer(1);
 
         for(size_t portal_index = 0;
-            portal_index < level->portals_number;
+            portal_index < level->portals.count;
             ++portal_index) {
 
-            PR::Portal *portal = level->portals + portal_index;
-            Rect b = portal->body;
+            PR::Portal portal = level->portals.items[portal_index];
+            Rect b = portal.body;
             b.pos.x *= inv_proportion_x;
             b.pos.y *= inv_proportion_y;
             b.dim.x *= inv_proportion_x;
@@ -508,7 +514,7 @@ int save_map_to_file(const char *file_path,
 
             std::fprintf(map_file,
                         "%i %i %f %f %f %f\n",
-                        portal->type, portal->enable_effect,
+                        portal.type, portal.enable_effect,
                         b.pos.x, b.pos.y, b.dim.x, b.dim.y);
             if (std::ferror(map_file)) return_defer(1);
 
@@ -1468,12 +1474,9 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     if (std::strcmp(mapfile_path, "")) {
 
         if (is_new_level) {
-            level->obstacles = NULL;
-            level->obstacles_number = 0;
-            level->boosts = NULL;
-            level->boosts_number = 0;
-            level->portals = NULL;
-            level->portals_number = 0;
+            level->obstacles = {0};
+            level->boosts = {0};
+            level->portals = {0};
             level->start_pos.pos.x = 0.f;
             level->start_pos.pos.y = win->h * 0.5f;
             level->start_pos.angle = 0.f;
@@ -1483,11 +1486,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
                 load_map_from_file(
                     mapfile_path,
                     &level->obstacles,
-                    &level->obstacles_number,
                     &level->boosts,
-                    &level->boosts_number,
                     &level->portals,
-                    &level->portals_number,
                     &level->start_pos.pos.x, &level->start_pos.pos.y,
                     &level->start_pos.angle,
                     &level->goal_line.pos.x,
@@ -1500,7 +1500,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
         cam->pos.x = p->body.pos.x;
 
     } else {
-
+        /*
         std::cout << "[WARNING] Loading fallback map information!"
                   << std::endl;
 
@@ -1599,6 +1599,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
             pad->boost_angle = pad->body.angle;
             pad->boost_power = 20.f;
         }
+        */
     }
 
 
@@ -1711,12 +1712,9 @@ void level_update(void) {
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
     PR::Rider *rid = &glob->current_level.rider;
-    size_t obstacles_number = glob->current_level.obstacles_number;
-    PR::Obstacle *obstacles = glob->current_level.obstacles;
-    size_t boosts_number = glob->current_level.boosts_number;
-    PR::BoostPad *boosts = glob->current_level.boosts;
-    size_t portals_number = glob->current_level.portals_number;
-    PR::Portal *portals = glob->current_level.portals;
+    PR::Obstacles *obstacles = &glob->current_level.obstacles;
+    PR::BoostPads *boosts = &glob->current_level.boosts;
+    PR::Portals *portals = &glob->current_level.portals;
 
     PR::Level *level = &glob->current_level;
 
@@ -2082,10 +2080,10 @@ void level_update(void) {
     if (level->editing_now) { // EDITING
 
         for(size_t portal_index = 0;
-            portal_index < portals_number;
+            portal_index < portals->count;
             ++portal_index) {
 
-            PR::Portal *portal = portals + portal_index;
+            PR::Portal *portal = &portals->items[portal_index];
 
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
@@ -2100,16 +2098,14 @@ void level_update(void) {
                 set_portal_option_buttons(level->selected_options_buttons);
             }
 
-
             portal_render(portal);
-
         }
 
         for (size_t boost_index = 0;
-             boost_index < boosts_number;
+             boost_index < boosts->count;
              ++boost_index) {
 
-            PR::BoostPad *pad = boosts + boost_index;
+            PR::BoostPad *pad = &boosts->items[boost_index];
 
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
@@ -2128,10 +2124,10 @@ void level_update(void) {
         }
 
         for (size_t obstacle_index = 0;
-             obstacle_index < obstacles_number;
+             obstacle_index < obstacles->count;
              obstacle_index++) {
 
-            PR::Obstacle *obs = obstacles + obstacle_index;
+            PR::Obstacle *obs = &obstacles->items[obstacle_index];
 
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
@@ -2203,10 +2199,10 @@ void level_update(void) {
         //       Even if the rider is not attached, the effect is also
         //          applied to the plane.
         for(size_t portal_index = 0;
-            portal_index < portals_number;
+            portal_index < portals->count;
             ++portal_index) {
 
-            PR::Portal *portal = portals + portal_index;
+            PR::Portal *portal = &portals->items[portal_index];
 
             portal_render(portal);
 
@@ -2266,19 +2262,19 @@ void level_update(void) {
 
         // NOTE: Render the boosts
         for (size_t boost_index = 0;
-             boost_index < boosts_number;
+             boost_index < boosts->count;
              ++boost_index) {
 
-            PR::BoostPad *pad = boosts + boost_index;
+            PR::BoostPad *pad = &boosts->items[boost_index];
             boostpad_render(pad);
         }
 
         // NOTE: Checking collision with obstacles
         for (size_t obstacle_index = 0;
-             obstacle_index < obstacles_number;
+             obstacle_index < obstacles->count;
              obstacle_index++) {
 
-            PR::Obstacle *obs = obstacles + obstacle_index;
+            PR::Obstacle *obs = &obstacles->items[obstacle_index];
 
             obstacle_render(obs);
 
@@ -2572,21 +2568,18 @@ void level_update(void) {
                                 input->mouseX, input->mouseY,
                                 add_portal.from_center)) {
 
-                level->portals_number++;
-                level->portals = (PR::Portal *)
-                    std::realloc((void *) level->portals,
-                                 sizeof(PR::Portal) * level->portals_number);
-                PR::Portal *portal =
-                    level->portals + (level->portals_number - 1);
-                portal->body.pos = cam->pos;
-                portal->body.dim.x = win->w * 0.2f;
-                portal->body.dim.y = win->h * 0.2f;
-                portal->body.triangle = false;
-                portal->body.angle = 0.f;
-                portal->type = PR::SHUFFLE_COLORS;
-                portal->enable_effect = true;
+                PR::Portal portal;
+                portal.body.pos = cam->pos;
+                portal.body.dim.x = win->w * 0.2f;
+                portal.body.dim.y = win->h * 0.2f;
+                portal.body.triangle = false;
+                portal.body.angle = 0.f;
+                portal.type = PR::SHUFFLE_COLORS;
+                portal.enable_effect = true;
 
-                level->selected = (void *) portal;
+                da_append(portals, portal, PR::Portal);
+
+                level->selected = (void *) &da_last(portals);
                 level->selected_type = PR::PORTAL_TYPE;
                 set_portal_option_buttons(level->selected_options_buttons);
 
@@ -2595,21 +2588,18 @@ void level_update(void) {
                                     input->mouseX, input->mouseY,
                                     add_boost.from_center)) {
 
-                level->boosts_number++;
-                level->boosts = (PR::BoostPad *)
-                    std::realloc((void *) level->boosts,
-                                 sizeof(PR::BoostPad) * level->boosts_number);
-                PR::BoostPad *pad =
-                    level->boosts + (level->boosts_number - 1);
-                pad->body.pos = cam->pos;
-                pad->body.dim.x = win->w * 0.2f;
-                pad->body.dim.y = win->h * 0.2f;
-                pad->body.triangle = false;
-                pad->body.angle = 0.f;
-                pad->boost_angle = 0.f;
-                pad->boost_power = 0.f;
+                PR::BoostPad pad;
+                pad.body.pos = cam->pos;
+                pad.body.dim.x = win->w * 0.2f;
+                pad.body.dim.y = win->h * 0.2f;
+                pad.body.triangle = false;
+                pad.body.angle = 0.f;
+                pad.boost_angle = 0.f;
+                pad.boost_power = 0.f;
 
-                level->selected = (void *) pad;
+                da_append(boosts, pad, PR::BoostPad);
+
+                level->selected = (void *) &da_last(boosts);
                 level->selected_type = PR::BOOST_TYPE;
                 set_boost_option_buttons(level->selected_options_buttons);
 
@@ -2618,22 +2608,18 @@ void level_update(void) {
                                     input->mouseX, input->mouseY,
                                     add_obstacle.from_center)) {
 
-                level->obstacles_number++;
-                level->obstacles = (PR::Obstacle *)
-                    std::realloc((void *) level->obstacles,
-                                 sizeof(PR::Obstacle) *
-                                    level->obstacles_number);
-                PR::Obstacle *obs =
-                    level->obstacles+(level->obstacles_number - 1);
-                obs->body.pos = cam->pos;
-                obs->body.dim.x = win->w * 0.2f;
-                obs->body.dim.y = win->h * 0.2f;
-                obs->body.triangle = false;
-                obs->body.angle = 0.f;
-                obs->collide_plane = false;
-                obs->collide_rider = false;
+                PR::Obstacle obs;
+                obs.body.pos = cam->pos;
+                obs.body.dim.x = win->w * 0.2f;
+                obs.body.dim.y = win->h * 0.2f;
+                obs.body.triangle = false;
+                obs.body.angle = 0.f;
+                obs.collide_plane = false;
+                obs.collide_rider = false;
 
-                level->selected = (void *) obs;
+                da_append(obstacles, obs, PR::Obstacle);
+
+                level->selected = (void *) &da_last(obstacles);
                 level->selected_type = PR::OBSTACLE_TYPE;
                 set_obstacle_option_buttons(level->selected_options_buttons);
 
@@ -2678,21 +2664,8 @@ void level_update(void) {
             {
                 PR::Portal *portal = (PR::Portal *) level->selected;
 
-                int index = portal - level->portals;
-
-                // std::memmove((void *)(level->portals + index),
-                //              (void *)(level->portals + index + 1),
-                //              (size_t)(level->portals_number - index - 1) *
-                //                 sizeof(PR::Portal));
-
-                // level->portals = (PR::Portal *)
-                //     std::realloc((void *) level->portals,
-                //                  sizeof(PR::Portal) *
-                //                     level->portals_number);
-                remove_element_of_index(level->portals,
-                                        level->portals_number,
-                                        index, sizeof(PR::Portal));
-                level->portals_number--;
+                int index = portal - portals->items;
+                da_remove(portals, index);
                 std::cout << "Removed portal n. " << index << std::endl;
                 
                 level->selected = NULL;
@@ -2703,12 +2676,8 @@ void level_update(void) {
             {
                 PR::BoostPad *pad = (PR::BoostPad *) level->selected;
 
-                int index = pad - level->boosts;
-
-                remove_element_of_index(level->boosts,
-                                        level->boosts_number,
-                                        index, sizeof(PR::BoostPad));
-                level->boosts_number--;
+                int index = pad - boosts->items;
+                da_remove(boosts, index);
                 std::cout << "Removed boost n. " << index << std::endl;
                 
                 level->selected = NULL;
@@ -2719,13 +2688,8 @@ void level_update(void) {
             {
                 PR::Obstacle *obs = (PR::Obstacle *) level->selected;
 
-                int index = obs - level->obstacles;
-
-                remove_element_of_index(level->obstacles,
-                                        level->obstacles_number,
-                                        index, sizeof(PR::Obstacle));
-
-                level->obstacles_number--;
+                int index = obs - obstacles->items;
+                da_remove(obstacles, index);
                 std::cout << "Removed obstacle n. " << index << std::endl;
 
                 level->selected = NULL;
@@ -4534,19 +4498,19 @@ void update_plane_physics_n_boost_collisions(PR::Level *level) {
     apply_air_resistances(p);
     // NOTE: Checking collision with boost_pads
     for (size_t boost_index = 0;
-         boost_index < level->boosts_number;
+         boost_index < level->boosts.count;
          ++boost_index) {
 
-        PR::BoostPad *pad = level->boosts + boost_index;
+        PR::BoostPad pad = level->boosts.items[boost_index];
 
-        if (rect_are_colliding(p->body, pad->body, NULL, NULL)) {
+        if (rect_are_colliding(p->body, pad.body, NULL, NULL)) {
 
             boost_ps->active = true;
             
-            p->acc.x += pad->boost_power *
-                        cos(glm::radians(pad->boost_angle));
-            p->acc.y += pad->boost_power *
-                        -sin(glm::radians(pad->boost_angle));
+            p->acc.x += pad.boost_power *
+                        cos(glm::radians(pad.boost_angle));
+            p->acc.y += pad.boost_power *
+                        -sin(glm::radians(pad.boost_angle));
 
         }
     }

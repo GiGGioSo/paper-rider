@@ -181,6 +181,22 @@ struct PR {
         P_START_POS_TYPE = 4,
     };
 
+    struct Obstacles {
+        Obstacle *items;
+        size_t count;
+        size_t capacity;
+    };
+    struct BoostPads {
+        BoostPad *items;
+        size_t count;
+        size_t capacity;
+    };
+    struct Portals {
+        Portal *items;
+        size_t count;
+        size_t capacity;
+    };
+
     struct Level {
         char file_path[99];
         char name[99];
@@ -228,12 +244,10 @@ struct PR {
 #define SELECTED_MAX_OPTIONS 6
         Button selected_options_buttons[SELECTED_MAX_OPTIONS];
 
-        size_t obstacles_number;
-        Obstacle *obstacles;
-        size_t boosts_number;
-        BoostPad *boosts;
-        size_t portals_number;
-        Portal *portals;
+        Obstacles obstacles;
+        BoostPads boosts;
+        Portals portals;
+
     };
     Level current_level;
 
