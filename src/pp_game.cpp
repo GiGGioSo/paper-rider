@@ -47,9 +47,11 @@
 
 #define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
     PR::Level t_level = glob->current_level;\
+    level_set_to_null(&t_level);\
     t_level.editing_available = (edit);\
     std::snprintf(t_level.name, std::strlen(level_name)+1, "%s", (level_name));\
     PR::Menu t_menu = glob->current_menu;\
+    menu_set_to_null(&t_menu);\
     int preparation_result = (prepare_func)(&t_menu, &t_level,\
                                             (map_path), (is_new));\
     if (preparation_result == 0) {\
@@ -128,38 +130,12 @@ void update_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle)
 
 void free_menu_level(PR::Menu *menu, PR::Level *level) {
     // Menu freeing
-    if (menu->custom_buttons) {
-        std::free(menu->custom_buttons);
-        menu->custom_buttons = NULL;
-    }
-    if (menu->custom_edit_buttons) {
-        std::free(menu->custom_edit_buttons);
-        menu->custom_edit_buttons = NULL;
-    }
-    if (menu->custom_del_buttons) {
-        std::free(menu->custom_del_buttons);
-        menu->custom_del_buttons = NULL;
-    }
+    da_clear(&menu->custom_buttons);
 
     // Level freeing
-    if (level->portals.items) {
-        std::free(level->portals.items);
-        level->portals.items = NULL;
-    }
-    level->portals.capacity = 0;
-    level->portals.count = 0;
-    if (level->obstacles.items) {
-        std::free(level->obstacles.items);
-        level->obstacles.items = NULL;
-    }
-    level->obstacles.capacity = 0;
-    level->obstacles.count = 0;
-    if (level->boosts.items) {
-        std::free(level->boosts.items);
-        level->boosts.items = NULL;
-    }
-    level->boosts.capacity = 0;
-    level->boosts.count = 0;
+    da_clear(&level->portals);
+    da_clear(&level->obstacles);
+    da_clear(&level->boosts);
     for(size_t ps_index = 0;
         ps_index < ARRAY_LENGTH(level->particle_systems);
         ++ps_index) {
@@ -172,10 +148,7 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
 
 inline
 void menu_set_to_null(PR::Menu *menu) {
-    menu->custom_buttons_number = 0;
-    menu->custom_buttons = NULL;
-    menu->custom_edit_buttons = NULL;
-    menu->custom_del_buttons = NULL;
+    menu->custom_buttons = {0};
 }
 
 inline
@@ -194,11 +167,8 @@ void level_set_to_null(PR::Level *level) {
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 int load_map_from_file(const char *file_path,
                        PR::Obstacles *obstacles,
-                       // size_t *number_of_obstacles,
                        PR::BoostPads *boosts,
-                       // size_t *number_of_boosts,
                        PR::Portals *portals,
-                       // size_t *number_of_portals,
                        float *start_x, float *start_y,
                        float *start_angle,
                        float *goal_line,
@@ -212,6 +182,10 @@ int load_map_from_file(const char *file_path,
     FILE *map_file = NULL;
 
     {
+        da_clear(obstacles);
+        da_clear(portals);
+        da_clear(boosts);
+
         map_file = std::fopen(file_path, "rb");
         if (map_file == NULL) return_defer(1);
 
@@ -437,6 +411,9 @@ int load_map_from_file(const char *file_path,
 
     defer:
     if (map_file) std::fclose(map_file);
+    if (result != 0 && obstacles->count > 0) da_clear(obstacles);
+    if (result != 0 && boosts->count > 0) da_clear(boosts);
+    if (result != 0 && portals->count > 0) da_clear(portals);
     return result;
 }
 
@@ -545,22 +522,17 @@ int save_map_to_file(const char *file_path,
 }
 
 int load_custom_buttons_from_dir(const char *dir_path,
-                                 PR::LevelButton **buttons,
-                                 PR::Button **edit_buttons,
-                                 PR::Button **del_buttons,
-                                 size_t *buttons_number) {
+                                 PR::CustomLevelButtons *buttons) {
 
     // PR::WinInfo *win = &glob->window;
 
     int result = 0;
     DIR *dir = NULL;
-    *buttons = NULL;
-    *edit_buttons = NULL;
-    *del_buttons = NULL;
-    *buttons_number = 0;
     FILE *map_file = NULL;
 
     {
+        da_clear(buttons);
+
         dir = opendir(dir_path);
         if (dir == NULL) {
             std::cout << "[ERROR] Could not open directory: "
@@ -603,13 +575,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << map_name << " length: " << std::strlen(map_name)
                           << std::endl;
 
-                // Creating the custom level button
-                // NOTE: If it's the first button, malloc, otherwise just realloc
-                *buttons = (button_index == 0) ?
-                    (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
-                    (PR::LevelButton *) std::realloc(*buttons,
-                                                     sizeof(PR::LevelButton) *
-                                                      (button_index+1));
                 // Insertion sort on the indexes
                 // 1 2 5 7 9
                 //
@@ -618,45 +583,45 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 //  cmp(3, 5) <= 0 <-
                 //
                 // 1 2 3 5 7 9
-                if (button_index == 0) {
+                if (buttons->count == 0) {
                     ordered_indexes[0] = 0;
                 } else {
-                    for(size_t i = 0; i < button_index; ++i) {
+                    for(size_t i = 0; i < buttons->count; ++i) {
                         if (std::strcmp(map_name,
-                                        (*buttons)[i].button.text) <= 0) {
-                            for(int k = button_index; k > i; --k) {
+                                        buttons->items[i].button.text) <= 0) {
+                            for(int k = buttons->count; k > i; --k) {
                                 ordered_indexes[k] = ordered_indexes[k-1];
                             }
                             ordered_indexes[i] = button_index;
 
                             // move other right by one, then insert
-                        } else if (i == button_index-1) {
-                            ordered_indexes[button_index] = button_index;
+                        } else if (i == buttons->count-1) {
+                            ordered_indexes[buttons->count-1] = buttons->count;
                         }
                     }
                 }
 
-                PR::LevelButton *lb = *buttons + button_index;
-                button_set_position(&lb->button, button_index);
-                lb->is_new_level = false;
+                PR::CustomLevelButton lb;
+                // button_set_position(&lb.button, button_index);
+                lb.is_new_level = false;
 
                 assert((std::strlen(map_name)+1 <=
-                            ARRAY_LENGTH(lb->button.text))
+                            ARRAY_LENGTH(lb.button.text))
                         && "Map name bigger than button text buffer!");
-                std::snprintf(lb->button.text, std::strlen(map_name)+1,
+                std::snprintf(lb.button.text, std::strlen(map_name)+1,
                               "%s", map_name);
 
                 assert((std::strlen(map_path)+1 <=
-                            ARRAY_LENGTH(lb->mapfile_path))
+                            ARRAY_LENGTH(lb.mapfile_path))
                         && "Mapfile path bigger than button mapfile buffer!");
-                std::snprintf(lb->mapfile_path, std::strlen(map_path)+1,
+                std::snprintf(lb.mapfile_path, std::strlen(map_path)+1,
                               "%s", map_path);
 
                 // Creating the little custom level edit button
-                button_add_custom_edit_del(lb, button_index,
-                                           edit_buttons, del_buttons);
+                // button_add_custom_edit_del(lb, button_index,
+                //                            edit_buttons, del_buttons);
 
-                ++button_index;
+                da_append(buttons, lb, PR::CustomLevelButton);
 
                 if (map_file) std::fclose(map_file);
                 
@@ -665,20 +630,16 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
 
         for(size_t i = 0; i < button_index; ++i) {
-            button_set_position(&(*buttons)[i].button, ordered_indexes[i]);
-            button_edit_del_to_lb(&(*buttons)[i].button,
-                                  &(*edit_buttons)[i],
-                                  &(*del_buttons)[i]);
+            button_set_position(&buttons->items[i].button, ordered_indexes[i]);
+            button_edit_del_to_lb(&buttons->items[i].button,
+                                  &buttons->items[i].edit,
+                                  &buttons->items[i].del);
         }
-
-        *buttons_number = button_index;
     }
 
     defer:
     if (map_file) std::fclose(map_file);
-    if (result != 0 && *buttons) std::free(*buttons);
-    if (result != 0 && *edit_buttons) std::free(*edit_buttons);
-    if (result != 0 && *del_buttons) std::free(*del_buttons);
+    if (result != 0 && buttons->count > 0) da_clear(buttons);
     if (dir) {
         if (closedir(dir) < 0) {
             std::cout << "[ERROR] Could not close directory: "
@@ -744,8 +705,6 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
 
     PR::WinInfo *win = &glob->window;
 
-    level_set_to_null(level);
-
     // NOTE: By not setting this, it will remain the same as before
     //          starting the level
     //menu->showing_campaign_buttons = true;
@@ -809,18 +768,12 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
 
     // NOTE: Custom levels buttons
     if (menu->showing_campaign_buttons) {
-        menu->custom_buttons_number = 0;
-        menu->custom_buttons = NULL;
-        menu->custom_edit_buttons = NULL;
-        menu->custom_del_buttons = NULL;
+        da_clear(&menu->custom_buttons);
     } else {
         int result = 0;
         result =
             load_custom_buttons_from_dir("./custom_maps/",
-                                         &menu->custom_buttons,
-                                         &menu->custom_edit_buttons,
-                                         &menu->custom_del_buttons,
-                                         &menu->custom_buttons_number);
+                                         &menu->custom_buttons);
         if (result != 0) {
             std::cout << "[ERROR] Could not load custom map files"
                       << std::endl;
@@ -828,7 +781,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
             return result;
         }
         PR::Button *add_level = &menu->add_custom_button;
-        button_set_position(add_level, menu->custom_buttons_number);
+        button_set_position(add_level, menu->custom_buttons.count);
         assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
                 && "Text bigger than button text buffer!");
         std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
@@ -887,7 +840,7 @@ void menu_update(void) {
 
     size_t buttons_shown_number =
         menu->showing_campaign_buttons ? CAMPAIGN_LEVELS_NUMBER :
-                                         menu->custom_buttons_number;
+                                         menu->custom_buttons.count;
 
     // NOTE: Consider the cursor only if it's inside the window
     if (0 < input->mouseX && input->mouseX < win->w &&
@@ -942,42 +895,22 @@ void menu_update(void) {
                 menu->show_custom_button.from_center)) {
         if (input->mouse_left.clicked) {
             int result = 0;
-            PR::LevelButton *temp_custom_buttons = NULL;
-            PR::Button *temp_custom_edit_buttons = NULL;
-            PR::Button *temp_custom_del_buttons = NULL;
-            size_t temp_custom_buttons_number = 0;
+            PR::CustomLevelButtons temp_custom_buttons = {0};
             result =
                 load_custom_buttons_from_dir("./custom_maps/",
-                                             &temp_custom_buttons,
-                                             &temp_custom_edit_buttons,
-                                             &temp_custom_del_buttons,
-                                             &temp_custom_buttons_number);
+                                             &temp_custom_buttons);
             if (result == 0) {
                 // NOTE: Free the previous present custom buttons
-                if (menu->custom_buttons) {
-                    std::free(menu->custom_buttons);
-                    menu->custom_buttons = NULL;
-                }
-                if (menu->custom_edit_buttons) {
-                    std::free(menu->custom_edit_buttons);
-                    menu->custom_edit_buttons = NULL;
-                }
-                if (menu->custom_del_buttons) {
-                    std::free(menu->custom_del_buttons);
-                    menu->custom_del_buttons = NULL;
-                }
+                da_clear(&menu->custom_buttons);
                 // NOTE: Reassing the updated and checked values
                 menu->custom_buttons = temp_custom_buttons;
-                menu->custom_edit_buttons = temp_custom_edit_buttons;
-                menu->custom_del_buttons = temp_custom_del_buttons;
-                menu->custom_buttons_number = temp_custom_buttons_number;
                 menu->showing_campaign_buttons = false;
                 menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
                 menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
                 menu->camera_goal_position = win->h * 0.5f;
 
                 PR::Button *add_level = &menu->add_custom_button;
-                button_set_position(add_level, menu->custom_buttons_number);
+                button_set_position(add_level, menu->custom_buttons.count);
                 assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
                         && "Text bigger than button text buffer!");
                 std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
@@ -1012,8 +945,8 @@ void menu_update(void) {
         }
     } else {
         if (menu->deleting_level) {
-            PR::LevelButton *deleted_lb = menu->custom_buttons +
-                                          menu->deleting_index;
+            PR::CustomLevelButton deleted_lb =
+                menu->custom_buttons.items[menu->deleting_index];
 
             if (rect_contains_point(menu->delete_yes.body,
                                     input->mouseX, input->mouseY,
@@ -1023,48 +956,29 @@ void menu_update(void) {
                     std::cout << "REMOVED LEVEL "
                               << menu->deleting_index << std::endl;
 
-                    if (!deleted_lb->is_new_level &&
-                            std::remove(deleted_lb->mapfile_path)) {
+                    if (!deleted_lb.is_new_level &&
+                            std::remove(deleted_lb.mapfile_path)) {
                         std::cout << "[ERROR]: Could not delete the mapfile: "
-                                  << deleted_lb->mapfile_path
+                                  << deleted_lb.mapfile_path
                                   << std::endl;
                     }
 
-                    remove_element_of_index(menu->custom_buttons,
-                                            menu->custom_buttons_number,
-                                            menu->deleting_index,
-                                            sizeof(PR::LevelButton));
-                    remove_element_of_index(menu->custom_edit_buttons,
-                                            menu->custom_buttons_number,
-                                            menu->deleting_index,
-                                            sizeof(PR::Button));
-                    remove_element_of_index(menu->custom_del_buttons,
-                                            menu->custom_buttons_number,
-                                            menu->deleting_index,
-                                            sizeof(PR::Button));
-
-                    menu->custom_buttons_number--;
+                    da_remove(&menu->custom_buttons, menu->deleting_index);
 
                     for(size_t repos_index = 0;
-                        repos_index < menu->custom_buttons_number;
+                        repos_index < menu->custom_buttons.count;
                         ++repos_index) {
 
-                        PR::Button *edit =
-                            menu->custom_edit_buttons + repos_index;
-                        PR::Button *del =
-                            menu->custom_del_buttons + repos_index;
-                        PR::LevelButton *but =
-                            menu->custom_buttons + repos_index;
+                        PR::CustomLevelButton but =
+                            menu->custom_buttons.items[repos_index];
 
-                        button_set_position(&but->button, repos_index);
-                        // std::cout << "Button: " << but->button.text
-                        //           << " set to index: " << repos_index
-                        //           << std::endl;
-                        button_edit_del_to_lb(&but->button, edit, del);
+                        button_set_position(&but.button, repos_index);
+                        button_edit_del_to_lb(&but.button,
+                                              &but.edit, &but.del);
                     }
 
                     PR::Button *add_level = &menu->add_custom_button;
-                    button_set_position(add_level, menu->custom_buttons_number);
+                    button_set_position(add_level, menu->custom_buttons.count);
 
                     menu->deleting_level = false;
                 }
@@ -1083,15 +997,15 @@ void menu_update(void) {
             }
         } else {
             for(size_t custombutton_index = 0;
-                custombutton_index < menu->custom_buttons_number;
+                custombutton_index < menu->custom_buttons.count;
                 ++custombutton_index) {
 
                 PR::Button *edit_lb =
-                    menu->custom_edit_buttons + custombutton_index;
+                    &menu->custom_buttons.items[custombutton_index].edit;
                 PR::Button *del_lb =
-                    menu->custom_del_buttons + custombutton_index;
-                PR::LevelButton *lb =
-                    menu->custom_buttons + custombutton_index;
+                    &menu->custom_buttons.items[custombutton_index].del;
+                PR::CustomLevelButton *lb =
+                    &menu->custom_buttons.items[custombutton_index];
 
                 if (rect_contains_point(
                             rect_in_camera_space(del_lb->body, cam),
@@ -1166,11 +1080,11 @@ void menu_update(void) {
                         std::snprintf(map_name, map_name_size+1,
                                       "map_%zu", map_number);
                         for(size_t lb_index = 0;
-                            lb_index < menu->custom_buttons_number;
+                            lb_index < menu->custom_buttons.count;
                             ++lb_index) {
 
                             if (std::strcmp(map_name,
-                                 menu->custom_buttons[lb_index].button.text) == 0) {
+                                 menu->custom_buttons.items[lb_index].button.text) == 0) {
                                 found = false;
                                 break;
                             }
@@ -1178,19 +1092,12 @@ void menu_update(void) {
                     } while (!found && map_number++ < 1000);
 
                     if (map_number < 1000) {
-                        menu->custom_buttons = (menu->custom_buttons_number == 0) ?
-                            (PR::LevelButton *) std::malloc(sizeof(PR::LevelButton)) :
-                            (PR::LevelButton *) std::realloc(menu->custom_buttons,
-                                                    sizeof(PR::LevelButton) *
-                                                    (menu->custom_buttons_number+1));
-                        menu->custom_buttons_number++;
-                        PR::LevelButton *new_lb = menu->custom_buttons +
-                                                  menu->custom_buttons_number - 1;
-                        button_set_position(&new_lb->button,
-                                            menu->custom_buttons_number - 1);
-                        new_lb->is_new_level = true;
+                        PR::CustomLevelButton new_lb;
+                        button_set_position(&new_lb.button,
+                                            menu->custom_buttons.count);
+                        new_lb.is_new_level = true;
 
-                        std::snprintf(new_lb->button.text, map_name_size+1,
+                        std::snprintf(new_lb.button.text, map_name_size+1,
                                       "%s", map_name);
 
                         uint32_t random_id = (uint32_t)(((float)std::rand() / RAND_MAX) *999999) +1;
@@ -1199,19 +1106,20 @@ void menu_update(void) {
                         int path_size = std::snprintf(nullptr, 0,
                                                  "./custom_maps/map%zu-%.06u.prmap",
                                                  map_number, random_id);
-                        assert((path_size+1 <= ARRAY_LENGTH(new_lb->mapfile_path))
+                        assert((path_size+1 <= ARRAY_LENGTH(new_lb.mapfile_path))
                                 && "Mapfile path buffer is too little!");
-                        std::snprintf(new_lb->mapfile_path, path_size+1,
+                        std::snprintf(new_lb.mapfile_path, path_size+1,
                                       "./custom_maps/map%zu-%.06u.prmap",
                                       map_number, random_id);
 
-                        button_add_custom_edit_del(new_lb,
-                                                   menu->custom_buttons_number - 1,
-                                                   &menu->custom_edit_buttons,
-                                                   &menu->custom_del_buttons);
+                        button_edit_del_to_lb(&new_lb.button,
+                                              &new_lb.edit, &new_lb.del);
+
+                        da_append(&menu->custom_buttons,
+                                  new_lb, PR::CustomLevelButton);
 
                         button_set_position(add_level,
-                                            menu->custom_buttons_number);
+                                            menu->custom_buttons.count);
                     }
                 }
             } else {
@@ -1270,61 +1178,54 @@ void menu_draw(void) {
         }
     } else {
         for(size_t custombutton_index = 0;
-            custombutton_index < menu->custom_buttons_number;
+            custombutton_index < menu->custom_buttons.count;
             ++custombutton_index) {
 
-            PR::LevelButton *lb =
-                menu->custom_buttons + custombutton_index;
+            PR::CustomLevelButton lb =
+                menu->custom_buttons.items[custombutton_index];
 
-            Rect button_rend_rect = rect_in_camera_space(lb->button.body, cam);
+            Rect button_rend_rect = rect_in_camera_space(lb.button.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
-                                   lb->button.col,
-                                   lb->button.from_center);
+                                   lb.button.col,
+                                   lb.button.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x,
                                     button_rend_rect.pos.y,
-                                    lb->button.text, glm::vec4(1.0f),
+                                    lb.button.text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
 
-
-            PR::Button *edit_lb =
-                menu->custom_edit_buttons + custombutton_index;
-
-            button_rend_rect = rect_in_camera_space(edit_lb->body, cam);
+            button_rend_rect = rect_in_camera_space(lb.edit.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
-                                   edit_lb->col,
-                                   edit_lb->from_center);
+                                   lb.edit.col,
+                                   lb.edit.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x+
                                         button_rend_rect.dim.x*0.5f,
                                     button_rend_rect.pos.y+
                                         button_rend_rect.dim.y*0.5f,
-                                    edit_lb->text, glm::vec4(1.0f),
+                                    lb.edit.text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
 
-            PR::Button *del_lb =
-                menu->custom_del_buttons + custombutton_index;
-
-            button_rend_rect = rect_in_camera_space(del_lb->body, cam);
+            button_rend_rect = rect_in_camera_space(lb.del.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
-                                   del_lb->col,
-                                   del_lb->from_center);
+                                   lb.del.col,
+                                   lb.del.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x,
                                     button_rend_rect.pos.y,
-                                    del_lb->text, glm::vec4(1.0f),
+                                    lb.del.text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
         }
 
         // NOTE: Drawing the button to add a level
-        PR::Button *add_level = &menu->add_custom_button;
-        Rect button_rend_rect = rect_in_camera_space(add_level->body, cam);
+        PR::Button add_level = menu->add_custom_button;
+        Rect button_rend_rect = rect_in_camera_space(add_level.body, cam);
         renderer_add_queue_uni(button_rend_rect,
-                               add_level->col,
-                               add_level->from_center);
+                               add_level.col,
+                               add_level.from_center);
         renderer_add_queue_text(button_rend_rect.pos.x,
                                 button_rend_rect.pos.y,
-                                add_level->text, glm::vec4(1.0f),
+                                add_level.text, glm::vec4(1.0f),
                                 &glob->rend_res.fonts[0], true);
 
     }
@@ -1355,7 +1256,7 @@ void menu_draw(void) {
                                 &glob->rend_res.fonts[0], true);
         renderer_add_queue_text(
             win->w * 0.5f, win->h * 0.45f,
-            (menu->custom_buttons+menu->deleting_index)->button.text,
+            menu->custom_buttons.items[menu->deleting_index].button.text,
             glm::vec4(0.0f, 0.0f, 0.0f, 1.f),
             &glob->rend_res.fonts[0], true);
     }
@@ -1369,9 +1270,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 
     PR::Plane *p = &level->plane;
     PR::Rider *rid = &level->rider;
-
-    // Have to set to NULL if I don't use it
-    menu_set_to_null(menu);
 
     PR::Camera *cam = &level->camera;
     // cam->pos.x is set afterwards
@@ -1462,6 +1360,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     rid->attached = true;
     rid->mass = 0.010f;
     rid->jump_time_elapsed = 0.f;
+    rid->attach_time_elapsed = 0.f;
     rid->air_friction_acc = 100.f;
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
@@ -1864,8 +1763,10 @@ void level_update(void) {
                 if (p->body.angle < -360) {
                     p->body.angle += 360.f;
                 }
+                rid->attach_time_elapsed += dt;
                 // NOTE: Make the rider jump based on input
-                if (!level->editing_now && input->jump.clicked) { // PLAYING
+                if (!level->editing_now && input->jump.clicked &&
+                    rid->attach_time_elapsed > 0.5f) { // PLAYING
                     rid->attached = false;
                     rid->second_jump = true;
                     rid->base_velocity = p->vel.x;
@@ -1941,6 +1842,7 @@ void level_update(void) {
                     rid->attached = true;
                     p->vel += (rid->vel - p->vel) * 0.5f;
                     rid->vel *= 0.f;
+                    rid->attach_time_elapsed = 0;
                 }
 
                 // NOTE: Make the camera follow the rider

@@ -64,6 +64,7 @@ struct PR {
 
         bool attached;
         float jump_time_elapsed;
+        float attach_time_elapsed;
 
         bool second_jump;
     };
@@ -146,6 +147,18 @@ struct PR {
         char mapfile_path[99];
         bool is_new_level;
     };
+    struct CustomLevelButton {
+        Button button;
+        Button edit;
+        Button del;
+        char mapfile_path[99];
+        bool is_new_level;
+    };
+    struct CustomLevelButtons {
+        CustomLevelButton *items;
+        size_t count;
+        size_t capacity;
+    };
 
     #define CAMPAIGN_LEVELS_NUMBER 2
     struct Menu {
@@ -158,10 +171,7 @@ struct PR {
 
         LevelButton campaign_buttons[CAMPAIGN_LEVELS_NUMBER];
 
-        size_t custom_buttons_number;
-        LevelButton *custom_buttons;
-        Button *custom_edit_buttons;
-        Button *custom_del_buttons;
+        CustomLevelButtons custom_buttons;
         
         Button add_custom_button;
 
