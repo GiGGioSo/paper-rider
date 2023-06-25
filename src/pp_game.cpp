@@ -1609,6 +1609,28 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     return 0;
 }
 
+struct Animation {
+    float frame_duration;
+    float frame_elapsed;
+    size_t current;
+    size_t frame_number;
+    TexCoords *tc;
+};
+
+void animation_step(Animation *a) {
+    float dt = glob->state.delta_time;
+
+    a->frame_elapsed += dt;
+    if (a->frame_elapsed > a->frame_duration) {
+        a->frame_elapsed -= a->frame_duration;
+        a->current = (a->current + 1) % a->frame_number;
+    }
+}
+
+void animation_draw(Rect b, Animation *a) {
+    renderer_add_queue_tex(b, a->tc[a->current], false);
+}
+
 void level_update(void) {
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
@@ -2083,6 +2105,36 @@ void level_update(void) {
             level->selected = NULL;
         }
 
+        if (input->obj_duplicate.clicked && level->selected) {
+            switch(level->selected_type) {
+                case PR::PORTAL_TYPE:
+                {
+                    PR::Portal *portal = (PR::Portal *) level->selected;
+                    int index = portal - portals->items;
+                    da_append(portals, portals->items[index], PR::Portal);
+                    level->selected = (void *) &da_last(portals);
+                    break;
+                }
+                case PR::BOOST_TYPE:
+                {
+                    PR::BoostPad *pad = (PR::BoostPad *) level->selected;
+                    int index = pad - boosts->items;
+                    da_append(boosts, boosts->items[index], PR::BoostPad);
+                    level->selected = (void *) &da_last(boosts);
+                    break;
+                }
+                case PR::OBSTACLE_TYPE:
+                {
+                    PR::Obstacle *obs = (PR::Obstacle *) level->selected;
+                    int index = obs - obstacles->items;
+                    da_append(obstacles, obstacles->items[index], PR::Obstacle);
+                    level->selected = (void *) &da_last(obstacles);
+                    break;
+                }
+                default: { break; }
+            }
+        }
+
         if (level->selected == NULL && input->reset_pos.clicked) {
             p->body.pos = level->start_pos.pos;
             p->body.angle = level->start_pos.angle;
@@ -2090,10 +2142,10 @@ void level_update(void) {
 
         // NOTE: Loop over window edged pacman style,
         //       but only on the top and bottom
-        if (p->body.pos.y + p->body.dim.y/2 > win->h) {
+        if (p->body.pos.y + p->body.dim.y * 0.5f > win->h) {
             p->body.pos.y -= win->h;
         }
-        if (p->body.pos.y + p->body.dim.y/2 < 0) {
+        if (p->body.pos.y + p->body.dim.y * 0.5f < 0) {
             p->body.pos.y += win->h;
         }
         

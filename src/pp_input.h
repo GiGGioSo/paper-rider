@@ -60,6 +60,7 @@ struct InputController {
     Key save_map;
     Key obj_delete;
     Key obj_add;
+    Key obj_duplicate;
     Key reset_pos;
 
     // NOTE: Menu
