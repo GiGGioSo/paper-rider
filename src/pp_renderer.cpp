@@ -21,6 +21,31 @@
 
 // TODO: Add alpha support for textured quads
 
+TexCoords texcoords_in_texture_space(size_t x, size_t y,
+                                     size_t w, size_t h,
+                                     Texture tex, bool inverse) {
+    TexCoords res;
+
+    res.tx = (float)x / tex.width;
+    res.tw = (float)w / tex.width;
+    if (inverse) {
+        res.th = -((float)h / tex.height);
+        res.ty = (1.f - (float)(y + h) / tex.height) - res.th;
+    } else {
+        res.ty = 1.f - (float)(y + h) / tex.height;
+        res.th = (float)h / tex.height;
+    }
+
+    /*std::cout << "--------------------"
+              << "\ntx: " << res.tx
+              << "\ntw: " << res.tw
+              << "\nty: " << res.ty
+              << "\nth: " << res.th
+              << std::endl;*/
+    
+    return res;
+}
+
 // General setup
 void renderer_init(Renderer* renderer) {
     // NOTE: unicolor rendering initialization

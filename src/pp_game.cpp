@@ -105,7 +105,6 @@ void set_boost_option_buttons(PR::Button *buttons);
 void set_obstacle_option_buttons(PR::Button *buttons);
 void set_start_pos_option_buttons(PR::Button *buttons);
 inline Rect rect_in_camera_space(Rect r, PR::Camera *cam);
-inline TexCoords texcoords_in_texture_space(float x, float y, float w, float h, Texture *tex, bool inverse);
 void deactivate_level_edit_mode(PR::Level *level);
 void activate_level_edit_mode(PR::Level *level);
 void update_plane_physics_n_boost_collisions(PR::Level *level);
@@ -540,12 +539,10 @@ int load_custom_buttons_from_dir(const char *dir_path,
             return_defer(1);
         }
 
-        size_t button_index = 0;
-
         size_t ordered_indexes[1024];
 
         dirent *dp = NULL;
-        while ((dp = readdir(dir)) && button_index < 1024) {
+        while ((dp = readdir(dir)) && buttons->count < 1024) {
 
             const char *extension = std::strrchr(dp->d_name, '.');
 
@@ -592,17 +589,16 @@ int load_custom_buttons_from_dir(const char *dir_path,
                             for(int k = buttons->count; k > i; --k) {
                                 ordered_indexes[k] = ordered_indexes[k-1];
                             }
-                            ordered_indexes[i] = button_index;
+                            ordered_indexes[i] = buttons->count;
 
                             // move other right by one, then insert
                         } else if (i == buttons->count-1) {
-                            ordered_indexes[buttons->count-1] = buttons->count;
+                            ordered_indexes[buttons->count] = buttons->count;
                         }
                     }
                 }
 
                 PR::CustomLevelButton lb;
-                // button_set_position(&lb.button, button_index);
                 lb.is_new_level = false;
 
                 assert((std::strlen(map_name)+1 <=
@@ -617,9 +613,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 std::snprintf(lb.mapfile_path, std::strlen(map_path)+1,
                               "%s", map_path);
 
-                // Creating the little custom level edit button
-                // button_add_custom_edit_del(lb, button_index,
-                //                            edit_buttons, del_buttons);
 
                 da_append(buttons, lb, PR::CustomLevelButton);
 
@@ -629,7 +622,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
         }
 
 
-        for(size_t i = 0; i < button_index; ++i) {
+        for(size_t i = 0; i < buttons->count; ++i) {
             button_set_position(&buttons->items[i].button, ordered_indexes[i]);
             button_edit_del_to_lb(&buttons->items[i].button,
                                   &buttons->items[i].edit,
@@ -1264,8 +1257,65 @@ void menu_draw(void) {
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 }
 
+struct Animation {
+    bool active;
+    bool loop;
+    float frame_duration;
+    float frame_elapsed;
+    size_t current;
+    size_t frame_number;
+    TexCoords *tc;
+};
+void animation_init(Animation *a, Texture tex, size_t start_x, size_t start_y, size_t dim_x, size_t dim_y, size_t step_x, size_t step_y, size_t frame_number, float frame_duration, bool loop) {
+    a->loop = loop;
+    a->frame_number = frame_number;
+    a->frame_duration = frame_duration;
+
+    if (a->tc) std::free(a->tc);
+    a->tc = (TexCoords *) std::malloc(sizeof(TexCoords) * frame_number);
+
+    for(size_t i = 0; i < frame_number; ++i) {
+        a->tc[i] = texcoords_in_texture_space(start_x + (step_x * i),
+                                              start_y + (step_y * i),
+                                              dim_x, dim_y,
+                                              tex, false);
+    }
+
+    a->current = 0;
+    a->active = false;
+    a->frame_elapsed = 0.f;
+}
+void animation_step(Animation *a) {
+    float dt = glob->state.delta_time;
+
+    if (!a->active) return;
+
+    a->frame_elapsed += dt;
+    if (a->frame_elapsed > a->frame_duration) {
+        a->frame_elapsed -= a->frame_duration;
+        if (a->loop) {
+            a->current = (a->current + 1) % a->frame_number;
+        } else {
+            if (a->current < a->frame_number-1) {
+                a->current = a->current + 1;
+            } else {
+                a->active = false;
+            }
+        }
+    }
+}
+void animation_draw(Rect b, Animation *a) {
+    renderer_add_queue_tex(b, a->tc[a->current], false);
+}
+Animation test;
+
 int level_prepare(PR::Menu *menu, PR::Level *level,
                   const char *mapfile_path, bool is_new_level) {
+
+    // animation_init(&test, glob->rend_res.global_sprite,
+    //                128, 0, 32, 32, 32, 0, 4, 0.1f, true);
+    // test.active = true;
+
     PR::WinInfo *win = &glob->window;
 
     PR::Plane *p = &level->plane;
@@ -1587,20 +1637,20 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     // Initializing the parallaxes
     parallax_init(&level->parallaxs[0], 0.9f,
                    texcoords_in_texture_space(
-                       0.f, 275.f, 1920.f, 265.f,
-                       &glob->rend_res.global_sprite, false),
+                       0, 275, 1920, 265,
+                       glob->rend_res.global_sprite, false),
                   -((float)win->w), 0.f,
                   win->w, win->h * 0.25f);
     parallax_init(&level->parallaxs[1], 0.85f,
                   texcoords_in_texture_space(
-                      0.f, 815.f, 1920.f, 265.f,
-                      &glob->rend_res.global_sprite, false),
+                      0, 815, 1920, 265,
+                      glob->rend_res.global_sprite, false),
                   -((float)win->w), win->h * 0.75f,
                   win->w, win->h * 0.25f);
     parallax_init(&level->parallaxs[2], 0.75f,
                    texcoords_in_texture_space(
-                       0.f, 545.f, 1920.f, 265.f,
-                       &glob->rend_res.global_sprite, false),
+                       0, 545, 1920, 265,
+                       glob->rend_res.global_sprite, false),
                   -((float)win->w), win->h * 0.75f,
                   win->w, win->h * 0.25f);
 
@@ -1609,29 +1659,19 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     return 0;
 }
 
-struct Animation {
-    float frame_duration;
-    float frame_elapsed;
-    size_t current;
-    size_t frame_number;
-    TexCoords *tc;
-};
-
-void animation_step(Animation *a) {
-    float dt = glob->state.delta_time;
-
-    a->frame_elapsed += dt;
-    if (a->frame_elapsed > a->frame_duration) {
-        a->frame_elapsed -= a->frame_duration;
-        a->current = (a->current + 1) % a->frame_number;
-    }
-}
-
-void animation_draw(Rect b, Animation *a) {
-    renderer_add_queue_tex(b, a->tc[a->current], false);
-}
-
 void level_update(void) {
+
+    // animation_step(&test);
+    // Rect animation_rend = {
+    //     .pos = glm::vec2(300.f, 300.f),
+    //     .dim = glm::vec2(256.f, 256.f),
+    //     .angle = 0.f,
+    //     .triangle = false
+    // };
+    // animation_draw(animation_rend, &test);
+    // renderer_draw_tex(glob->rend_res.shaders[1],
+    //                   &glob->rend_res.global_sprite);
+
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -2465,9 +2505,9 @@ void level_update(void) {
     // NOTE: Rendering plane texture
     renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
                            texcoords_in_texture_space(
-                                p->current_animation * 32.f, 0.f,
-                                32.f, 8.f,
-                                &glob->rend_res.global_sprite, p->inverse),
+                                p->current_animation * 32, 0.f,
+                                32, 8,
+                                glob->rend_res.global_sprite, p->inverse),
                            false);
 
     // NOTE: Rendering the rider
@@ -3823,8 +3863,8 @@ inline void boostpad_render(PR::BoostPad *pad) {
     pad_in_cam_pos.angle = pad->boost_angle;
     renderer_add_queue_tex(pad_in_cam_pos,
                            texcoords_in_texture_space(
-                               0.f, 8.f, 96.f, 32.f,
-                               &glob->rend_res.global_sprite, false),
+                               0, 8, 96, 32,
+                               glob->rend_res.global_sprite, false),
                            true);
 }
 
@@ -4384,31 +4424,6 @@ inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
     res.angle = r.angle;
     res.triangle = r.triangle;
 
-    return res;
-}
-
-inline TexCoords texcoords_in_texture_space(float x, float y,
-                                            float w, float h,
-                                            Texture *tex, bool inverse) {
-    TexCoords res;
-
-    res.tx = x / tex->width;
-    res.tw = w / tex->width;
-    if (inverse) {
-        res.th = -(h / tex->height);
-        res.ty = (1.f - (y + h) / tex->height) - res.th;
-    } else {
-        res.ty = 1.f - (y + h) / tex->height;
-        res.th = (h / tex->height);
-    }
-
-    /*std::cout << "--------------------"
-              << "\ntx: " << res.tx
-              << "\ntw: " << res.tw
-              << "\nty: " << res.ty
-              << "\nth: " << res.th
-              << std::endl;*/
-    
     return res;
 }
 
