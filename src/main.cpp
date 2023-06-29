@@ -210,7 +210,7 @@ void glob_init(void) {
 
     // NOTE: Initializing the global_sprite
     renderer_create_texture(&glob->rend_res.global_sprite,
-                            "res/paper-rider_sprite2.png");
+                            "res/paper-rider_sprite3.png");
 
     std::cout << "Loaded the spritesheet of size: "
               << glob->rend_res.global_sprite.width

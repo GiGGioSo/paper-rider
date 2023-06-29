@@ -1313,8 +1313,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
                   const char *mapfile_path, bool is_new_level) {
 
     // animation_init(&test, glob->rend_res.global_sprite,
-    //                128, 0, 32, 32, 32, 0, 4, 0.1f, true);
-    // test.active = true;
+    //                128, 64, 32, 16, 32, 0, 7, 0.07f, false);
 
     PR::WinInfo *win = &glob->window;
 
@@ -1661,17 +1660,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 
 void level_update(void) {
 
-    // animation_step(&test);
-    // Rect animation_rend = {
-    //     .pos = glm::vec2(300.f, 300.f),
-    //     .dim = glm::vec2(256.f, 256.f),
-    //     .angle = 0.f,
-    //     .triangle = false
-    // };
-    // animation_draw(animation_rend, &test);
-    // renderer_draw_tex(glob->rend_res.shaders[1],
-    //                   &glob->rend_res.global_sprite);
-
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -1688,6 +1676,7 @@ void level_update(void) {
         &glob->current_level.particle_systems[1];
     PR::ParticleSystem *rider_crash_ps =
         &glob->current_level.particle_systems[2];
+
 
     // Global stuff
     PR::WinInfo *win = &glob->window;
@@ -3747,6 +3736,18 @@ void level_update(void) {
             level->is_new = false;
         }
     }
+
+    // if (p->crashed && !test.active) test.active = true;
+    // animation_step(&test);
+    // Rect animation_rend = p->render_zone;
+    // animation_rend.pos.y -= animation_rend.dim.y * 0.5f *
+    //                         cos(glm::radians(animation_rend.angle));
+    // animation_rend.pos.x += animation_rend.dim.y * 0.5f *
+    //                         sin(glm::radians(animation_rend.angle));
+    // animation_rend.dim.y *= 2.f;
+    // animation_draw(rect_in_camera_space(animation_rend, cam), &test);
+    // renderer_draw_tex(glob->rend_res.shaders[1],
+    //                   &glob->rend_res.global_sprite);
 }
 
 // Utilities
