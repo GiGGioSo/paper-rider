@@ -1759,10 +1759,10 @@ void level_update(void) {
             if (rid->attached) {
                 move_rider_to_plane(rid, p);
                 // NOTE: Changing plane angle based on input
-                if (input->left_right) {
+                if (input->up_down) {
                     p->body.angle -= p->inverse ?
-                                     -150.f * input->left_right * dt :
-                                     150.f * input->left_right * dt;
+                                     -150.f * input->up_down * dt :
+                                     150.f * input->up_down * dt;
                 }
                 // NOTE: Limiting the angle of the plane
                 if (p->body.angle > 360.f) {

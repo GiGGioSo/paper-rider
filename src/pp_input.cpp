@@ -23,11 +23,15 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
 
     // Gameplay
     key_reset(&input->boost);
+    input->up_down = 0.f;
     input->left_right = 0.f;
 
     key_reset(&input->jump);
 
-    key_reset(&input->menu);
+    key_reset(&input->pause);
+    key_reset(&input->resume);
+    key_reset(&input->restart);
+    key_reset(&input->quit);
     // Editing
     key_reset(&input->edit);
     key_reset(&input->save_map);
@@ -36,9 +40,6 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     key_reset(&input->obj_duplicate);
     key_reset(&input->reset_pos);
 
-    // Menu
-    key_reset(&input->level1);
-    key_reset(&input->level2);
     // Debug
     key_reset(&input->debug);
 
@@ -81,68 +82,33 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         }
     }
 
-    float *axes = NULL;
-    unsigned char *buttons = NULL;
+    GLFWgamepadstate gamepad;
 
-    if (input->current_gamepad >= 0) {
-        // int axes_count;
-        // axes = (float *) glfwGetJoystickAxes(input->current_joystick,
-        //                                      &axes_count);
-        // // TODO: Decent Warning handling
-        // if (axes_count != 6) {
-        //     std::cout << "[WARNING] Controller with "
-        //               << axes_count << " axes!!"
-        //               << std::endl;
-        //     axes = NULL;
-        // }
-
-        // int buttons_count;
-        // buttons =
-        //     (unsigned char *) glfwGetJoystickButtons(input->current_joystick,
-        //                                              &buttons_count);
-        // // TODO: Decent Warning handling
-        // if (buttons_count != 18) {
-        //     std::cout << "[WARNING] Controller with "
-        //               << buttons_count << " buttons!!"
-        //               << std::endl;
-        //     buttons = NULL;
-        // }
-    }
-
-    // TODO: Actually add gamepad input.
-    //       
-    //       ALWAYS CHECK IF `axes` and `buttons` are NULL before using them,
-    //          because if they are NULL then it means there's something
-    //          wrong with the gamepad.
-    // UNUSED(axes);
-    // UNUSED(buttons);
-
-    if (axes && buttons) {
-        if (buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS) {
+    if (input->current_gamepad >= 0 &&
+            glfwGetGamepadState(input->current_gamepad, &gamepad)) {
+        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_CROSS] == GLFW_PRESS) {
             key_pressed(&input->jump);
         }
-        if (buttons[GLFW_GAMEPAD_BUTTON_X] == GLFW_PRESS) {
-            key_pressed(&input->boost);
+        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_SQUARE] == GLFW_PRESS) {
+            key_pressed(&input->restart);
         }
-        if (buttons[GLFW_GAMEPAD_BUTTON_Y] == GLFW_PRESS) {
-            key_pressed(&input->menu);
+        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_CIRCLE] == GLFW_PRESS) {
+            key_pressed(&input->quit);
         }
-        if (glm::abs(axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > 0.1f) {
-            input->left_right = axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_TRIANGLE] == GLFW_PRESS) {
+            key_pressed(&input->pause);
+            key_pressed(&input->resume);
+        }
+        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]) > 0.1f) {
+            input->up_down = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+        }
+        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > 0.1f) {
+            input->left_right = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
         }
     }
 
-
-    // TODO: Handle abnormal gamepads
-
-    if (IS_KEY_PRESSED(GLFW_KEY_1)) {
-        key_pressed(&input->level1);
-    }
-    if (IS_KEY_PRESSED(GLFW_KEY_2)) {
-        key_pressed(&input->level2);
-    }
     if (IS_KEY_PRESSED(GLFW_KEY_ESCAPE)) {
-        key_pressed(&input->menu);
+        key_pressed(&input->pause);
     }
 
 

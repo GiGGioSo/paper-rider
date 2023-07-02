@@ -52,9 +52,13 @@ struct InputController {
 
     // NOTE: Gameplay
     float left_right;
+    float up_down;
     Key boost;
     Key jump;
-    Key menu;
+    Key pause;
+    Key resume;
+    Key restart;
+    Key quit;
 
     // NOTE: Editing
     Key edit;
@@ -65,8 +69,6 @@ struct InputController {
     Key reset_pos;
 
     // NOTE: Menu
-    Key level1;
-    Key level2;
 
     // NOTE: Debug
     Key debug;
