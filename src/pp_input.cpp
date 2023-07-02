@@ -84,29 +84,29 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     float *axes = NULL;
     unsigned char *buttons = NULL;
 
-    if (input->current_joystick >= 0) {
-        int axes_count;
-        axes = (float *) glfwGetJoystickAxes(input->current_joystick,
-                                             &axes_count);
-        // TODO: Decent Warning handling
-        if (axes_count != 6) {
-            std::cout << "[WARNING] Controller with "
-                      << axes_count << " axes!!"
-                      << std::endl;
-            axes = NULL;
-        }
+    if (input->current_gamepad >= 0) {
+        // int axes_count;
+        // axes = (float *) glfwGetJoystickAxes(input->current_joystick,
+        //                                      &axes_count);
+        // // TODO: Decent Warning handling
+        // if (axes_count != 6) {
+        //     std::cout << "[WARNING] Controller with "
+        //               << axes_count << " axes!!"
+        //               << std::endl;
+        //     axes = NULL;
+        // }
 
-        int buttons_count;
-        buttons =
-            (unsigned char *) glfwGetJoystickButtons(input->current_joystick,
-                                                     &buttons_count);
-        // TODO: Decent Warning handling
-        if (buttons_count != 18) {
-            std::cout << "[WARNING] Controller with "
-                      << buttons_count << " buttons!!"
-                      << std::endl;
-            buttons = NULL;
-        }
+        // int buttons_count;
+        // buttons =
+        //     (unsigned char *) glfwGetJoystickButtons(input->current_joystick,
+        //                                              &buttons_count);
+        // // TODO: Decent Warning handling
+        // if (buttons_count != 18) {
+        //     std::cout << "[WARNING] Controller with "
+        //               << buttons_count << " buttons!!"
+        //               << std::endl;
+        //     buttons = NULL;
+        // }
     }
 
     // TODO: Actually add gamepad input.
@@ -114,8 +114,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
     //       ALWAYS CHECK IF `axes` and `buttons` are NULL before using them,
     //          because if they are NULL then it means there's something
     //          wrong with the gamepad.
-    UNUSED(axes);
-    UNUSED(buttons);
+    // UNUSED(axes);
+    // UNUSED(buttons);
 
     if (axes && buttons) {
         if (buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS) {

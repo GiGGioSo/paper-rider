@@ -1,7 +1,11 @@
 @echo off
 SetLocal EnableDelayedExpansion
 
-SET CFLAGS=-ggdb -Wall
+IF "%1"=="release" (
+    SET CFLAGS=-O3 -Wall -Wextra
+) ELSE (
+    SET CFLAGS=-ggdb -Wall -Wextra
+)
 SET LIBS=-LC:\dev\paper-rider\lib -lUser32.lib -lGdi32.lib -lShell32.lib -lmsvcrt.lib -lopengl32.lib -lglfw3.lib
 SET INCLUDES=-IC:\dev\paper-rider\include
 SET PREPROCESSOR_DEFINITIONS=-D _CRT_SECURE_NO_WARNINGS

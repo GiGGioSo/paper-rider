@@ -37,7 +37,8 @@ struct InputController {
     //        - Vertical joystick movement for the plane
     //        - Horizontal joystick movement for the rider
 
-    int8_t current_joystick;
+    int8_t current_gamepad;
+    char *gamepad_name;
 
     // NOTE: Global
     Key exit;

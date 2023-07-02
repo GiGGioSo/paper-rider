@@ -13,14 +13,9 @@
 #include "pp_game.h"
 
 // Callbacks
-void callback_framebuffer_size(GLFWwindow* window,
-                               int width, int height);
-void callback_debug(GLenum source,
-                    GLenum type,
-                    GLuint id, GLenum severity,
-                    GLsizei length, const GLchar* message,
-                    const void* user);
-void callback_joystick(int joystick_id, int event);
+void callback_framebuffer_size(GLFWwindow* window, int width, int height);
+void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user);
+void callback_gamepad(int gamepad_id, int event);
 
 // Initializing global structure
 PR* glob = NULL;
@@ -77,7 +72,7 @@ int main() {
     // Callbacks
     glfwSetFramebufferSizeCallback(glob->window.glfw_win,
                                    callback_framebuffer_size);
-    glfwSetJoystickCallback(callback_joystick);
+    glfwSetJoystickCallback(callback_gamepad);
     glDebugMessageCallback(&callback_debug, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
@@ -101,7 +96,10 @@ int main() {
             // TODO: Debug flag
             std::cout << "FPS: " << fps_to_display << std::endl;
             std::cout << "Controller: "
-                      << (int) glob->input.current_joystick
+                      << (int) glob->input.current_gamepad
+                      << ", Name: "
+                      << (glob->input.gamepad_name ?
+                               glob->input.gamepad_name : "none")
                       << std::endl;
 
         }
@@ -180,7 +178,18 @@ void glob_init(void) {
     glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)win->w,
                                        (float)win->h, 0.0f);
 
-    glob->input.current_joystick = -1;
+    InputController *in = &glob->input;
+
+    // Detect already connected controllers at startup
+    in->current_gamepad = -1;
+    in->gamepad_name = NULL;
+    for(size_t jid = 0; jid < GLFW_JOYSTICK_LAST; ++jid) {
+        if (glfwJoystickIsGamepad(jid)) {
+            in->current_gamepad = jid;
+            in->gamepad_name = (char *)glfwGetGamepadName(jid);
+            break;
+        }
+    }
 
     // NOTE: Initializing of the shaders
     /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
@@ -264,24 +273,24 @@ void glob_free(void) {
     std::free(glob);
 }
 
-void callback_joystick(int joystick_id, int event) {
+void callback_gamepad(int gamepad_id, int event) {
     InputController *in = &glob->input;
 
     if (event == GLFW_CONNECTED) {
-        if (in->current_joystick == -1) {
-            in->current_joystick = joystick_id;
+        if (in->current_gamepad == -1 && glfwJoystickIsGamepad(gamepad_id)) {
+            in->current_gamepad = gamepad_id;
+            in->gamepad_name = (char *)glfwGetGamepadName(gamepad_id);
         } // else we don't care, how current controller is still good to go
     }
     else if (event == GLFW_DISCONNECTED) {
-        if (joystick_id == in->current_joystick) {
-            in->current_joystick = -1;
+        if (gamepad_id == in->current_gamepad) {
+            in->current_gamepad = -1;
+            in->gamepad_name = NULL;
             // NOTE: Try to find another controller
-            for(size_t jid = 0;
-                jid < GLFW_JOYSTICK_LAST;
-                ++jid) {
-
-                if (glfwJoystickPresent(jid)) {
-                    in->current_joystick = jid;
+            for(size_t jid = 0; jid < GLFW_JOYSTICK_LAST; ++jid) {
+                if (glfwJoystickIsGamepad(jid)) {
+                    in->current_gamepad = jid;
+                    in->gamepad_name = (char *)glfwGetGamepadName(jid);
                     break;
                 }
             }

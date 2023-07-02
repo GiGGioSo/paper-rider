@@ -10,11 +10,11 @@
 #include <iostream>
 #include <math.h>
 
-#define PR_MAX_UNICOLOR_QUADS 2000
+#define PR_MAX_UNICOLOR_VERTICES (2000 * 6)
 
-#define PR_MAX_TEXTURED_QUADS 10
+#define PR_MAX_TEXTURED_VERTICES (1000 * 6)
 
-#define PR_MAX_TEXT_QUADS 1000
+#define PR_MAX_TEXT_VERTICES (1000 * 6)
 
 // TODO: Render using a `Rect`, so is more convenient
 //          to draw the plane and the obstacles
@@ -55,12 +55,11 @@ void renderer_init(Renderer* renderer) {
     glBindVertexArray(renderer->uni_vao);
     glBindBuffer(GL_ARRAY_BUFFER, renderer->uni_vbo);
 
-    // NOTE: `PR_MAX_UNICOLOR_QUADS` is the max number of unicolor quads
-    //                               displayable together on the screen
-    //       6 is the number of vertices for a single quad
+    // NOTE: `PR_MAX_UNICOLOR_VERTICES` is the max number of unicolor vertices
+    //                                  displayable together on the screen
     //       6 is the number of floats per vertex (2: position, 4: color)
     glBufferData(GL_ARRAY_BUFFER,
-                 sizeof(float) * 6 * 6 * PR_MAX_UNICOLOR_QUADS,
+                 sizeof(float) * 6 * PR_MAX_UNICOLOR_VERTICES,
                  NULL, GL_DYNAMIC_DRAW);
 
     // Vertex position
@@ -84,12 +83,11 @@ void renderer_init(Renderer* renderer) {
     glBindVertexArray(renderer->tex_vao);
     glBindBuffer(GL_ARRAY_BUFFER, renderer->tex_vbo);
 
-    // NOTE: `PR_MAX_TEXTURED_QUADS` is the max number of textured quads
-    //                               displayable together on the screen
-    //       6 is the number of vertices for a single quad
+    // NOTE: `PR_MAX_TEXTURED_VERTICES` is the max number of textured vertices
+    //                                  displayable together on the screen
     //       4 is the number of floats per vertex (2: position, 2: tex_coords)
     glBufferData(GL_ARRAY_BUFFER,
-                 sizeof(float) * 6 * 4 * PR_MAX_TEXTURED_QUADS,
+                 sizeof(float) * 4 * PR_MAX_TEXTURED_VERTICES,
                  NULL, GL_DYNAMIC_DRAW);
 
     // Everything can be done in a single attribute pointer
@@ -107,15 +105,14 @@ void renderer_init(Renderer* renderer) {
     glBindVertexArray(renderer->text_vao);
     glBindBuffer(GL_ARRAY_BUFFER, renderer->text_vbo);
 
-    // NOTE: `PR_MAX_TEXT_QUADS` is the max number of text quads
-    //                           displayable together on the screen
-    //       6 is the number of vertices for a single quad
+    // NOTE: `PR_MAX_TEXT_VERTICES` is the max number of text vertices
+    //                              displayable together on the screen
     //       8 is the number of floats per vertex:
     //          - 2: position
     //          - 2: tex_coords
     //          - 4: color
     glBufferData(GL_ARRAY_BUFFER,
-                 sizeof(float) * 6 * 8 * PR_MAX_TEXT_QUADS,
+                 sizeof(float) * 8 * PR_MAX_TEXT_VERTICES,
                  NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE,
@@ -147,6 +144,13 @@ void renderer_add_queue_uni(float x, float y,
     // NOTE: All the vertices get prepared, but only the 
     //       necessary amount gets processed.
     size_t vertices_number = triangle ? 3 : 6;
+    if (renderer->uni_vertex_count + vertices_number >=
+            PR_MAX_UNICOLOR_VERTICES) {
+        std::cout << "[ERROR] Cannot display more than "
+                  << PR_MAX_UNICOLOR_VERTICES << " unicolored vertices."
+                  << std::endl;
+        return;
+    }
     float vertices[] = {
         x  , y+h, c.r, c.g, c.b, c.a,
         x+w, y+h, c.r, c.g, c.b, c.a,
@@ -157,6 +161,8 @@ void renderer_add_queue_uni(float x, float y,
     };
 
     r = glm::radians(-r);
+    float cos_r = cos(r);
+    float sin_r = sin(r);
     float center_x = x + w/2;
     float center_y = y + h/2;
 
@@ -165,11 +171,11 @@ void renderer_add_queue_uni(float x, float y,
         float vy = vertices[i*6 + 1];
 
         float newX = center_x +
-                     (vx - center_x) * cos(r) +
-                     (vy - center_y) * sin(r);
+                     (vx - center_x) * cos_r +
+                     (vy - center_y) * sin_r;
         float newY = center_y +
-                     (vx - center_x) * sin(r) -
-                     (vy - center_y) * cos(r);
+                     (vx - center_x) * sin_r -
+                     (vy - center_y) * cos_r;
 
         vertices[i*6 + 0] = newX;
         vertices[i*6 + 1] = newY;
@@ -252,6 +258,13 @@ void renderer_add_queue_tex(float x, float y,
     //       tw, th are the width and height, still in texture coordinates
     //       This means that everything has to be 0 <= x <= 1
 
+    if (renderer->tex_vertex_count + 6 >=
+            PR_MAX_TEXTURED_VERTICES) {
+        std::cout << "[ERROR] Cannot display more than "
+                  << PR_MAX_TEXTURED_VERTICES << " textured vertices."
+                  << std::endl;
+        return;
+    }
     float vertices[] = {
         x  , y+h, tx   , ty+th,
         x  , y  , tx   , ty   ,
@@ -368,6 +381,14 @@ void renderer_add_queue_text(float x, float y,
     Renderer *renderer = &glob->renderer;
 
     size_t length = strlen(text);
+
+    if (renderer->text_vertex_count + length*6 >=
+            PR_MAX_TEXT_VERTICES) {
+        std::cout << "[ERROR] Cannot display more than "
+                  << PR_MAX_TEXT_VERTICES << " text vertices."
+                  << std::endl;
+        return;
+    }
 
     float vertices[length * 6][8];
 

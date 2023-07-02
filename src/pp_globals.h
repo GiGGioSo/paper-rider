@@ -17,10 +17,23 @@
 
 struct PR {
 
+    struct Animation {
+        bool active;
+        bool finished;
+        bool loop;
+        float frame_duration;
+        float frame_elapsed;
+        size_t current;
+        size_t frame_number;
+        size_t frame_stop;
+        TexCoords *tc;
+    };
+
     struct Plane {
         Rect body;
 
         Rect render_zone;
+        Animation anim;
 
         // portal effect
         bool inverse;
@@ -31,7 +44,7 @@ struct PR {
         glm::vec2 vel;
         glm::vec2 acc;
 
-        enum animation_state {
+        enum AnimationState {
             IDLE_ACC = 0,
             UPWARDS_ACC = 1,
             DOWNWARDS_ACC = 2
@@ -121,6 +134,7 @@ struct PR {
 
         void (*create_particle)(PR::ParticleSystem *, PR::Particle *);
         void (*update_particle)(PR::ParticleSystem *, PR::Particle *);
+        void (*draw_particle)(PR::ParticleSystem *, PR::Particle *);
 
         float time_between_particles;
         float time_elapsed;
