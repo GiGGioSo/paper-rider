@@ -80,58 +80,99 @@
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
 // Utilities functions for code reuse
-inline void portal_render(PR::Portal *portal);
-inline void boostpad_render(PR::BoostPad *pad);
-inline void obstacle_render(PR::Obstacle *obs);
-inline void portal_render_info(PR::Portal *portal, float tx, float ty);
-inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
-inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
-inline void goal_line_render_info(Rect *rect, float tx, float ty);
-inline void start_pos_render_info(Rect *rect, float tx, float ty);
-inline void plane_update_animation(PR::Plane *p);
-inline void plane_activate_crash_animation(PR::Plane *p);
-inline void level_reset_colors(PR::Level *);
-inline void level_shuffle_colors(PR::Level *level);
-inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type);
-void button_set_position(PR::Button *button, size_t index);
-void button_edit_del_to_lb(PR::Button *reference, PR::Button *edit, PR::Button *del);
-void button_add_custom_edit_del(PR::LevelButton *lb, size_t button_index, PR::Button **edit_buttons, PR::Button **del_buttons);
-void set_portal_option_buttons(PR::Button *buttons);
-void set_boost_option_buttons(PR::Button *buttons);
-void set_obstacle_option_buttons(PR::Button *buttons);
-void set_start_pos_option_buttons(PR::Button *buttons);
-inline Rect rect_in_camera_space(Rect r, PR::Camera *cam);
-void deactivate_level_edit_mode(PR::Level *level);
-void activate_level_edit_mode(PR::Level *level);
-void update_plane_physics_n_boost_collisions(PR::Level *level);
+inline void
+portal_render(PR::Portal *portal);
+inline void
+boostpad_render(PR::BoostPad *pad);
+inline void
+obstacle_render(PR::Obstacle *obs);
+inline void
+portal_render_info(PR::Portal *portal, float tx, float ty);
+inline void
+boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
+inline void
+obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
+inline void
+goal_line_render_info(Rect *rect, float tx, float ty);
+inline void
+start_pos_render_info(Rect *rect, glm::vec2 vel, float tx, float ty);
+inline void
+plane_update_animation(PR::Plane *p);
+inline void
+plane_activate_crash_animation(PR::Plane *p);
+inline void
+level_reset_colors(PR::Level *);
+inline void
+level_shuffle_colors(PR::Level *level);
+inline Rect
+*get_selected_body(void *selected, PR::ObjectType selected_type);
+void
+button_set_position(PR::Button *button, size_t index);
+void
+button_edit_del_to_lb(PR::Button *reference, PR::Button *edit, PR::Button *del);
+void
+set_portal_option_buttons(PR::Button *buttons);
+void
+set_boost_option_buttons(PR::Button *buttons);
+void
+set_obstacle_option_buttons(PR::Button *buttons);
+void
+set_start_pos_option_buttons(PR::Button *buttons);
+inline
+Rect rect_in_camera_space(Rect r, PR::Camera *cam);
+void
+deactivate_level_edit_mode(PR::Level *level);
+void
+activate_level_edit_mode(PR::Level *level);
+void
+update_plane_physics_n_boost_collisions(PR::Level *level);
 
 // Parallax stuff
-void parallax_init(PR::Parallax *px, float fc, TexCoords tc, float p_start_x, float p_start_y, float p_w, float p_h);
-void parallax_update_n_queue_render(PR::Parallax *px, float current_x);
+void
+parallax_init(PR::Parallax *px, float fc, TexCoords tc, float p_start_x, float p_start_y, float p_w, float p_h);
+void
+parallax_update_n_queue_render(PR::Parallax *px, float current_x);
 
 // Animation stuff
-void animation_init(PR::Animation *a, Texture tex, size_t start_x, size_t start_y, size_t dim_x, size_t dim_y, size_t step_x, size_t step_y, size_t frame_number, float frame_duration, bool loop);
-void animation_step(PR::Animation *a);
-void animation_queue_render(Rect b, PR::Animation *a);
-void animation_reset(PR::Animation *a);
+void
+animation_init(PR::Animation *a, Texture tex, size_t start_x, size_t start_y, size_t dim_x, size_t dim_y, size_t step_x, size_t step_y, size_t frame_number, float frame_duration, bool loop);
+void
+animation_step(PR::Animation *a);
+void
+animation_queue_render(Rect b, PR::Animation *a);
+void
+animation_reset(PR::Animation *a);
 
-inline void apply_air_resistances(PR::Plane* p);
-inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
-inline void move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
-inline void rider_jump_from_plane(PR::Rider *rid, PR::Plane *p);
+inline void
+apply_air_resistances(PR::Plane* p);
+inline void
+lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
+inline void
+move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
+inline void
+rider_jump_from_plane(PR::Rider *rid, PR::Plane *p);
 
 // Particle system functions
-void create_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
-void update_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
-void draw_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+create_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+update_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+draw_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
 
-void create_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
-void update_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
-void draw_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+create_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+update_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+draw_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 
-void create_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
-void update_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
-void draw_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+create_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+update_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+void
+draw_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 
 void free_menu_level(PR::Menu *menu, PR::Level *level) {
     // Menu freeing
@@ -175,6 +216,7 @@ int load_map_from_file(const char *file_path,
                        PR::BoostPads *boosts,
                        PR::Portals *portals,
                        float *start_x, float *start_y,
+                       float *start_vel_x, float *start_vel_y,
                        float *start_angle,
                        float *goal_line,
                        const float width, const float height) {
@@ -402,7 +444,8 @@ int load_map_from_file(const char *file_path,
                   << *goal_line
                   << std::endl;
 
-        std::fscanf(map_file, " %f %f %f", start_x, start_y, start_angle);
+        std::fscanf(map_file, " %f %f %f %f %f",
+                    start_x, start_y, start_vel_x, start_vel_y, start_angle);
         if (std::ferror(map_file)) return_defer(1);
         *start_x = *start_x * proportion_x;
         *start_y = *start_y * proportion_y;
@@ -513,12 +556,12 @@ int save_map_to_file(const char *file_path,
 
         // Player start position
         std::fprintf(map_file,
-                     "%f %f %f",
+                     "%f %f %f %f %f",
                      level->start_pos.pos.x * inv_proportion_x,
                      level->start_pos.pos.y * inv_proportion_y,
+                     level->start_vel.x, level->start_vel.y,
                      level->start_pos.angle);
         if (std::ferror(map_file)) return_defer(1);
-
     }
 
     defer:
@@ -589,19 +632,21 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 if (buttons->count == 0) {
                     ordered_indexes[0] = 0;
                 } else {
-                    for(size_t i = 0; i < buttons->count; ++i) {
-                        if (std::strcmp(map_name,
-                                        buttons->items[i].button.text) <= 0) {
-                            for(size_t k = buttons->count; k > i; --k) {
-                                ordered_indexes[k] = ordered_indexes[k-1];
-                            }
-                            ordered_indexes[i] = buttons->count;
-
-                            // move other right by one, then insert
-                        } else if (i == buttons->count-1) {
-                            ordered_indexes[buttons->count] = buttons->count;
+                    // search for where to insert the new button
+                    size_t lowest_sorted_index = buttons->count;
+                    for (size_t i = 0; i < buttons->count; ++i) {
+                        if (ordered_indexes[i] < lowest_sorted_index &&
+                            std::strcmp(map_name, buttons->items[i].button.text) < 0) {
+                            lowest_sorted_index = ordered_indexes[i];
                         }
                     }
+                    // increase the position of any button that's after the new
+                    for (size_t i = 0; i < buttons->count; ++i) {
+                        if (ordered_indexes[i] >= lowest_sorted_index) {
+                            ordered_indexes[i]++;
+                        }
+                    }
+                    ordered_indexes[buttons->count] = lowest_sorted_index;
                 }
 
                 PR::CustomLevelButton lb;
@@ -629,6 +674,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
 
         for(size_t i = 0; i < buttons->count; ++i) {
+            std::cout << i << " -> " << ordered_indexes[i] << std::endl;
             button_set_position(&buttons->items[i].button, ordered_indexes[i]);
             button_edit_del_to_lb(&buttons->items[i].button,
                                   &buttons->items[i].edit,
@@ -678,20 +724,6 @@ glm::vec4 get_portal_color(PR::Portal *portal) {
     }
 }
 
-void remove_element_of_index(void *base, size_t length,
-                             size_t index, size_t type_size) {
-    
-    // std::assert((index < length) &&
-    //             "The index is greater or equal to the array size!");
-
-    std::memmove((uint8_t *)(base) + index * type_size,
-                 (uint8_t *)(base) + (index+1) * type_size,
-                 (length - index - 1) * type_size);
-
-    base = std::realloc(base, type_size * (length - 1));
-
-}
-
 const char *campaign_levels_filepath[2] = {
     "./campaign_maps/level1.prmap",
     "./campaign_maps/level2.prmap"
@@ -708,6 +740,8 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     // NOTE: By not setting this, it will remain the same as before
     //          starting the level
     //menu->showing_campaign_buttons = true;
+
+    menu->selected_button = 0;
 
     // NOTE: Button to select which buttons to show
     PR::Button *campaign = &menu->show_campaign_button;
@@ -922,19 +956,63 @@ void menu_update(void) {
     }
 
     if (menu->showing_campaign_buttons) {
-        for(size_t levelbutton_index = 0;
+        // NOTE: The keybings are put before because
+        //       the mouse has the priority if it was moved
+
+        // Keybinding
+        if (input->menu_up.clicked) {
+            if (menu->selected_button-3 >= 0) {
+                menu->selected_button -= 3;
+            } else {
+                menu->selected_button = 0;
+            }
+        }
+        if (input->menu_down.clicked) {
+            if (menu->selected_button+3 <
+                    ARRAY_LENGTH(menu->campaign_buttons)) {
+                menu->selected_button += 3;
+            } else {
+                menu->selected_button = ARRAY_LENGTH(menu->campaign_buttons)-1;
+            }
+        }
+        if (input->menu_left.clicked) {
+            if (menu->selected_button-1 >= 0) {
+                menu->selected_button--;
+            }
+        }
+        if (input->menu_right.clicked) {
+            if (menu->selected_button+1 <
+                    ARRAY_LENGTH(menu->campaign_buttons)) {
+                menu->selected_button++;
+            }
+        }
+        for(int levelbutton_index = 0;
             levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
             ++levelbutton_index) {
 
             PR::LevelButton *lb =
                 &menu->campaign_buttons[levelbutton_index];
 
-            if (rect_contains_point(rect_in_camera_space(lb->button.body, cam),
-                                    input->mouseX, input->mouseY,
-                                    lb->button.from_center)) {
-                
+            // Mouse
+            if (input->was_mouse_moved) {
+                if (rect_contains_point(rect_in_camera_space(lb->button.body,
+                                                             cam),
+                                        input->mouseX, input->mouseY,
+                                        lb->button.from_center)) {
+                    menu->selected_button = levelbutton_index;
+                } else if (menu->selected_button >= 0 &&
+                           menu->selected_button == levelbutton_index) {
+                    // NOTE: If this is uncommented then if the mouse
+                    //          is moved outside of a button
+                    // menu->selected_button = -1;
+                }
+            }
+            // Keybinding, with selection
+            if (menu->selected_button >= 0 &&
+                menu->selected_button == levelbutton_index) {
+
                 lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->mouse_left.clicked) {
+                if (input->mouse_left.clicked || input->menu_click.clicked) {
                     CHANGE_CASE_TO(PR::LEVEL,
                                    level_prepare, lb->mapfile_path,
                                    lb->button.text, false, lb->is_new_level);
@@ -1318,8 +1396,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
                          (p->body.dim - p->render_zone.dim) * 0.5f;
     p->render_zone.angle = p->body.angle;
     p->render_zone.triangle = false;
-    p->vel.x = 0.f;
-    p->vel.y = 0.f;
     p->acc.x = 0.f;
     p->acc.y = 0.f;
     p->mass = 0.003f; // kg
@@ -1363,7 +1439,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     rid->air_friction_acc = 100.f;
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
-    rid->input_max_accelleration = 5000.f;
+    rid->input_max_accelleration = 7000.f;
     rid->inverse = false;
     std::snprintf(level->file_path,
                   std::strlen(mapfile_path)+1,
@@ -1380,6 +1456,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
             level->boosts = {NULL, 0, 0};
             level->start_pos.pos.x = 0.f;
             level->start_pos.pos.y = win->h * 0.5f;
+            level->start_vel = glm::vec2(0.f);
             level->start_pos.angle = 0.f;
             level->goal_line.pos.x = win->w * 0.4f;
         } else {
@@ -1390,6 +1467,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
                     &level->boosts,
                     &level->portals,
                     &level->start_pos.pos.x, &level->start_pos.pos.y,
+                    &level->start_vel.x, &level->start_vel.y,
                     &level->start_pos.angle,
                     &level->goal_line.pos.x,
                     win->w, win->h);
@@ -1397,6 +1475,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
         }
 
         p->body.pos = level->start_pos.pos;
+        p->vel = level->start_vel;
         p->body.angle = level->start_pos.angle;
         cam->pos.x = p->body.pos.x;
 
@@ -1616,7 +1695,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 }
 
 void level_update(void) {
-
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;
@@ -1639,20 +1717,6 @@ void level_update(void) {
     PR::WinInfo *win = &glob->window;
     InputController *input = &glob->input;
     float dt = glob->state.delta_time;
-
-    if (input->menu.clicked && !level->game_over) {
-        level->pause_now = !level->pause_now;
-        if (level->pause_now) {
-            glfwSetInputMode(glob->window.glfw_win,
-                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        } else {
-            if (!level->editing_now) {
-                glfwSetInputMode(glob->window.glfw_win,
-                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-            }
-        }
-        //CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
-    }
 
     level->old_selected = level->selected;
     if (level->editing_available &&
@@ -2732,7 +2796,7 @@ void level_update(void) {
                             input->mouse_right.pressed) {
 
                             float one = input->mouse_right.pressed ?
-                                        20.f * dt :
+                                        5.f * dt :
                                         1.f;
                             float five = input->mouse_right.pressed ?
                                         200.f * dt :
@@ -2961,7 +3025,7 @@ void level_update(void) {
                             input->mouse_right.pressed) {
 
                             float one = input->mouse_right.pressed ?
-                                        20.f * dt :
+                                        5.f * dt :
                                         1.f;
                             float five = input->mouse_right.pressed ?
                                         200.f * dt :
@@ -3167,7 +3231,7 @@ void level_update(void) {
                             input->mouse_right.pressed) {
 
                             float one = input->mouse_right.pressed ?
-                                        20.f * dt :
+                                        5.f * dt :
                                         1.f;
                             float five = input->mouse_right.pressed ?
                                         200.f * dt :
@@ -3338,7 +3402,7 @@ void level_update(void) {
             case PR::P_START_POS_TYPE:
             {
                 Rect *rect = (Rect *) level->selected;
-                start_pos_render_info(rect, 5.f, 0.f);
+                start_pos_render_info(rect, level->start_vel, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
 
@@ -3352,7 +3416,7 @@ void level_update(void) {
                     PR::Button *button =
                         &level->selected_options_buttons[option_button_index];
 
-                    if (option_button_index == 0) {
+                    if (option_button_index <= 2) {
                         PR::Button minus1;
                         minus1.from_center = true;
                         minus1.body.angle = 0.f;
@@ -3391,7 +3455,7 @@ void level_update(void) {
                             input->mouse_right.pressed) {
 
                             float one = input->mouse_right.pressed ?
-                                        20.f * dt :
+                                        5.f * dt :
                                         1.f;
                             float five = input->mouse_right.pressed ?
                                         200.f * dt :
@@ -3410,6 +3474,12 @@ void level_update(void) {
                                     case 0:
                                         rect->angle += one;
                                         break;
+                                    case 1:
+                                        level->start_vel.x += one;
+                                        break;
+                                    case 2:
+                                        level->start_vel.y += one;
+                                        break;
                                     default:
                                         break;
                                 }
@@ -3421,6 +3491,12 @@ void level_update(void) {
                                 switch(option_button_index) {
                                     case 0:
                                         rect->angle += five;
+                                        break;
+                                    case 1:
+                                        level->start_vel.x += five;
+                                        break;
+                                    case 2:
+                                        level->start_vel.y += five;
                                         break;
                                     default:
                                         break;
@@ -3434,6 +3510,12 @@ void level_update(void) {
                                     case 0:
                                         rect->angle -= one;
                                         break;
+                                    case 1:
+                                        level->start_vel.x -= one;
+                                        break;
+                                    case 2:
+                                        level->start_vel.y -= one;
+                                        break;
                                     default:
                                         break;
                                 }
@@ -3445,6 +3527,12 @@ void level_update(void) {
                                 switch(option_button_index) {
                                     case 0:
                                         rect->angle -= five;
+                                        break;
+                                    case 1:
+                                        level->start_vel.x -= five;
+                                        break;
+                                    case 2:
+                                        level->start_vel.y -= five;
                                         break;
                                     default:
                                         break;
@@ -3542,6 +3630,8 @@ void level_update(void) {
             .text = "QUIT",
         };
 
+        // ## RESTART
+        // Mouse
         if (rect_contains_point(b_restart.body,
                                 input->mouseX, input->mouseY,
                                 b_restart.from_center)) {
@@ -3553,7 +3643,15 @@ void level_update(void) {
                                level->editing_available, level->is_new);
             }
         }
+        // Keybinding
+        if (input->restart.clicked) {
+            CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                           level->file_path, level->name,
+                           level->editing_available, level->is_new);
+        }
 
+        // ## QUIT
+        // Mouse
         if (rect_contains_point(b_quit.body,
                                 input->mouseX, input->mouseY,
                                 b_quit.from_center)) {
@@ -3562,6 +3660,10 @@ void level_update(void) {
             if (input->mouse_left.clicked) {
                 CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
             }
+        }
+        // Keybinding
+        if (input->quit.clicked) {
+            CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
         }
 
         if (level->game_won) {
@@ -3644,6 +3746,8 @@ void level_update(void) {
             .text = "QUIT",
         };
 
+        // ## RESUME
+        // Mouse
         if (rect_contains_point(b_resume.body,
                                 input->mouseX, input->mouseY,
                                 b_resume.from_center)) {
@@ -3657,7 +3761,17 @@ void level_update(void) {
                 }
             }
         }
+        // Keybindings
+        if (input->resume.clicked) {
+            level->pause_now = false;
+            if (!level->editing_now) {
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            }
+        }
 
+        // ## RESTART
+        // Mouse
         if (rect_contains_point(b_restart.body,
                                 input->mouseX, input->mouseY,
                                 b_restart.from_center)) {
@@ -3669,7 +3783,15 @@ void level_update(void) {
                                level->editing_available, level->is_new);
             }
         }
+        // Keybindings
+        if (input->restart.clicked) {
+            CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                           level->file_path, level->name,
+                           level->editing_available, level->is_new);
+        }
 
+        // ## QUIT
+        // Mouse
         if (rect_contains_point(b_quit.body,
                                 input->mouseX, input->mouseY,
                                 b_quit.from_center)) {
@@ -3678,6 +3800,10 @@ void level_update(void) {
             if (input->mouse_left.clicked) {
                 CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
             }
+        }
+        // Keybindings
+        if (input->quit.clicked) {
+            CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
         }
 
         renderer_add_queue_uni(b_resume.body,
@@ -3705,6 +3831,13 @@ void level_update(void) {
         renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_text(&glob->rend_res.fonts[DEFAULT_FONT],
                            glob->rend_res.shaders[2]);
+    } else {
+        if (input->pause.clicked && !level->pause_now && !level->game_over) {
+            std::cout << "Pausing" << std::endl;
+            level->pause_now = true;
+            glfwSetInputMode(glob->window.glfw_win,
+                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
     }
 
     if (input->save_map.clicked) {
@@ -3717,18 +3850,6 @@ void level_update(void) {
             level->is_new = false;
         }
     }
-
-    // if (p->crashed && !test.active) test.active = true;
-    // animation_step(&test);
-    // Rect animation_rend = p->render_zone;
-    // animation_rend.pos.y -= animation_rend.dim.y * 0.5f *
-    //                         cos(glm::radians(animation_rend.angle));
-    // animation_rend.pos.x += animation_rend.dim.y * 0.5f *
-    //                         sin(glm::radians(animation_rend.angle));
-    // animation_rend.dim.y *= 2.f;
-    // animation_draw(rect_in_camera_space(animation_rend, cam), &test);
-    // renderer_draw_tex(glob->rend_res.shaders[1],
-    //                   &glob->rend_res.global_sprite);
 }
 
 // Utilities
@@ -4006,7 +4127,8 @@ inline void goal_line_render_info(Rect *rect, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void start_pos_render_info(Rect *rect, float tx, float ty) {
+inline void start_pos_render_info(Rect *rect, glm::vec2 vel,
+                                  float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -4018,8 +4140,12 @@ inline void start_pos_render_info(Rect *rect, float tx, float ty) {
                  rect->pos.x, rect->pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "dim: (%f, %f)",
-                 rect->dim.x, rect->dim.y);
+    // std::sprintf(buffer, "dim: (%f, %f)",
+    //              rect->dim.x, rect->dim.y);
+    // renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    //                         &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+    std::sprintf(buffer, "vel: (%f, %f)",
+                 vel.x, vel.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "angle: %f",
@@ -4251,28 +4377,6 @@ void button_edit_del_to_lb(PR::Button *reference,
     std::snprintf(del->text, std::strlen("-")+1, "-");
 }
 
-void button_add_custom_edit_del(PR::LevelButton *lb,
-                                size_t button_index,
-                                PR::Button **edit_buttons,
-                                PR::Button **del_buttons) {
-
-    *edit_buttons = (button_index == 0) ?
-        (PR::Button *) std::malloc(sizeof(PR::LevelButton)) :
-        (PR::Button *) std::realloc(*edit_buttons,
-                                         sizeof(PR::LevelButton) *
-                                          (button_index+1));
-    PR::Button *edit = *edit_buttons + button_index;
-
-    *del_buttons = (button_index == 0) ?
-        (PR::Button *) std::malloc(sizeof(PR::LevelButton)) :
-        (PR::Button *) std::realloc(*del_buttons,
-                                         sizeof(PR::LevelButton) *
-                                          (button_index+1));
-    PR::Button *del = *del_buttons + button_index;
-
-    button_edit_del_to_lb(&lb->button, edit, del);
-}
-
 void set_portal_option_buttons(PR::Button *buttons) {
     // NOTE: Set up options buttons for the selected portal
     for(size_t option_button_index = 0;
@@ -4473,6 +4577,16 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
                 std::snprintf(button->text,
                               std::strlen("ANGLE")+1,
                               "ANGLE");
+                break;
+            case 1:
+                std::snprintf(button->text,
+                              std::strlen("VEL X")+1,
+                              "VEL X");
+                break;
+            case 2:
+                std::snprintf(button->text,
+                              std::strlen("VEL Y")+1,
+                              "VEL Y");
                 break;
             default:
                 std::snprintf(button->text,

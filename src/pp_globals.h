@@ -183,6 +183,7 @@ struct PR {
         Button show_campaign_button;
         Button show_custom_button;
 
+        int selected_button;
         LevelButton campaign_buttons[CAMPAIGN_LEVELS_NUMBER];
 
         CustomLevelButtons custom_buttons;
@@ -234,6 +235,7 @@ struct PR {
 
         Rect goal_line;
         Rect start_pos;
+        glm::vec2 start_vel;
 
         ParticleSystem particle_systems[3];
         Parallax parallaxs[3];
@@ -264,7 +266,7 @@ struct PR {
 #define SELECTED_PORTAL_OPTIONS 4
 #define SELECTED_BOOST_OPTIONS 6
 #define SELECTED_OBSTACLE_OPTIONS 6
-#define SELECTED_START_POS_OPTIONS 1
+#define SELECTED_START_POS_OPTIONS 3
 #define SELECTED_MAX_OPTIONS 6
         Button selected_options_buttons[SELECTED_MAX_OPTIONS];
 

@@ -49,12 +49,16 @@ struct InputController {
     Key mouse_middle;
     double mouseX;
     double mouseY;
+    double old_mouseX;
+    double old_mouseY;
+    bool was_mouse_moved;
 
     // NOTE: Gameplay
     float left_right;
     float up_down;
     Key boost;
     Key jump;
+
     Key pause;
     Key resume;
     Key restart;
@@ -69,6 +73,13 @@ struct InputController {
     Key reset_pos;
 
     // NOTE: Menu
+    Key menu_up;
+    Key menu_down;
+    Key menu_left;
+    Key menu_right;
+    Key menu_click;
+    Key menu_to_custom;
+    Key menu_to_campaign;
 
     // NOTE: Debug
     Key debug;
