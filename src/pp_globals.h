@@ -129,6 +129,7 @@ struct PR {
 
         size_t current_particle;
 
+        bool frozen;
         bool active;
         bool all_inactive;
 
@@ -174,6 +175,11 @@ struct PR {
         size_t capacity;
     };
 
+    enum DeleteButtonChoice {
+        BUTTON_YES,
+        BUTTON_NO,
+    };
+
     #define CAMPAIGN_LEVELS_NUMBER 2
     struct Menu {
         Camera camera;
@@ -190,6 +196,7 @@ struct PR {
         
         Button add_custom_button;
 
+        DeleteButtonChoice delete_selection;
         bool deleting_level;
         Button delete_yes;
         Button delete_no;
@@ -222,6 +229,12 @@ struct PR {
         size_t capacity;
     };
 
+    enum GameMenuChoice {
+        BUTTON_RESUME,
+        BUTTON_RESTART,
+        BUTTON_QUIT,
+    };
+
     struct Level {
         char file_path[99];
         char name[99];
@@ -251,8 +264,8 @@ struct PR {
 
         bool adding_now;
 
+        GameMenuChoice gamemenu_selected;
         bool pause_now;
-
         bool game_over;
         bool game_won;
 
@@ -273,7 +286,6 @@ struct PR {
         Obstacles obstacles;
         BoostPads boosts;
         Portals portals;
-
     };
     Level current_level;
 

@@ -911,47 +911,47 @@ void menu_update(void) {
     cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
          glob->state.delta_time * cam->speed_multiplier);
 
-    if (rect_contains_point(
+    if (input->menu_to_campaign.clicked ||
+        (input->mouse_left.clicked &&
+         rect_contains_point(
                 rect_in_camera_space(menu->show_campaign_button.body, cam),
                 input->mouseX, input->mouseY,
-                menu->show_campaign_button.from_center)) {
-        if (input->mouse_left.clicked) {
-            menu->showing_campaign_buttons = true;
-            menu->show_campaign_button.col = SHOW_BUTTON_SELECTED_COLOR;
-            menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
-            menu->camera_goal_position = win->h * 0.5f;
-            menu->deleting_level = false;
-        }
+                menu->show_campaign_button.from_center))) {
+        menu->showing_campaign_buttons = true;
+        menu->show_campaign_button.col = SHOW_BUTTON_SELECTED_COLOR;
+        menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
+        menu->camera_goal_position = win->h * 0.5f;
+        menu->deleting_level = false;
     }
-    if (rect_contains_point(
-                rect_in_camera_space(menu->show_custom_button.body, cam),
-                input->mouseX, input->mouseY,
-                menu->show_custom_button.from_center)) {
-        if (input->mouse_left.clicked) {
-            int result = 0;
-            PR::CustomLevelButtons temp_custom_buttons = {NULL, 0, 0};
-            result =
-                load_custom_buttons_from_dir("./custom_maps/",
-                                             &temp_custom_buttons);
-            if (result == 0) {
-                // NOTE: Free the previous present custom buttons
-                da_clear(&menu->custom_buttons);
-                // NOTE: Reassing the updated and checked values
-                menu->custom_buttons = temp_custom_buttons;
-                menu->showing_campaign_buttons = false;
-                menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
-                menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
-                menu->camera_goal_position = win->h * 0.5f;
+    if (input->menu_to_custom.clicked ||
+        (input->mouse_left.clicked &&
+         rect_contains_point(
+             rect_in_camera_space(menu->show_custom_button.body, cam),
+             input->mouseX, input->mouseY,
+             menu->show_custom_button.from_center))) {
+        int result = 0;
+        PR::CustomLevelButtons temp_custom_buttons = {NULL, 0, 0};
+        result =
+            load_custom_buttons_from_dir("./custom_maps/",
+                                         &temp_custom_buttons);
+        if (result == 0) {
+            // NOTE: Free the previous present custom buttons
+            da_clear(&menu->custom_buttons);
+            // NOTE: Reassing the updated and checked values
+            menu->custom_buttons = temp_custom_buttons;
+            menu->showing_campaign_buttons = false;
+            menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
+            menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
+            menu->camera_goal_position = win->h * 0.5f;
 
-                PR::Button *add_level = &menu->add_custom_button;
-                button_set_position(add_level, menu->custom_buttons.count);
-                assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
-                        && "Text bigger than button text buffer!");
-                std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
-            } else {
-                std::cout << "[ERROR] Could not load custom map files"
-                          << std::endl;
-            }
+            PR::Button *add_level = &menu->add_custom_button;
+            button_set_position(add_level, menu->custom_buttons.count);
+            assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
+                    && "Text bigger than button text buffer!");
+            std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
+        } else {
+            std::cout << "[ERROR] Could not load custom map files"
+                      << std::endl;
         }
     }
 
@@ -1012,7 +1012,12 @@ void menu_update(void) {
                 menu->selected_button == levelbutton_index) {
 
                 lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->mouse_left.clicked || input->menu_click.clicked) {
+                if (input->menu_click.clicked ||
+                    (input->mouse_left.clicked &&
+                     rect_contains_point(rect_in_camera_space(lb->button.body,
+                                                              cam),
+                                         input->mouseX, input->mouseY,
+                                         lb->button.from_center))) {
                     CHANGE_CASE_TO(PR::LEVEL,
                                    level_prepare, lb->mapfile_path,
                                    lb->button.text, false, lb->is_new_level);
@@ -1026,20 +1031,45 @@ void menu_update(void) {
             PR::CustomLevelButton deleted_lb =
                 menu->custom_buttons.items[menu->deleting_index];
 
+            // mouse selection
             if (rect_contains_point(menu->delete_yes.body,
                                     input->mouseX, input->mouseY,
                                     menu->delete_yes.from_center)) {
-                menu->delete_yes.col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->mouse_left.clicked) {
-                    std::cout << "REMOVED LEVEL "
-                              << menu->deleting_index << std::endl;
+                menu->delete_selection = PR::BUTTON_YES;
+            }
+            if (input->was_mouse_moved &&
+                rect_contains_point(menu->delete_no.body,
+                                    input->mouseX, input->mouseY,
+                                    menu->delete_no.from_center)) {
+                menu->delete_selection = PR::BUTTON_NO;
+            }
 
+            // keybinding selection
+            if (input->menu_left.clicked) {
+                menu->delete_selection = PR::BUTTON_YES;
+            }
+            if (input->menu_right.clicked) {
+                menu->delete_selection = PR::BUTTON_NO;
+            }
+
+            // acting on the selection
+            if (menu->delete_selection == PR::BUTTON_YES) {
+                menu->delete_yes.col = LEVEL_BUTTON_SELECTED_COLOR;
+                menu->delete_no.col = LEVEL_BUTTON_DEFAULT_COLOR;
+                if (input->menu_click.clicked ||
+                    (input->mouse_left.clicked &&
+                     rect_contains_point(menu->delete_yes.body,
+                                         input->mouseX, input->mouseY,
+                                         menu->delete_yes.from_center))) {
                     if (!deleted_lb.is_new_level &&
                             std::remove(deleted_lb.mapfile_path)) {
                         std::cout << "[ERROR]: Could not delete the mapfile: "
                                   << deleted_lb.mapfile_path
                                   << std::endl;
                     }
+
+                    std::cout << "REMOVED LEVEL "
+                              << menu->deleting_index << std::endl;
 
                     da_remove(&menu->custom_buttons, menu->deleting_index);
 
@@ -1060,18 +1090,17 @@ void menu_update(void) {
 
                     menu->deleting_level = false;
                 }
-            } else {
-                menu->delete_yes.col = LEVEL_BUTTON_DEFAULT_COLOR;
             }
-            if (rect_contains_point(menu->delete_no.body,
-                                    input->mouseX, input->mouseY,
-                                    menu->delete_no.from_center)) {
+            if (menu->delete_selection == PR::BUTTON_NO) {
                 menu->delete_no.col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->mouse_left.clicked) {
+                menu->delete_yes.col = LEVEL_BUTTON_DEFAULT_COLOR;
+                if (input->menu_click.clicked ||
+                    (input->mouse_left.clicked &&
+                     rect_contains_point(menu->delete_no.body,
+                                         input->mouseX, input->mouseY,
+                                         menu->delete_no.from_center))) {
                     menu->deleting_level = false;
                 }
-            } else {
-                menu->delete_no.col = LEVEL_BUTTON_DEFAULT_COLOR;
             }
         } else {
             for(size_t custombutton_index = 0;
@@ -1096,6 +1125,7 @@ void menu_update(void) {
                     if (input->mouse_left.clicked) {
                         menu->deleting_level = true;
                         menu->deleting_index = custombutton_index;
+                        menu->delete_selection = PR::BUTTON_NO;
                     }
                     
                 } else if (rect_contains_point(
@@ -1178,13 +1208,16 @@ void menu_update(void) {
                         std::snprintf(new_lb.button.text, map_name_size+1,
                                       "%s", map_name);
 
-                        uint32_t random_id = (uint32_t)(((float)std::rand() / RAND_MAX) *999999) +1;
+                        uint32_t random_id = (uint32_t)
+                            (((float)std::rand() / RAND_MAX) *999999) +1;
 
                         // Level map file path
-                        int path_size = std::snprintf(nullptr, 0,
-                                                 "./custom_maps/map%zu-%.06u.prmap",
-                                                 map_number, random_id);
-                        assert((path_size+1 <= ARRAY_LENGTH(new_lb.mapfile_path))
+                        int path_size =
+                            std::snprintf(nullptr, 0,
+                                          "./custom_maps/map%zu-%.06u.prmap",
+                                          map_number, random_id);
+                        assert((path_size+1 <=
+                                    ARRAY_LENGTH(new_lb.mapfile_path))
                                 && "Mapfile path buffer is too little!");
                         std::snprintf(new_lb.mapfile_path, path_size+1,
                                       "./custom_maps/map%zu-%.06u.prmap",
@@ -1597,6 +1630,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     boost_ps->current_particle = 0;
     boost_ps->time_between_particles = 0.01f;
     boost_ps->time_elapsed = 0.f;
+    boost_ps->frozen = false;
     boost_ps->active = false;
     boost_ps->all_inactive = true;
     boost_ps->create_particle = create_particle_plane_boost;
@@ -1624,6 +1658,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     plane_crash_ps->current_particle = 0;
     plane_crash_ps->time_between_particles = 0.02f;
     plane_crash_ps->time_elapsed = 0.f;
+    plane_crash_ps->frozen = false;
     plane_crash_ps->active = false;
     plane_crash_ps->all_inactive = true;
     plane_crash_ps->create_particle = create_particle_plane_crash;
@@ -1651,6 +1686,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     rider_crash_ps->current_particle = 0;
     rider_crash_ps->time_between_particles = 0.02f;
     rider_crash_ps->time_elapsed = 0.f;
+    rider_crash_ps->frozen = false;
     rider_crash_ps->active = false;
     rider_crash_ps->all_inactive = true;
     rider_crash_ps->create_particle = create_particle_rider_crash;
@@ -2034,6 +2070,7 @@ void level_update(void) {
             activate_level_edit_mode(level);
         } else {
             level->game_over = true;
+            level->gamemenu_selected = PR::BUTTON_RESTART;
             level->game_won = true;
             level->text_wave_time = 0.f;
             glfwSetInputMode(glob->window.glfw_win,
@@ -2312,12 +2349,6 @@ void level_update(void) {
 
                 if (rid->attached) {
                     rider_jump_from_plane(rid, p);
-                    // rid->vel *= 0.f;
-                    // rid->base_velocity = 0.f;
-                    // rid->input_velocity = 0.f;
-                    // level->game_over = true;
-                    // glfwSetInputMode(glob->window.glfw_win,
-                    //                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 }
                 p->crashed = true;
                 plane_activate_crash_animation(p);
@@ -2335,6 +2366,7 @@ void level_update(void) {
                 // NOTE: Rider colliding with an obstacle
 
                 level->game_over = true;
+                level->gamemenu_selected = PR::BUTTON_RESTART;
                 glfwSetInputMode(glob->window.glfw_win,
                                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 rid->crashed = true;
@@ -2376,12 +2408,6 @@ void level_update(void) {
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
-                // rid->vel *= 0.f;
-                // rid->base_velocity = 0.f;
-                // rid->input_velocity = 0.f;
-                // level->game_over = true;
-                // glfwSetInputMode(glob->window.glfw_win,
-                //                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
             p->crashed = true;
             plane_activate_crash_animation(p);
@@ -2402,6 +2428,7 @@ void level_update(void) {
             rid->crashed = true;
             rid->attached = false;
             level->game_over = true;
+            level->gamemenu_selected = PR::BUTTON_RESTART;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             rid->vel *= 0.f;
@@ -2423,12 +2450,6 @@ void level_update(void) {
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
-                // rid->vel *= 0.f;
-                // rid->base_velocity = 0.f;
-                // rid->input_velocity = 0.f;
-                // level->game_over = true;
-                // glfwSetInputMode(glob->window.glfw_win,
-                //                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
             p->crashed = true;
             plane_activate_crash_animation(p);
@@ -2447,6 +2468,7 @@ void level_update(void) {
                 cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
 
             level->game_over = true;
+            level->gamemenu_selected = PR::BUTTON_RESTART;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             rid->crashed = true;
@@ -2506,16 +2528,18 @@ void level_update(void) {
             continue;
         }
 
-        ps->time_elapsed += dt;
-        while(ps->time_elapsed > ps->time_between_particles) {
-            ps->time_elapsed -= ps->time_between_particles;
+        if (!ps->frozen) {
+            ps->time_elapsed += dt;
+            while(ps->time_elapsed > ps->time_between_particles) {
+                ps->time_elapsed -= ps->time_between_particles;
 
-            PR::Particle *particle = ps->particles +
-                                     ps->current_particle;
-            ps->current_particle = (ps->current_particle + 1) %
-                                         ps->particles_number;
+                PR::Particle *particle = ps->particles +
+                                         ps->current_particle;
+                ps->current_particle = (ps->current_particle + 1) %
+                                             ps->particles_number;
 
-            (ps->create_particle)(ps, particle);
+                (ps->create_particle)(ps, particle);
+            }
         }
         for (size_t particle_index = 0;
              particle_index < ps->particles_number;
@@ -2523,7 +2547,9 @@ void level_update(void) {
 
             PR::Particle *particle = ps->particles + particle_index;
 
-            (ps->update_particle)(ps, particle);
+            if (!ps->frozen) {
+                (ps->update_particle)(ps, particle);
+            }
 
             (ps->draw_particle)(ps, particle);
         }
@@ -2534,7 +2560,9 @@ void level_update(void) {
     //                        false);
 
     // NOTE: Rendering plane texture
-    animation_step(&p->anim);
+    if (!level->game_over && !level->pause_now) {
+        animation_step(&p->anim);
+    }
     animation_queue_render(rect_in_camera_space(p->render_zone, cam),
                            &p->anim);
     // renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
@@ -3630,42 +3658,64 @@ void level_update(void) {
             .text = "QUIT",
         };
 
+        // ### Mouse change selections ###
         // ## RESTART
-        // Mouse
-        if (rect_contains_point(b_restart.body,
+        if (input->was_mouse_moved &&
+            rect_contains_point(b_restart.body,
                                 input->mouseX, input->mouseY,
                                 b_restart.from_center)) {
-            b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
-
-            if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                               level->file_path, level->name,
-                               level->editing_available, level->is_new);
-            }
+            level->gamemenu_selected = PR::BUTTON_RESTART;
         }
-        // Keybinding
-        if (input->restart.clicked) {
+        // ## QUIT
+        if (input->was_mouse_moved &&
+            rect_contains_point(b_quit.body,
+                                input->mouseX, input->mouseY,
+                                b_quit.from_center)) {
+            level->gamemenu_selected = PR::BUTTON_QUIT;
+        }
+        // ### Keybinding change selection ###
+        if (input->menu_up.clicked) {
+            level->gamemenu_selected = PR::BUTTON_RESTART;
+        }
+        if (input->menu_down.clicked) {
+            level->gamemenu_selected = PR::BUTTON_QUIT;
+        }
+
+        // ### All ways to click ###
+        // ## RESTART
+        if (input->restart.clicked ||
+            (input->menu_click.clicked &&
+                level->gamemenu_selected == PR::BUTTON_RESTART) ||
+            (input->mouse_left.clicked &&
+                rect_contains_point(b_restart.body,
+                                    input->mouseX, input->mouseY,
+                                    b_restart.from_center))) {
             CHANGE_CASE_TO(PR::LEVEL, level_prepare,
                            level->file_path, level->name,
                            level->editing_available, level->is_new);
         }
-
         // ## QUIT
-        // Mouse
-        if (rect_contains_point(b_quit.body,
-                                input->mouseX, input->mouseY,
-                                b_quit.from_center)) {
-            b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
-
-            if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
-            }
-        }
-        // Keybinding
-        if (input->quit.clicked) {
+        if (input->quit.clicked ||
+            (input->menu_click.clicked &&
+                level->gamemenu_selected == PR::BUTTON_QUIT) ||
+            (input->mouse_left.clicked &&
+                rect_contains_point(b_quit.body,
+                                    input->mouseX, input->mouseY,
+                                    b_quit.from_center))) {
             CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
         }
 
+        // ### Highlight selection ###
+        if (level->gamemenu_selected == PR::BUTTON_RESTART) {
+            b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
+            b_quit.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        }
+        if (level->gamemenu_selected == PR::BUTTON_QUIT) {
+            b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
+            b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        }
+
+        // ### Display winner text ###
         if (level->game_won) {
             level->text_wave_time += dt;
             shaderer_set_float(glob->rend_res.shaders[3], "time",
@@ -3746,64 +3796,103 @@ void level_update(void) {
             .text = "QUIT",
         };
 
+        // ### Mouse change selections ###
         // ## RESUME
-        // Mouse
-        if (rect_contains_point(b_resume.body,
+        if (input->was_mouse_moved &&
+            rect_contains_point(b_resume.body,
                                 input->mouseX, input->mouseY,
                                 b_resume.from_center)) {
-            b_resume.col = LEVEL_BUTTON_SELECTED_COLOR;
+            level->gamemenu_selected = PR::BUTTON_RESUME;
+        }
+        // ## RESTART
+        if (input->was_mouse_moved &&
+            rect_contains_point(b_restart.body,
+                                input->mouseX, input->mouseY,
+                                b_restart.from_center)) {
+            level->gamemenu_selected = PR::BUTTON_RESTART;
+        }
+        // ## QUIT
+        if (input->was_mouse_moved &&
+            rect_contains_point(b_quit.body,
+                                input->mouseX, input->mouseY,
+                                b_quit.from_center)) {
+            level->gamemenu_selected = PR::BUTTON_QUIT;
+        }
 
-            if (input->mouse_left.clicked) {
-                level->pause_now = false;
-                if (!level->editing_now) {
-                    glfwSetInputMode(glob->window.glfw_win,
-                                     GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-                }
+        // ### Keybinding change selection ###
+        if (input->menu_up.clicked) {
+            if (level->gamemenu_selected == PR::BUTTON_RESTART) {
+                level->gamemenu_selected = PR::BUTTON_RESUME;
+            } else if (level->gamemenu_selected == PR::BUTTON_QUIT) {
+                level->gamemenu_selected = PR::BUTTON_RESTART;
             }
         }
-        // Keybindings
-        if (input->resume.clicked) {
+        if (input->menu_down.clicked) {
+            if (level->gamemenu_selected == PR::BUTTON_RESUME) {
+                level->gamemenu_selected = PR::BUTTON_RESTART;
+            } else if (level->gamemenu_selected == PR::BUTTON_RESTART) {
+                level->gamemenu_selected = PR::BUTTON_QUIT;
+            }
+        }
+
+        // ### All ways to click ###
+        // ## RESUME
+        if (input->resume.clicked ||
+            (input->menu_click.clicked &&
+                level->gamemenu_selected == PR::BUTTON_RESUME) ||
+            (input->mouse_left.clicked &&
+                rect_contains_point(b_resume.body,
+                                    input->mouseX, input->mouseY,
+                                    b_resume.from_center))) {
             level->pause_now = false;
+            for(size_t ps_index = 0;
+                ps_index < ARRAY_LENGTH(level->particle_systems);
+                ++ps_index) {
+                level->particle_systems[ps_index].frozen = false;
+            }
             if (!level->editing_now) {
                 glfwSetInputMode(glob->window.glfw_win,
                                  GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
             }
         }
-
         // ## RESTART
-        // Mouse
-        if (rect_contains_point(b_restart.body,
-                                input->mouseX, input->mouseY,
-                                b_restart.from_center)) {
-            b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
-
-            if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                               level->file_path, level->name,
-                               level->editing_available, level->is_new);
-            }
-        }
-        // Keybindings
-        if (input->restart.clicked) {
+        if (input->restart.clicked ||
+            (input->menu_click.clicked &&
+                level->gamemenu_selected == PR::BUTTON_RESTART) ||
+            (input->mouse_left.clicked &&
+                rect_contains_point(b_restart.body,
+                                    input->mouseX, input->mouseY,
+                                    b_restart.from_center))) {
             CHANGE_CASE_TO(PR::LEVEL, level_prepare,
                            level->file_path, level->name,
                            level->editing_available, level->is_new);
         }
-
         // ## QUIT
-        // Mouse
-        if (rect_contains_point(b_quit.body,
-                                input->mouseX, input->mouseY,
-                                b_quit.from_center)) {
-            b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
-
-            if (input->mouse_left.clicked) {
-                CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
-            }
-        }
-        // Keybindings
-        if (input->quit.clicked) {
+        if (input->quit.clicked ||
+            (input->menu_click.clicked &&
+                level->gamemenu_selected == PR::BUTTON_QUIT) ||
+            (input->mouse_left.clicked &&
+                rect_contains_point(b_quit.body,
+                                    input->mouseX, input->mouseY,
+                                    b_quit.from_center))) {
             CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
+        }
+
+        // ### Highlight selection ###
+        if (level->gamemenu_selected == PR::BUTTON_RESUME) {
+            b_resume.col = LEVEL_BUTTON_SELECTED_COLOR;
+            b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
+            b_quit.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        }
+        if (level->gamemenu_selected == PR::BUTTON_RESTART) {
+            b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
+            b_resume.col = LEVEL_BUTTON_DEFAULT_COLOR;
+            b_quit.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        }
+        if (level->gamemenu_selected == PR::BUTTON_QUIT) {
+            b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
+            b_resume.col = LEVEL_BUTTON_DEFAULT_COLOR;
+            b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
 
         renderer_add_queue_uni(b_resume.body,
@@ -3835,6 +3924,12 @@ void level_update(void) {
         if (input->pause.clicked && !level->pause_now && !level->game_over) {
             std::cout << "Pausing" << std::endl;
             level->pause_now = true;
+            for(size_t ps_index = 0;
+                ps_index < ARRAY_LENGTH(level->particle_systems);
+                ++ps_index) {
+                level->particle_systems[ps_index].frozen = true;
+            }
+            level->gamemenu_selected = PR::BUTTON_RESUME;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
