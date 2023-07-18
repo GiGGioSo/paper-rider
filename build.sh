@@ -36,6 +36,7 @@ rm -r bin
 mkdir bin
 
 echo "Compiling the sources..."
+echo $SRCS_FILES
 
 clang++ $CFLAGS $LIBS -o $EXE $SRCS_FILES
 
