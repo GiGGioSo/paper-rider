@@ -4,6 +4,10 @@
 #include "../include/glm/trigonometric.hpp"
 #include "pp_globals.h"
 
+void
+menu_set_to_null(PR::Menu *menu);
+void
+level_set_to_null(PR::Level *level);
 int menu_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path, bool is_new);
 void menu_update(void);
 void menu_draw(void);

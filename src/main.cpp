@@ -19,7 +19,7 @@ void callback_gamepad(int gamepad_id, int event);
 
 // Initializing global structure
 PR* glob = NULL;
-void glob_init();
+int glob_init();
 void glob_free();
 
 float last_frame = 0.f;
@@ -138,7 +138,7 @@ int main() {
     return 0;
 }
 
-void glob_init(void) {
+int glob_init(void) {
     // NOTE: Set custom cursor
     uint8_t cursor_pixels[16 * 16 * 4];
     for(size_t row = 0; row < 16; ++row) {
@@ -162,15 +162,6 @@ void glob_init(void) {
     // Don't really need to check if the cursor is NULL,
     // because if it is, then the cursor will be set to default
     glfwSetCursor(glob->window.glfw_win, cursor);
-
-
-    glob->state.current_case = PR::MENU;
-
-    // NOTE: I need to set it here because I do not reset
-    //       it when preparing the menu, so that the player comes back to
-    //       where he was before
-    glob->current_menu.showing_campaign_buttons = true;
-    menu_prepare(&glob->current_menu, &glob->current_level, "", false);
 
     PR::WinInfo* win = &glob->window;
 
@@ -242,6 +233,7 @@ void glob_init(void) {
     if (error) {
         std::cout << "[ERROR] Could not create font atlas: "
                   << error << std::endl;
+        return 1;
     }
 
 
@@ -258,6 +250,7 @@ void glob_init(void) {
     if (error) {
         std::cout << "[ERROR] Could not create font atlas: "
                   << error << std::endl;
+        return 1;
     }
 
     renderer_init(&glob->renderer);
@@ -266,9 +259,172 @@ void glob_init(void) {
     glob->colors[1] = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
     glob->colors[2] = glm::vec4(0.3f, 0.3f, 0.8f, 1.0f);
     glob->colors[3] = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
+
+    // ### Sound initialization ###
+    PR::Sound *sound = &glob->sound;
+    // Engine
+    ma_result result;
+    result = ma_engine_init(NULL, &sound->engine);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the audio engine!"
+                  << std::endl;
+        return 1;
+    }
+
+    // Sound groups
+    result = ma_sound_group_init(&sound->engine, NULL, NULL,
+                                 &sound->music_group);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound music group!"
+                  << std::endl;
+        return 1;
+    }
+    result = ma_sound_group_init(&sound->engine, NULL, NULL,
+                                 &sound->sfx_group);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound sfx group!"
+                  << std::endl;
+        return 1;
+    }
+
+    // Sounds in the music group
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_theme.wav",
+                                     MA_SOUND_FLAG_STREAM,
+                                     &sound->music_group, NULL,
+                                     &sound->menu_music);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound menu_music!"
+                  << std::endl;
+        return 1;
+    }
+    ma_sound_set_looping(&sound->menu_music, true);
+
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_theme.wav",
+                                     MA_SOUND_FLAG_STREAM,
+                                     &sound->music_group, NULL,
+                                     &sound->playing_music);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound playing_music!"
+                  << std::endl;
+        return 1;
+    }
+
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_theme.wav",
+                                     MA_SOUND_FLAG_STREAM,
+                                     &sound->music_group, NULL,
+                                     &sound->gameover_music);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound gameover_music!"
+                  << std::endl;
+        return 1;
+    }
+
+    // Sounds in the sfx group
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_select.wav",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->change_selection);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound change_selection!"
+                  << std::endl;
+        return 1;
+    }
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_select.wav",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->click_selected);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound click_selected!"
+                  << std::endl;
+        return 1;
+    }
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_select.wav",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->campaign_custom);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound campaign_custom!"
+                  << std::endl;
+        return 1;
+    }
+    /*
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/discord-join.mp3",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->rider_detach);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound rider_detach!"
+                  << std::endl;
+        return 1;
+    }
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/discord-notification.mp3",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->rider_double_jump);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound rider_double_jump!"
+                  << std::endl;
+        return 1;
+    }
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/succ.mp3",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->plane_crash);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound plane_crash!"
+                  << std::endl;
+        return 1;
+    }
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/rider_crash.wav",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->rider_crash);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound rider_crash!"
+                  << std::endl;
+        return 1;
+    }
+    */
+
+    std::cout << "Loaded all audio files successfully!" << std::endl;
+
+    menu_set_to_null(&glob->current_menu);
+    level_set_to_null(&glob->current_level);
+    glob->state.current_case = PR::MENU;
+    // NOTE: I need to set it here because I do not reset
+    //       it when preparing the menu, so that the player comes back to
+    //       where he was before
+    glob->current_menu.showing_campaign_buttons = true;
+    menu_prepare(&glob->current_menu, &glob->current_level, "", false);
+
+    return 0;
 }
 
 void glob_free(void) {
+    PR::Sound *s = &glob->sound;
+    ma_sound_uninit(&s->menu_music);
+    ma_sound_uninit(&s->playing_music);
+    ma_sound_uninit(&s->gameover_music);
+    ma_sound_uninit(&s->change_selection);
+    ma_sound_uninit(&s->click_selected);
+    ma_sound_uninit(&s->campaign_custom);
+    ma_sound_uninit(&s->rider_detach);
+    ma_sound_uninit(&s->rider_double_jump);
+    ma_sound_uninit(&s->plane_crash);
+    ma_sound_uninit(&s->rider_crash);
+    ma_sound_group_uninit(&s->music_group);
+    ma_sound_group_uninit(&s->sfx_group);
+    ma_engine_uninit(&s->engine);
     std::free(glob->rend_res.fonts[0].char_data);
     std::free(glob);
 }

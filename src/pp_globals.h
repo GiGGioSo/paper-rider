@@ -3,6 +3,7 @@
 
 #include "../include/glfw3.h"
 #include "../include/glm/mat4x4.hpp"
+#include "../include/miniaudio.h"
 
 #include "pp_shaderer.h"
 #include "pp_renderer.h"
@@ -294,6 +295,55 @@ struct PR {
 
 #define DEFAULT_FONT_SIZE (64.f)
 #define OBJECT_INFO_FONT_SIZE (24.f)
+
+    /*
+    ma_engine_init(ma_engine_config *conf, ma_engine *engine)
+
+    ma_sound_group_init();
+
+    ma_sound_init_from_file(&engine, "my_sound.wav", flags, pGroup, NULL, &sound);
+    Useful flags:
+     - MA_SOUND_FLAG_DECODE: Decode the file at loading time
+     - MA_SOUND_FLAG_STREAM: Do not load sound in memory, but load while playing (Use it for music tracks, maybe)
+
+    To play the same sound twice at the same time,
+    you need to create two separate ma_sound.
+    To create a copy of an existing sound, use:
+        ma_sound_init_copy(ma_engine *eng, ma_sound *existingSound,
+                           flags, sound_ground, ma_sound *dst)
+        (this can be used only if `existingSound` was created using
+            the ma_sound_init_from_file function and
+            WITHOUT the flag MA_SOUND_FLAG_STREAM)
+
+     ma_sound_start()
+     ma_sound_stop()
+
+     */
+
+    struct Sound {
+        ma_engine engine;
+
+        // ### Sound groups (to control volume levels) ###
+        ma_sound_group music_group;
+        ma_sound_group sfx_group;
+
+        // ### Sounds in the music group ###
+        ma_sound menu_music;
+        ma_sound playing_music;
+        ma_sound gameover_music;
+
+        // ### Sounds in the sfx group ###
+        // Menu
+        ma_sound change_selection;
+        ma_sound click_selected;
+        ma_sound campaign_custom;
+        // Game
+        ma_sound rider_detach;
+        ma_sound rider_double_jump;
+        ma_sound plane_crash;
+        ma_sound rider_crash;
+    };
+    Sound sound;
 
     struct RenderResources {
         glm::mat4 ortho_proj;

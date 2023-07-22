@@ -121,9 +121,9 @@ set_start_pos_option_buttons(PR::Button *buttons);
 inline
 Rect rect_in_camera_space(Rect r, PR::Camera *cam);
 void
-deactivate_level_edit_mode(PR::Level *level);
+level_deactivate_edit_mode(PR::Level *level);
 void
-activate_level_edit_mode(PR::Level *level);
+level_activate_edit_mode(PR::Level *level);
 void
 update_plane_physics_n_boost_collisions(PR::Level *level);
 
@@ -139,7 +139,7 @@ animation_init(PR::Animation *a, Texture tex, size_t start_x, size_t start_y, si
 void
 animation_step(PR::Animation *a);
 void
-animation_queue_render(Rect b, PR::Animation *a);
+animation_queue_render(Rect b, PR::Animation *a, bool inverse);
 void
 animation_reset(PR::Animation *a);
 
@@ -192,12 +192,10 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
     }
 }
 
-inline
 void menu_set_to_null(PR::Menu *menu) {
     menu->custom_buttons = {NULL, 0, 0};
 }
 
-inline
 void level_set_to_null(PR::Level *level) {
     level->portals = {NULL, 0, 0};
     level->obstacles = {NULL, 0, 0};
@@ -863,6 +861,9 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
+    PR::Sound *sound = &glob->sound;
+    ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
+    ma_sound_start(&sound->menu_music);
     return 0;
 }
 
@@ -871,6 +872,7 @@ void menu_update(void) {
     PR::WinInfo *win = &glob->window;
     PR::Camera *cam = &glob->current_menu.camera;
     PR::Menu *menu = &glob->current_menu;
+    PR::Sound *sound = &glob->sound;
 
     size_t buttons_shown_number =
         menu->showing_campaign_buttons ? CAMPAIGN_LEVELS_NUMBER :
@@ -922,6 +924,11 @@ void menu_update(void) {
         menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
         menu->camera_goal_position = win->h * 0.5f;
         menu->deleting_level = false;
+        // if (ma_sound_is_playing(&sound->campaign_custom)) {
+        //     ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
+        // }
+        ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
+        ma_sound_start(&sound->campaign_custom);
     }
     if (input->menu_to_custom.clicked ||
         (input->mouse_left.clicked &&
@@ -953,12 +960,18 @@ void menu_update(void) {
             std::cout << "[ERROR] Could not load custom map files"
                       << std::endl;
         }
+        // if (ma_sound_is_playing(&sound->campaign_custom)) {
+        //     ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
+        // }
+        ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
+        ma_sound_start(&sound->campaign_custom);
     }
 
     if (menu->showing_campaign_buttons) {
         // NOTE: The keybings are put before because
         //       the mouse has the priority if it was moved
 
+        int previous_selection = menu->selected_button;
         // Keybinding
         if (input->menu_up.clicked) {
             if (menu->selected_button-3 >= 0) {
@@ -1025,6 +1038,13 @@ void menu_update(void) {
             } else {
                 lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
             }
+        }
+        if (previous_selection != menu->selected_button) {
+            // if (ma_sound_is_playing(&sound->change_selection)) {
+            //     ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
+            // }
+            ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
+            ma_sound_start(&sound->change_selection);
         }
     } else {
         if (menu->deleting_level) {
@@ -1727,6 +1747,9 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 
     // NOTE: Hide the cursor only if it succeded in doing everything else
     glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+    PR::Sound *sound = &glob->sound;
+    ma_sound_stop(&sound->menu_music);
     return 0;
 }
 
@@ -1748,7 +1771,6 @@ void level_update(void) {
     PR::ParticleSystem *rider_crash_ps =
         &glob->current_level.particle_systems[2];
 
-
     // Global stuff
     PR::WinInfo *win = &glob->window;
     InputController *input = &glob->input;
@@ -1758,9 +1780,9 @@ void level_update(void) {
     if (level->editing_available &&
             input->edit.clicked) {
         if (level->editing_now) {
-            deactivate_level_edit_mode(level);
+            level_deactivate_edit_mode(level);
         } else {
-            activate_level_edit_mode(level);
+            level_activate_edit_mode(level);
             level_reset_colors(level);
         }
     }
@@ -2067,7 +2089,7 @@ void level_update(void) {
     if (!rid->crashed && !level->editing_now && !level->game_over &&
         rect_are_colliding(rid->body, level->goal_line, NULL, NULL)) {
         if (level->editing_available) {
-            activate_level_edit_mode(level);
+            level_activate_edit_mode(level);
         } else {
             level->game_over = true;
             level->gamemenu_selected = PR::BUTTON_RESTART;
@@ -2365,41 +2387,56 @@ void level_update(void) {
                                    &rid->crash_position.y)) {
                 // NOTE: Rider colliding with an obstacle
 
-                level->game_over = true;
-                level->gamemenu_selected = PR::BUTTON_RESTART;
-                glfwSetInputMode(glob->window.glfw_win,
-                                 GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                rid->crashed = true;
-                rid->attached = false;
-                rid->vel *= 0.f;
-                rid->base_velocity = 0.f;
-                rid->input_velocity = 0.f;
+                if (level->editing_available) {
+                    level_activate_edit_mode(level);
+                } else {
+                    level->game_over = true;
+                    level->gamemenu_selected = PR::BUTTON_RESTART;
+                    glfwSetInputMode(glob->window.glfw_win,
+                                     GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    rid->crashed = true;
+                    rid->attached = false;
+                    rid->vel *= 0.f;
+                    rid->base_velocity = 0.f;
+                    rid->input_velocity = 0.f;
 
-                // TODO: Debug flag
-                std::cout << "Rider collided with "
-                          << obstacle_index << std::endl;
+                    // TODO: Debug flag
+                    std::cout << "Rider collided with "
+                              << obstacle_index << std::endl;
+                }
             }
         }
 
+        Rect p_body_camera_space = rect_in_camera_space(p->body, cam);
+        Rect rid_body_camera_space = rect_in_camera_space(rid->body, cam);
         // NOTE: Collide with the ceiling and the floor
-        Rect ceiling;
-        ceiling.pos.x = -((float) win->w);
-        ceiling.pos.y = -((float) win->h);
-        ceiling.dim.x = win->w*3.f;
-        ceiling.dim.y = win->h;
-        ceiling.angle = 0.f;
-        ceiling.triangle = false;
-        Rect floor;
-        floor.pos.x = -((float) win->w);
-        floor.pos.y = (float) win->h;
-        floor.dim.x = win->w*3.f;
-        floor.dim.y = win->h;
-        floor.angle = 0.f;
-        floor.triangle = false;
+        Rect plane_ceiling;
+        plane_ceiling.pos.x = p_body_camera_space.pos.x +
+                              p_body_camera_space.dim.x * 0.5f -
+                              ((float) win->w);
+        plane_ceiling.dim.x = win->w*2.f;
+        plane_ceiling.pos.y = -((float) win->h);
+        plane_ceiling.dim.y = win->h;
+        plane_ceiling.angle = 0.f;
+        plane_ceiling.triangle = false;
+        Rect rider_ceiling = plane_ceiling;
+        rider_ceiling.pos.x = rid_body_camera_space.pos.x +
+                              rid_body_camera_space.dim.x * 0.5f -
+                              ((float) win->w);
+
+        Rect plane_floor;
+        plane_floor.pos.x = plane_ceiling.pos.x;
+        plane_floor.pos.y = (float) win->h;
+        plane_floor.dim.x = win->w*2.f;
+        plane_floor.dim.y = win->h;
+        plane_floor.angle = 0.f;
+        plane_floor.triangle = false;
+        Rect rider_floor = plane_floor;
+        rider_floor.pos.x = rider_ceiling.pos.x;
 
         // NOTE: Collisions with the ceiling
         if (!p->crashed &&
-            rect_are_colliding(rect_in_camera_space(p->body, cam), ceiling,
+            rect_are_colliding(p_body_camera_space, plane_ceiling,
                                &p->crash_position.x,
                                &p->crash_position.y)) {
 
@@ -2418,22 +2455,27 @@ void level_update(void) {
             std::cout << "Plane collided with the ceiling" << std::endl;
         }
         if (!rid->crashed &&
-            rect_are_colliding(rect_in_camera_space(rid->body, cam), ceiling,
+            rect_are_colliding(rid_body_camera_space, rider_ceiling,
                                &rid->crash_position.x,
                                &rid->crash_position.y)) {
 
-            rid->crash_position +=
-                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+            if (level->editing_available) {
+                level_activate_edit_mode(level);
+            } else {
+                rid->crash_position +=
+                    cam->pos -
+                    glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
 
-            rid->crashed = true;
-            rid->attached = false;
-            level->game_over = true;
-            level->gamemenu_selected = PR::BUTTON_RESTART;
-            glfwSetInputMode(glob->window.glfw_win,
-                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            rid->vel *= 0.f;
-            rid->base_velocity = 0.f;
-            rid->input_velocity = 0.f;
+                rid->crashed = true;
+                rid->attached = false;
+                level->game_over = true;
+                level->gamemenu_selected = PR::BUTTON_RESTART;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                rid->vel *= 0.f;
+                rid->base_velocity = 0.f;
+                rid->input_velocity = 0.f;
+            }
 
             // TODO: Debug flag
             std::cout << "Rider collided with the ceiling" << std::endl;
@@ -2441,12 +2483,13 @@ void level_update(void) {
 
         // NOTE: Collisions with the floor
         if (!p->crashed &&
-            rect_are_colliding(rect_in_camera_space(p->body, cam), floor,
+            rect_are_colliding(p_body_camera_space, plane_floor,
                                &p->crash_position.x,
                                &p->crash_position.y)) {
 
             p->crash_position +=
-                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+                cam->pos -
+                glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
@@ -2460,22 +2503,27 @@ void level_update(void) {
             std::cout << "Plane collided with the floor" << std::endl;
         }
         if (!rid->crashed &&
-            rect_are_colliding(rect_in_camera_space(rid->body, cam), floor,
+            rect_are_colliding(rid_body_camera_space, rider_floor,
                                &rid->crash_position.x,
                                &rid->crash_position.y)) {
 
-            rid->crash_position +=
-                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+            if (level->editing_available) {
+                level_deactivate_edit_mode(level);
+            } else {
+                rid->crash_position +=
+                    cam->pos -
+                    glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
 
-            level->game_over = true;
-            level->gamemenu_selected = PR::BUTTON_RESTART;
-            glfwSetInputMode(glob->window.glfw_win,
-                             GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            rid->crashed = true;
-            rid->attached = false;
-            rid->vel *= 0.f;
-            rid->base_velocity = 0.f;
-            rid->input_velocity = 0.f;
+                level->game_over = true;
+                level->gamemenu_selected = PR::BUTTON_RESTART;
+                glfwSetInputMode(glob->window.glfw_win,
+                                 GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                rid->crashed = true;
+                rid->attached = false;
+                rid->vel *= 0.f;
+                rid->base_velocity = 0.f;
+                rid->input_velocity = 0.f;
+            }
 
             // TODO: Debug flag
             std::cout << "Rider collided with the floor" << std::endl;
@@ -2564,7 +2612,7 @@ void level_update(void) {
         animation_step(&p->anim);
     }
     animation_queue_render(rect_in_camera_space(p->render_zone, cam),
-                           &p->anim);
+                           &p->anim, p->inverse);
     // renderer_add_queue_tex(rect_in_camera_space(p->render_zone, cam),
     //                        texcoords_in_texture_space(
     //                             p->current_animation * 32, 0.f,
@@ -2856,9 +2904,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        portal->body.pos.x -= five * 0.5f;
                                         portal->body.dim.x += five;
                                         break;
                                     case 1:
+                                        portal->body.pos.y -= five * 0.5f;
                                         portal->body.dim.y += five;
                                         break;
                                     default:
@@ -2871,9 +2921,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        portal->body.pos.x += one * 0.5f;
                                         portal->body.dim.x -= one;
                                         break;
                                     case 1:
+                                        portal->body.pos.y += one * 0.5f;
                                         portal->body.dim.y -= one;
                                         break;
                                     default:
@@ -2886,9 +2938,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        portal->body.pos.x += five * 0.5f;
                                         portal->body.dim.x -= five;
                                         break;
                                     case 1:
+                                        portal->body.pos.y += five * 0.5f;
                                         portal->body.dim.y -= five;
                                         break;
                                     default:
@@ -3070,9 +3124,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        pad->body.pos.x -= one * 0.5f;
                                         pad->body.dim.x += one;
                                         break;
                                     case 1:
+                                        pad->body.pos.y -= one * 0.5f;
                                         pad->body.dim.y += one;
                                         break;
                                     case 2:
@@ -3094,9 +3150,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        pad->body.pos.x -= five * 0.5f;
                                         pad->body.dim.x += five;
                                         break;
                                     case 1:
+                                        pad->body.pos.y -= five * 0.5f;
                                         pad->body.dim.y += five;
                                         break;
                                     case 2:
@@ -3118,9 +3176,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        pad->body.pos.x += one * 0.5f;
                                         pad->body.dim.x -= one;
                                         break;
                                     case 1:
+                                        pad->body.pos.y += one * 0.5f;
                                         pad->body.dim.y -= one;
                                         break;
                                     case 2:
@@ -3142,9 +3202,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        pad->body.pos.x += five * 0.5f;
                                         pad->body.dim.x -= five;
                                         break;
                                     case 1:
+                                        pad->body.pos.y += five * 0.5f;
                                         pad->body.dim.y -= five;
                                         break;
                                     case 2:
@@ -3276,9 +3338,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        obs->body.pos.x -= one * 0.5f;
                                         obs->body.dim.x += one;
                                         break;
                                     case 1:
+                                        obs->body.pos.y -= one * 0.5f;
                                         obs->body.dim.y += one;
                                         break;
                                     case 2:
@@ -3294,9 +3358,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        obs->body.pos.x -= five * 0.5f;
                                         obs->body.dim.x += five;
                                         break;
                                     case 1:
+                                        obs->body.pos.y -= five * 0.5f;
                                         obs->body.dim.y += five;
                                         break;
                                     case 2:
@@ -3312,9 +3378,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        obs->body.pos.x += one * 0.5f;
                                         obs->body.dim.x -= one;
                                         break;
                                     case 1:
+                                        obs->body.pos.y += one * 0.5f;
                                         obs->body.dim.y -= one;
                                         break;
                                     case 2:
@@ -3330,9 +3398,11 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
+                                        obs->body.pos.x += five * 0.5f;
                                         obs->body.dim.x -= five;
                                         break;
                                     case 1:
+                                        obs->body.pos.y += five * 0.5f;
                                         obs->body.dim.y -= five;
                                         break;
                                     case 2:
@@ -4705,7 +4775,7 @@ inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
     return res;
 }
 
-void activate_level_edit_mode(PR::Level *level) {
+void level_activate_edit_mode(PR::Level *level) {
     std::cout << "Activating edit mode!" << std::endl;
     level->editing_now = true;
     level->game_over = false;
@@ -4729,7 +4799,7 @@ void activate_level_edit_mode(PR::Level *level) {
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
-void deactivate_level_edit_mode(PR::Level *level) {
+void level_deactivate_edit_mode(PR::Level *level) {
     std::cout << "Deactivating edit mode!" << std::endl;
     level->selected = NULL;
     level->editing_now = false;
@@ -4896,8 +4966,13 @@ void animation_step(PR::Animation *a) {
         }
     }
 }
-void animation_queue_render(Rect b, PR::Animation *a) {
-    renderer_add_queue_tex(b, a->tc[a->current], false);
+void animation_queue_render(Rect b, PR::Animation *a, bool inverse) {
+    TexCoords tc = a->tc[a->current];
+    if (inverse) {
+        tc.ty += tc.th;
+        tc.th = -tc.th;
+    }
+    renderer_add_queue_tex(b, tc, false);
 }
 
 void animation_reset(PR::Animation *a) {
