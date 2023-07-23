@@ -5,7 +5,8 @@
 
 #define IS_KEY_PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)
 
-void input_controller_update(GLFWwindow *window, InputController* input) {
+void input_controller_update(GLFWwindow *window, InputController* input,
+                             const float screen_w, const float screen_h) {
     // NOTE: Multiple values might be set based off the same keys.
     //       This could happen because a menu action has the
     //          same keybinding as a gameplay one.
@@ -85,6 +86,8 @@ void input_controller_update(GLFWwindow *window, InputController* input) {
         glfwGetCursorPos(window,
                          &input->mouseX,
                          &input->mouseY);
+        input->mouseX *= GAME_WIDTH / screen_w;
+        input->mouseY *= GAME_HEIGHT / screen_h;
         if (input->mouseX != input->old_mouseX ||
             input->mouseY != input->old_mouseY) {
             input->was_mouse_moved = true;

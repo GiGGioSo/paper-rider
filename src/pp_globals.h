@@ -10,8 +10,8 @@
 #include "pp_input.h"
 #include "pp_rect.h"
 
-#define SCREEN_WIDTH_PROPORTION 320
-#define SCREEN_HEIGHT_PROPORTION 240
+#define GAME_WIDTH 1440
+#define GAME_HEIGHT 1080
 
 #define ARRAY_LENGTH(arr) ((int)(sizeof(arr) / sizeof(arr[0])))
 #define UNUSED(expr) do { (void)(expr); } while (0)

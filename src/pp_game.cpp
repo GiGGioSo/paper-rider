@@ -37,13 +37,13 @@
 //  - Make the boost change the plane angle
 
 
-#define GRAVITY (9.81f * 50.f)
+#define GRAVITY (630.f)
 
-#define PLANE_VELOCITY_LIMIT (1000.f)
-#define RIDER_VELOCITY_Y_LIMIT (600.f)
-#define RIDER_INPUT_VELOCITY_LIMIT (550.f)
+#define PLANE_VELOCITY_LIMIT (1300.f)
+#define RIDER_VELOCITY_Y_LIMIT (800.f)
+#define RIDER_INPUT_VELOCITY_LIMIT (800.f)
 
-#define CAMERA_MAX_VELOCITY (1500.f)
+#define CAMERA_MAX_VELOCITY (1950.f)
 
 #define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
     PR::Level t_level = glob->current_level;\
@@ -118,8 +118,10 @@ void
 set_obstacle_option_buttons(PR::Button *buttons);
 void
 set_start_pos_option_buttons(PR::Button *buttons);
-inline
-Rect rect_in_camera_space(Rect r, PR::Camera *cam);
+Rect
+rect_in_screen_space(Rect rect);
+inline Rect
+rect_in_camera_space(Rect r, PR::Camera *cam);
 void
 level_deactivate_edit_mode(PR::Level *level);
 void
@@ -216,12 +218,7 @@ int load_map_from_file(const char *file_path,
                        float *start_x, float *start_y,
                        float *start_vel_x, float *start_vel_y,
                        float *start_angle,
-                       float *goal_line,
-                       const float width, const float height) {
-
-    // NOTE: The screen resolution
-    float proportion_x = width / SCREEN_WIDTH_PROPORTION;
-    float proportion_y = height / SCREEN_HEIGHT_PROPORTION;
+                       float *goal_line) {
     
     int result = 0;
     FILE *map_file = NULL;
@@ -275,10 +272,10 @@ int load_map_from_file(const char *file_path,
             }
 
             PR::Obstacle obs;
-            obs.body.pos.x = x * proportion_x;
-            obs.body.pos.y = y * proportion_y;
-            obs.body.dim.x = w * proportion_x;
-            obs.body.dim.y = h * proportion_y;
+            obs.body.pos.x = x;
+            obs.body.pos.y = y;
+            obs.body.dim.x = w;
+            obs.body.dim.y = h;
             obs.body.angle = r;
             obs.body.triangle = triangle;
 
@@ -287,10 +284,10 @@ int load_map_from_file(const char *file_path,
 
             da_append(obstacles, obs, PR::Obstacle);
 
-            std::cout << "x: " << x * proportion_x
-                      << " y: " << y * proportion_y
-                      << " w: " << w * proportion_x
-                      << " h: " << h * proportion_y
+            std::cout << "x: " << x
+                      << " y: " << y
+                      << " w: " << w
+                      << " h: " << h
                       << " r: " << r
                       << " tr: " << triangle
                       << " cp: " << collide_plane
@@ -334,10 +331,10 @@ int load_map_from_file(const char *file_path,
             }
 
             PR::BoostPad pad;
-            pad.body.pos.x = x * proportion_x;
-            pad.body.pos.y = y * proportion_y;
-            pad.body.dim.x = w * proportion_x;
-            pad.body.dim.y = h * proportion_y;
+            pad.body.pos.x = x;
+            pad.body.pos.y = y;
+            pad.body.dim.x = w;
+            pad.body.dim.y = h;
             pad.body.angle = r;
             pad.body.triangle = triangle;
             pad.boost_angle = ba;
@@ -345,10 +342,10 @@ int load_map_from_file(const char *file_path,
 
             da_append(boosts, pad, PR::BoostPad);
 
-            std::cout << "x: " << x * proportion_x
-                      << " y: " << y * proportion_y
-                      << " w: " << w * proportion_x
-                      << " h: " << h * proportion_y
+            std::cout << "x: " << x
+                      << " y: " << y
+                      << " w: " << w
+                      << " h: " << h
                       << " r: " << r
                       << " tr: " << triangle
                       << " ba: " << ba
@@ -416,19 +413,19 @@ int load_map_from_file(const char *file_path,
             }
 
             portal.enable_effect = enable;
-            portal.body.pos.x = x * proportion_x;
-            portal.body.pos.y = y * proportion_y;
-            portal.body.dim.x = w * proportion_x;
-            portal.body.dim.y = h * proportion_y;
+            portal.body.pos.x = x;
+            portal.body.pos.y = y;
+            portal.body.dim.x = w;
+            portal.body.dim.y = h;
             portal.body.angle = 0.f;
             portal.body.triangle = false;
 
             da_append(portals, portal, PR::Portal);
 
-            std::cout << "x: " << x * proportion_x
-                      << " y: " << y * proportion_y
-                      << " w: " << w * proportion_x
-                      << " h: " << h * proportion_y
+            std::cout << "x: " << x
+                      << " y: " << y
+                      << " w: " << w
+                      << " h: " << h
                       << " type: " << type
                       << " enable: " << enable
                       << std::endl;
@@ -436,7 +433,7 @@ int load_map_from_file(const char *file_path,
 
         std::fscanf(map_file, " %f", goal_line);
         if (std::ferror(map_file)) return_defer(1);
-        *goal_line = *goal_line * proportion_x;
+        *goal_line = *goal_line;
         
         std::cout << "[LOADING] goal_line set at: "
                   << *goal_line
@@ -445,8 +442,8 @@ int load_map_from_file(const char *file_path,
         std::fscanf(map_file, " %f %f %f %f %f",
                     start_x, start_y, start_vel_x, start_vel_y, start_angle);
         if (std::ferror(map_file)) return_defer(1);
-        *start_x = *start_x * proportion_x;
-        *start_y = *start_y * proportion_y;
+        *start_x = *start_x;
+        *start_y = *start_y;
 
         std::cout << "[LOADING] player start position set to"
                   << " x: " << *start_x
@@ -464,13 +461,9 @@ int load_map_from_file(const char *file_path,
 }
 
 int save_map_to_file(const char *file_path,
-                     PR::Level *level,
-                     const float width, const float height) {
+                     PR::Level *level) {
     int result = 0;
     FILE *map_file = NULL;
-
-    float inv_proportion_x = SCREEN_WIDTH_PROPORTION / width;
-    float inv_proportion_y = SCREEN_HEIGHT_PROPORTION / height;
 
     {
         map_file = std::fopen(file_path, "wb");
@@ -488,11 +481,6 @@ int save_map_to_file(const char *file_path,
 
             PR::Obstacle obs = level->obstacles.items[obs_index];
             Rect b = obs.body;
-            b.pos.x *= inv_proportion_x;
-            b.pos.y *= inv_proportion_y;
-            b.dim.x *= inv_proportion_x;
-            b.dim.y *= inv_proportion_y;
-
             std::fprintf(map_file,
                          "%i %i %i %f %f %f %f %f\n",
                          obs.collide_plane, obs.collide_rider,
@@ -511,11 +499,6 @@ int save_map_to_file(const char *file_path,
 
             PR::BoostPad pad = level->boosts.items[boost_index];
             Rect b = pad.body;
-            b.pos.x *= inv_proportion_x;
-            b.pos.y *= inv_proportion_y;
-            b.dim.x *= inv_proportion_x;
-            b.dim.y *= inv_proportion_y;
-
             std::fprintf(map_file,
                          "%i %f %f %f %f %f %f %f\n",
                          b.triangle, b.pos.x, b.pos.y,
@@ -533,30 +516,24 @@ int save_map_to_file(const char *file_path,
 
             PR::Portal portal = level->portals.items[portal_index];
             Rect b = portal.body;
-            b.pos.x *= inv_proportion_x;
-            b.pos.y *= inv_proportion_y;
-            b.dim.x *= inv_proportion_x;
-            b.dim.y *= inv_proportion_y;
-
             std::fprintf(map_file,
                         "%i %i %f %f %f %f\n",
                         portal.type, portal.enable_effect,
                         b.pos.x, b.pos.y, b.dim.x, b.dim.y);
             if (std::ferror(map_file)) return_defer(1);
-
         }
 
         // Goal line
         std::fprintf(map_file,
                      "%f\n",
-                     level->goal_line.pos.x * inv_proportion_x);
+                     level->goal_line.pos.x);
         if (std::ferror(map_file)) return_defer(1);
 
         // Player start position
         std::fprintf(map_file,
                      "%f %f %f %f %f",
-                     level->start_pos.pos.x * inv_proportion_x,
-                     level->start_pos.pos.y * inv_proportion_y,
+                     level->start_pos.pos.x,
+                     level->start_pos.pos.y,
                      level->start_vel.x, level->start_vel.y,
                      level->start_pos.angle);
         if (std::ferror(map_file)) return_defer(1);
@@ -733,8 +710,6 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     UNUSED(is_new_level);
     UNUSED(mapfile_path);
 
-    PR::WinInfo *win = &glob->window;
-
     // NOTE: By not setting this, it will remain the same as before
     //          starting the level
     //menu->showing_campaign_buttons = true;
@@ -743,10 +718,10 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
 
     // NOTE: Button to select which buttons to show
     PR::Button *campaign = &menu->show_campaign_button;
-    campaign->body.pos.x = (win->w * 3.f) / 10.f;
-    campaign->body.pos.y = win->h / 10.f;
-    campaign->body.dim.x = win->w / 3.f;
-    campaign->body.dim.y = win->h / 8.f;
+    campaign->body.pos.x = (GAME_WIDTH * 3.f) / 10.f;
+    campaign->body.pos.y = GAME_HEIGHT / 10.f;
+    campaign->body.dim.x = GAME_WIDTH / 3.f;
+    campaign->body.dim.y = GAME_HEIGHT / 8.f;
     campaign->body.angle = 0.f;
     campaign->body.triangle = false;
     campaign->col =
@@ -756,10 +731,10 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     std::snprintf(campaign->text, strlen("CAMPAIGN")+1, "CAMPAIGN");
 
     PR::Button *custom = &menu->show_custom_button;
-    custom->body.pos.x = (win->w * 7.f) / 10.f;
-    custom->body.pos.y = win->h / 10.f;
-    custom->body.dim.x = win->w / 3.f;
-    custom->body.dim.y = win->h / 8.f;
+    custom->body.pos.x = (GAME_WIDTH * 7.f) / 10.f;
+    custom->body.pos.y = GAME_HEIGHT / 10.f;
+    custom->body.dim.x = GAME_WIDTH / 3.f;
+    custom->body.dim.y = GAME_HEIGHT / 8.f;
     custom->body.angle = 0.f;
     custom->body.triangle = false;
     custom->col = menu->showing_campaign_buttons ? SHOW_BUTTON_DEFAULT_COLOR :
@@ -784,7 +759,8 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
         int size = std::snprintf(nullptr, 0, "LEVEL %zu", levelbutton_index+1);
         assert((size+1 <= ARRAY_LENGTH(lb->button.text))
                 && "Text buffer is too little!");
-        std::snprintf(lb->button.text, size+1, "LEVEL %zu", levelbutton_index+1);
+        std::snprintf(lb->button.text, size+1,
+                      "LEVEL %zu", levelbutton_index+1);
         if (levelbutton_index < ARRAY_LENGTH(campaign_levels_filepath)) {
             assert((std::strlen(campaign_levels_filepath[levelbutton_index]) <
                         ARRAY_LENGTH(lb->mapfile_path))
@@ -820,14 +796,14 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     }
 
     PR::Camera *cam = &menu->camera;
-    cam->pos.x = win->w * 0.5f;
-    cam->pos.y = win->h * 0.5f;
+    cam->pos.x = GAME_WIDTH * 0.5f;
+    cam->pos.y = GAME_HEIGHT * 0.5f;
     cam->speed_multiplier = 6.f;
     menu->camera_goal_position = cam->pos.y;
 
     menu->deleting_frame = {
-        .pos = glm::vec2(win->w * 0.5f, win->h * 0.5f),
-        .dim = glm::vec2(win->w * 0.6f, win->h * 0.6f),
+        .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
+        .dim = glm::vec2(GAME_WIDTH * 0.6f, GAME_HEIGHT * 0.6f),
         .angle = 0.f,
         .triangle = false,
     };
@@ -836,8 +812,8 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     *yes = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(win->w * 0.35f, win->h * 0.6f),
-            .dim = glm::vec2(win->w * 0.2f, win->h * 0.1f),
+            .pos = glm::vec2(GAME_WIDTH * 0.35f, GAME_HEIGHT * 0.6f),
+            .dim = glm::vec2(GAME_WIDTH * 0.2f, GAME_HEIGHT * 0.1f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -849,8 +825,8 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     *no = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(win->w * 0.65f, win->h * 0.6f),
-            .dim = glm::vec2(win->w * 0.2f, win->h * 0.1f),
+            .pos = glm::vec2(GAME_WIDTH * 0.65f, GAME_HEIGHT * 0.6f),
+            .dim = glm::vec2(GAME_WIDTH * 0.2f, GAME_HEIGHT * 0.1f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -869,7 +845,6 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
 
 void menu_update(void) {
     InputController *input = &glob->input;
-    PR::WinInfo *win = &glob->window;
     PR::Camera *cam = &glob->current_menu.camera;
     PR::Menu *menu = &glob->current_menu;
     PR::Sound *sound = &glob->sound;
@@ -879,13 +854,13 @@ void menu_update(void) {
                                          menu->custom_buttons.count;
 
     // NOTE: Consider the cursor only if it's inside the window
-    if (0 < input->mouseX && input->mouseX < win->w &&
-        0 < input->mouseY && input->mouseY < win->h) {
+    if (0 < input->mouseX && input->mouseX < GAME_WIDTH &&
+        0 < input->mouseY && input->mouseY < GAME_HEIGHT) {
 
         // NOTE: 0.2f is an arbitrary amount
-        if (menu->camera_goal_position > win->h*0.5f &&
-            input->mouseY < win->h * 0.2f) {
-            float cam_velocity = (1.f - (input->mouseY / (win->h*0.20))) *
+        if (menu->camera_goal_position > GAME_HEIGHT*0.5f &&
+            input->mouseY < GAME_HEIGHT * 0.2f) {
+            float cam_velocity = (1.f - (input->mouseY / (GAME_HEIGHT*0.20))) *
                                  CAMERA_MAX_VELOCITY;
             menu->camera_goal_position -=
                 cam_velocity * glob->state.delta_time;
@@ -900,10 +875,10 @@ void menu_update(void) {
         float screens_of_buttons = ((buttons_shown_number+2) / 15) +
                                     rows_in_screen / 5.f;
 
-        if (menu->camera_goal_position < win->h*screens_of_buttons &&
-            input->mouseY > win->h * 0.8f) {
+        if (menu->camera_goal_position < GAME_HEIGHT*screens_of_buttons &&
+            input->mouseY > GAME_HEIGHT * 0.8f) {
             float cam_velocity =
-                ((input->mouseY - win->h*0.8f) / (win->h*0.20)) *
+                ((input->mouseY - GAME_HEIGHT*0.8f) / (GAME_HEIGHT*0.20)) *
                 CAMERA_MAX_VELOCITY;
             menu->camera_goal_position +=
                 cam_velocity * glob->state.delta_time;
@@ -922,7 +897,7 @@ void menu_update(void) {
         menu->showing_campaign_buttons = true;
         menu->show_campaign_button.col = SHOW_BUTTON_SELECTED_COLOR;
         menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
-        menu->camera_goal_position = win->h * 0.5f;
+        menu->camera_goal_position = GAME_HEIGHT * 0.5f;
         menu->deleting_level = false;
         // if (ma_sound_is_playing(&sound->campaign_custom)) {
         //     ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
@@ -949,7 +924,7 @@ void menu_update(void) {
             menu->showing_campaign_buttons = false;
             menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
             menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
-            menu->camera_goal_position = win->h * 0.5f;
+            menu->camera_goal_position = GAME_HEIGHT * 0.5f;
 
             PR::Button *add_level = &menu->add_custom_button;
             button_set_position(add_level, menu->custom_buttons.count);
@@ -1267,7 +1242,6 @@ void menu_draw(void) {
 
     PR::Menu *menu = &glob->current_menu;
     PR::Camera *cam = &glob->current_menu.camera;
-    PR::WinInfo *win = &glob->window;
 
     Rect campaign_rend_rect =
         rect_in_camera_space(menu->show_campaign_button.body, cam);
@@ -1381,12 +1355,12 @@ void menu_draw(void) {
                                 menu->delete_no.body.pos.y,
                                 menu->delete_no.text, glm::vec4(1.0f),
                                 &glob->rend_res.fonts[0], true);
-        renderer_add_queue_text(win->w * 0.5f, win->h * 0.3f,
+        renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.3f,
                                 "DELETE THE LEVEL:",
                                 glm::vec4(0.0f, 0.0f, 0.0f, 1.f),
                                 &glob->rend_res.fonts[0], true);
         renderer_add_queue_text(
-            win->w * 0.5f, win->h * 0.45f,
+            GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.45f,
             menu->custom_buttons.items[menu->deleting_index].button.text,
             glm::vec4(0.0f, 0.0f, 0.0f, 1.f),
             &glob->rend_res.fonts[0], true);
@@ -1407,8 +1381,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 
     PR::Camera *cam = &level->camera;
     // cam->pos.x is set afterwards
-    cam->pos.y = win->h * 0.5f;
-    cam->speed_multiplier = 3.f;
+    cam->pos.y = GAME_HEIGHT * 0.5f;
+    cam->speed_multiplier = 3.8f;
 
     PR::Atmosphere *air = &level->air;
     air->density = 0.015f;
@@ -1431,19 +1405,19 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     level->selected = NULL;
 
     level->goal_line.pos.y = 0.f;
-    level->goal_line.dim.x =  30.f;
-    level->goal_line.dim.y = win->h;
+    level->goal_line.dim.x = 30.f;
+    level->goal_line.dim.y = GAME_HEIGHT;
     level->goal_line.triangle = false;
     level->goal_line.angle = 0.f;
 
     p->crashed = false;
     p->crash_position.x = 0.f;
     p->crash_position.y = 0.f;
-    p->body.dim.y = 21.f;
+    p->body.dim.y = 27.f;
     p->body.dim.x = p->body.dim.y * 3.f;
     p->body.angle = 0.f;
     p->body.triangle = true;
-    p->render_zone.dim.y = 25.f * 2.f;
+    p->render_zone.dim.y = 32.f * 2.f;
     p->render_zone.dim.x = p->render_zone.dim.y * 0.5f * 3.f;
     p->render_zone.pos = p->body.pos +
                          (p->body.dim - p->render_zone.dim) * 0.5f;
@@ -1451,10 +1425,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     p->render_zone.triangle = false;
     p->acc.x = 0.f;
     p->acc.y = 0.f;
-    p->mass = 0.003f; // kg
+    p->mass = 0.005f; // kg
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
-    p->alar_surface = 0.12f; // m squared
+    p->alar_surface = 0.15f; // m squared
     p->current_animation = PR::Plane::IDLE_ACC;
     p->animation_countdown = 0.f;
     p->inverse = false;
@@ -1462,8 +1436,8 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     rid->crashed = false;
     rid->crash_position.x = 0.f;
     rid->crash_position.y = 0.f;
-    rid->body.dim.x = 30.f;
-    rid->body.dim.y = 50.f;
+    rid->body.dim.x = 38.f;
+    rid->body.dim.y = 64.f;
     rid->body.triangle = false;
     //move_rider_to_plane(rid, p);
     rid->body.angle = p->render_zone.angle;
@@ -1486,10 +1460,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     rid->vel.y = 0.0f;
     rid->body.angle = p->body.angle;
     rid->attached = true;
-    rid->mass = 0.010f;
+    rid->mass = 0.013f;
     rid->jump_time_elapsed = 0.f;
     rid->attach_time_elapsed = 0.f;
-    rid->air_friction_acc = 100.f;
+    rid->air_friction_acc = 120.f;
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
     rid->input_max_accelleration = 7000.f;
@@ -1508,10 +1482,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
             level->obstacles = {NULL, 0, 0};
             level->boosts = {NULL, 0, 0};
             level->start_pos.pos.x = 0.f;
-            level->start_pos.pos.y = win->h * 0.5f;
+            level->start_pos.pos.y = GAME_HEIGHT * 0.5f;
             level->start_vel = glm::vec2(0.f);
             level->start_pos.angle = 0.f;
-            level->goal_line.pos.x = win->w * 0.4f;
+            level->goal_line.pos.x = GAME_WIDTH * 0.4f;
         } else {
             int loading_result =
                 load_map_from_file(
@@ -1522,8 +1496,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
                     &level->start_pos.pos.x, &level->start_pos.pos.y,
                     &level->start_vel.x, &level->start_vel.y,
                     &level->start_pos.angle,
-                    &level->goal_line.pos.x,
-                    win->w, win->h);
+                    &level->goal_line.pos.x);
             if (loading_result != 0) return loading_result;
         }
 
@@ -1533,6 +1506,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
         cam->pos.x = p->body.pos.x;
 
     } else {
+        return 1;
         /*
         std::cout << "[WARNING] Loading fallback map information!"
                   << std::endl;
@@ -1726,20 +1700,20 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
                    texcoords_in_texture_space(
                        0, 275, 1920, 265,
                        glob->rend_res.global_sprite, false),
-                  -((float)win->w), 0.f,
-                  win->w, win->h * 0.25f);
+                  -((float)GAME_WIDTH), 0.f,
+                  GAME_WIDTH, GAME_HEIGHT * 0.25f);
     parallax_init(&level->parallaxs[1], 0.85f,
                   texcoords_in_texture_space(
                       0, 815, 1920, 265,
                       glob->rend_res.global_sprite, false),
-                  -((float)win->w), win->h * 0.75f,
-                  win->w, win->h * 0.25f);
+                  -((float)GAME_WIDTH), GAME_HEIGHT * 0.75f,
+                  GAME_WIDTH, GAME_HEIGHT * 0.25f);
     parallax_init(&level->parallaxs[2], 0.75f,
                    texcoords_in_texture_space(
                        0, 545, 1920, 265,
                        glob->rend_res.global_sprite, false),
-                  -((float)win->w), win->h * 0.75f,
-                  win->w, win->h * 0.25f);
+                  -((float)GAME_WIDTH), GAME_HEIGHT * 0.75f,
+                  GAME_WIDTH, GAME_HEIGHT * 0.25f);
 
     // Initializing plane animation
     animation_init(&p->anim, glob->rend_res.global_sprite,
@@ -1772,7 +1746,6 @@ void level_update(void) {
         &glob->current_level.particle_systems[2];
 
     // Global stuff
-    PR::WinInfo *win = &glob->window;
     InputController *input = &glob->input;
     float dt = glob->state.delta_time;
 
@@ -1943,11 +1916,11 @@ void level_update(void) {
                 if(rid->second_jump && input->jump.clicked) {
                     if ((!rid->inverse && rid->vel.y < 0) ||
                          (rid->inverse && rid->vel.y > 0)) {
-                        rid->vel.y -= rid->inverse ? -300.f:
-                                                     300.f;
+                        rid->vel.y -= rid->inverse ? -400.f:
+                                                     400.f;
                     } else {
-                        rid->vel.y = rid->inverse ? 300.f:
-                                                    -300.f;
+                        rid->vel.y = rid->inverse ? 400.f:
+                                                    -400.f;
                     }
                     rid->second_jump = false;
                 }
@@ -2024,11 +1997,11 @@ void level_update(void) {
                 if(rid->second_jump && input->jump.clicked) {
                     if ((!rid->inverse && rid->vel.y < 0) ||
                          (rid->inverse && rid->vel.y > 0)) {
-                        rid->vel.y -= rid->inverse ? -300.f:
-                                                     300.f;
+                        rid->vel.y -= rid->inverse ? -400.f:
+                                                     400.f;
                     } else {
-                        rid->vel.y = rid->inverse ? 300.f:
-                                                    -300.f;
+                        rid->vel.y = rid->inverse ? 400.f:
+                                                    -400.f;
                     }
                     rid->second_jump = false;
                 }
@@ -2065,9 +2038,9 @@ void level_update(void) {
         p->body.angle = 0.f;
         p->render_zone.angle = 0.f;
         if (glm::abs(p->render_zone.pos.y +
-                     p->render_zone.dim.y*0.75f - win->h) < 0.03f &&
+                     p->render_zone.dim.y*0.75f - GAME_HEIGHT) < 0.03f &&
                 glm::length(p->vel) < 0.03f) {
-            p->render_zone.pos.y = (float)win->h -
+            p->render_zone.pos.y = (float)GAME_HEIGHT -
                                     p->render_zone.dim.y*0.75f;
             p->vel.y = 0.f;
         } else {
@@ -2077,8 +2050,9 @@ void level_update(void) {
                 p->vel.y = glm::sign(p->vel.y) * RIDER_VELOCITY_Y_LIMIT;
             }
             p->render_zone.pos.y += p->vel.y * dt;
-            if (p->render_zone.pos.y + p->render_zone.dim.y*0.75f > win->h) {
-                p->render_zone.pos.y = (float)win->h -
+            if (p->render_zone.pos.y + p->render_zone.dim.y*0.75f >
+                    GAME_HEIGHT) {
+                p->render_zone.pos.y = (float)GAME_HEIGHT -
                                         p->render_zone.dim.y*0.75f;
                 p->vel.y = -p->vel.y * 0.5f;
             }
@@ -2279,11 +2253,11 @@ void level_update(void) {
 
         // NOTE: Loop over window edged pacman style,
         //       but only on the top and bottom
-        if (p->body.pos.y + p->body.dim.y * 0.5f > win->h) {
-            p->body.pos.y -= win->h;
+        if (p->body.pos.y + p->body.dim.y * 0.5f > GAME_HEIGHT) {
+            p->body.pos.y -= GAME_HEIGHT;
         }
         if (p->body.pos.y + p->body.dim.y * 0.5f < 0) {
-            p->body.pos.y += win->h;
+            p->body.pos.y += GAME_HEIGHT;
         }
         
     } else { // PLAYING
@@ -2413,22 +2387,22 @@ void level_update(void) {
         Rect plane_ceiling;
         plane_ceiling.pos.x = p_body_camera_space.pos.x +
                               p_body_camera_space.dim.x * 0.5f -
-                              ((float) win->w);
-        plane_ceiling.dim.x = win->w*2.f;
-        plane_ceiling.pos.y = -((float) win->h);
-        plane_ceiling.dim.y = win->h;
+                              ((float) GAME_WIDTH);
+        plane_ceiling.dim.x = GAME_WIDTH*2.f;
+        plane_ceiling.pos.y = -((float) GAME_HEIGHT);
+        plane_ceiling.dim.y = GAME_HEIGHT;
         plane_ceiling.angle = 0.f;
         plane_ceiling.triangle = false;
         Rect rider_ceiling = plane_ceiling;
         rider_ceiling.pos.x = rid_body_camera_space.pos.x +
                               rid_body_camera_space.dim.x * 0.5f -
-                              ((float) win->w);
+                              ((float) GAME_WIDTH);
 
         Rect plane_floor;
         plane_floor.pos.x = plane_ceiling.pos.x;
-        plane_floor.pos.y = (float) win->h;
-        plane_floor.dim.x = win->w*2.f;
-        plane_floor.dim.y = win->h;
+        plane_floor.pos.y = (float) GAME_HEIGHT;
+        plane_floor.dim.x = GAME_WIDTH*2.f;
+        plane_floor.dim.y = GAME_HEIGHT;
         plane_floor.angle = 0.f;
         plane_floor.triangle = false;
         Rect rider_floor = plane_floor;
@@ -2441,7 +2415,7 @@ void level_update(void) {
                                &p->crash_position.y)) {
 
             p->crash_position +=
-                cam->pos - glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+                cam->pos - glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
@@ -2464,7 +2438,7 @@ void level_update(void) {
             } else {
                 rid->crash_position +=
                     cam->pos -
-                    glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+                    glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
 
                 rid->crashed = true;
                 rid->attached = false;
@@ -2489,7 +2463,7 @@ void level_update(void) {
 
             p->crash_position +=
                 cam->pos -
-                glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+                glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
@@ -2512,7 +2486,7 @@ void level_update(void) {
             } else {
                 rid->crash_position +=
                     cam->pos -
-                    glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+                    glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
 
                 level->game_over = true;
                 level->gamemenu_selected = PR::BUTTON_RESTART;
@@ -2632,10 +2606,10 @@ void level_update(void) {
     if (level->adding_now) {
         PR::Button add_portal;
         add_portal.from_center = true;
-        add_portal.body.pos.x = win->w * 0.25f;
-        add_portal.body.pos.y = win->h * 0.5f;
-        add_portal.body.dim.x = win->w * 0.2f;
-        add_portal.body.dim.y = win->h * 0.3f;
+        add_portal.body.pos.x = GAME_WIDTH * 0.25f;
+        add_portal.body.pos.y = GAME_HEIGHT * 0.5f;
+        add_portal.body.dim.x = GAME_WIDTH * 0.2f;
+        add_portal.body.dim.y = GAME_HEIGHT * 0.3f;
         add_portal.body.triangle = false;
         add_portal.body.angle = 0.f;
         add_portal.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
@@ -2645,10 +2619,10 @@ void level_update(void) {
 
         PR::Button add_boost;
         add_boost.from_center = true;
-        add_boost.body.pos.x = win->w * 0.5f;
-        add_boost.body.pos.y = win->h * 0.5f;
-        add_boost.body.dim.x = win->w * 0.2f;
-        add_boost.body.dim.y = win->h * 0.3f;
+        add_boost.body.pos.x = GAME_WIDTH * 0.5f;
+        add_boost.body.pos.y = GAME_HEIGHT * 0.5f;
+        add_boost.body.dim.x = GAME_WIDTH * 0.2f;
+        add_boost.body.dim.y = GAME_HEIGHT * 0.3f;
         add_boost.body.triangle = false;
         add_boost.body.angle = 0.f;
         add_boost.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
@@ -2658,10 +2632,10 @@ void level_update(void) {
 
         PR::Button add_obstacle;
         add_obstacle.from_center = true;
-        add_obstacle.body.pos.x = win->w * 0.75f;
-        add_obstacle.body.pos.y = win->h * 0.5f;
-        add_obstacle.body.dim.x = win->w * 0.2f;
-        add_obstacle.body.dim.y = win->h * 0.3f;
+        add_obstacle.body.pos.x = GAME_WIDTH * 0.75f;
+        add_obstacle.body.pos.y = GAME_HEIGHT * 0.5f;
+        add_obstacle.body.dim.x = GAME_WIDTH * 0.2f;
+        add_obstacle.body.dim.y = GAME_HEIGHT * 0.3f;
         add_obstacle.body.triangle = false;
         add_obstacle.body.angle = 0.f;
         add_obstacle.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
@@ -2677,8 +2651,8 @@ void level_update(void) {
 
                 PR::Portal portal;
                 portal.body.pos = cam->pos;
-                portal.body.dim.x = win->w * 0.2f;
-                portal.body.dim.y = win->h * 0.2f;
+                portal.body.dim.x = GAME_WIDTH * 0.2f;
+                portal.body.dim.y = GAME_HEIGHT * 0.2f;
                 portal.body.triangle = false;
                 portal.body.angle = 0.f;
                 portal.type = PR::SHUFFLE_COLORS;
@@ -2697,8 +2671,8 @@ void level_update(void) {
 
                 PR::BoostPad pad;
                 pad.body.pos = cam->pos;
-                pad.body.dim.x = win->w * 0.2f;
-                pad.body.dim.y = win->h * 0.2f;
+                pad.body.dim.x = GAME_WIDTH * 0.2f;
+                pad.body.dim.y = GAME_HEIGHT * 0.2f;
                 pad.body.triangle = false;
                 pad.body.angle = 0.f;
                 pad.boost_angle = 0.f;
@@ -2717,8 +2691,8 @@ void level_update(void) {
 
                 PR::Obstacle obs;
                 obs.body.pos = cam->pos;
-                obs.body.dim.x = win->w * 0.2f;
-                obs.body.dim.y = win->h * 0.2f;
+                obs.body.dim.x = GAME_WIDTH * 0.2f;
+                obs.body.dim.y = GAME_HEIGHT * 0.2f;
                 obs.body.triangle = false;
                 obs.body.angle = 0.f;
                 obs.collide_plane = false;
@@ -3708,8 +3682,8 @@ void level_update(void) {
         PR::Button b_restart = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(win->w * 0.5f, win->h * 0.4f),
-                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.4f),
+                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -3719,8 +3693,8 @@ void level_update(void) {
         PR::Button b_quit = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(win->w * 0.5f, win->h * 0.7f),
-                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.7f),
+                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -3791,7 +3765,7 @@ void level_update(void) {
             shaderer_set_float(glob->rend_res.shaders[3], "time",
                                level->text_wave_time);
             char congratulations[] = "CONGRATULATIONS!";
-            renderer_add_queue_text(win->w * 0.5f, win->h * 0.1f,
+            renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.1f,
                                     congratulations,
                                     glm::vec4(0.f, 0.f, 0.f, 1.f),
                                     &glob->rend_res.fonts[0], true);
@@ -3804,7 +3778,7 @@ void level_update(void) {
             std::snprintf(time_recap, size+1,
                           "You finished the level in %.3f seconds!",
                           level->finish_time);
-            renderer_add_queue_text(win->w * 0.5f, win->h * 0.2f,
+            renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f,
                                     time_recap,
                                     glm::vec4(0.f, 0.f, 0.f, 1.f),
                                     &glob->rend_res.fonts[1], true);
@@ -3835,8 +3809,8 @@ void level_update(void) {
         PR::Button b_resume = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(win->w * 0.5f, win->h * 0.2f),
-                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
+                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -3846,8 +3820,8 @@ void level_update(void) {
         PR::Button b_restart = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(win->w * 0.5f, win->h * 0.5f),
-                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
+                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -3857,8 +3831,8 @@ void level_update(void) {
         PR::Button b_quit = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(win->w * 0.5f, win->h * 0.8f),
-                .dim = glm::vec2(win->w * 0.4f, win->h * 0.2f),
+                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
+                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -4006,7 +3980,7 @@ void level_update(void) {
     }
 
     if (input->save_map.clicked) {
-        if (save_map_to_file(level->file_path, level, win->w, win->h)) {
+        if (save_map_to_file(level->file_path, level)) {
             std::cout << "[ERROR] Could not save the map in the file: "
                       << level->file_path << std::endl;
         } else {
@@ -4148,12 +4122,11 @@ inline void portal_render(PR::Portal *portal) {
 
 inline void boostpad_render(PR::BoostPad *pad) {
     PR::Camera *cam = &glob->current_level.camera;
-    PR::WinInfo *win = &glob->window;
 
     Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
 
-    if (pad_in_cam_pos.pos.x < -((float)win->w) ||
-        pad_in_cam_pos.pos.x > win->w * 2.f) return;
+    // if (pad_in_cam_pos.pos.x < -((float)win->w) ||
+    //     pad_in_cam_pos.pos.x > win->w * 2.f) return;
 
     renderer_add_queue_uni(pad_in_cam_pos,
                           glm::vec4(0.f, 1.f, 0.f, 1.f),
@@ -4177,11 +4150,10 @@ inline void boostpad_render(PR::BoostPad *pad) {
 
 inline void obstacle_render(PR::Obstacle *obs) {
     PR::Camera *cam = &glob->current_level.camera;
-    PR::WinInfo *win = &glob->window;
     Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
-    if (obs_in_cam_pos.pos.x < -((float)win->w) ||
-        obs_in_cam_pos.pos.x > win->w * 2.f) return;
+    // if (obs_in_cam_pos.pos.x < -((float)win->w) ||
+    //     obs_in_cam_pos.pos.x > win->w * 2.f) return;
 
     renderer_add_queue_uni(obs_in_cam_pos,
                           get_obstacle_color(obs),
@@ -4499,15 +4471,13 @@ inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type) {
 }
 
 void button_set_position(PR::Button *button, size_t index) {
-    PR::WinInfo *win = &glob->window;
-
     size_t row = index / 3;
     size_t col = index % 3;
 
-    button->body.pos.x = (col * 2.f + 1.f) / 6.f * win->w;
-    button->body.pos.y = (row * 2.f + 3.f) / 10.f * win->h;
-    button->body.dim.x = win->w / 4.f;
-    button->body.dim.y = win->h / 8.f;
+    button->body.pos.x = (col * 2.f + 1.f) / 6.f * GAME_WIDTH;
+    button->body.pos.y = (row * 2.f + 3.f) / 10.f * GAME_HEIGHT;
+    button->body.dim.x = GAME_WIDTH / 4.f;
+    button->body.dim.y = GAME_HEIGHT / 8.f;
     button->body.angle = 0.f;
     button->body.triangle = false;
     button->col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -4763,11 +4733,22 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
     }
 }
 
+Rect rect_in_screen_space(Rect rect) {
+    float proportion_x = (float)glob->window.w / GAME_WIDTH;
+    float proportion_y = (float)glob->window.h / GAME_HEIGHT;
+    rect.pos.x *= proportion_x;
+    rect.pos.y *= proportion_y;
+    rect.dim.x *= proportion_x;
+    rect.dim.y *= proportion_y;
+
+    return rect;
+}
+
 inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
     Rect res;
 
     res.pos = r.pos - cam->pos +
-        glm::vec2(glob->window.w*0.5f, glob->window.h*0.5f);
+        glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
     res.dim = r.dim;
     res.angle = r.angle;
     res.triangle = r.triangle;

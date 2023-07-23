@@ -34,8 +34,8 @@ int main() {
 
     glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
-    glob->window.w = (uint32_t) (SCREEN_WIDTH_PROPORTION * 3.5f);
-    glob->window.h = (uint32_t) (SCREEN_HEIGHT_PROPORTION * 3.5f);
+    glob->window.w = 800;
+    glob->window.h = 600;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -44,7 +44,7 @@ int main() {
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     glob->window.glfw_win =
         glfwCreateWindow(glob->window.w, glob->window.h,
@@ -108,7 +108,8 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         // NOTE: Update input
-        input_controller_update(glob->window.glfw_win, &glob->input);
+        input_controller_update(glob->window.glfw_win, &glob->input,
+                                (float)glob->window.w, (float)glob->window.h);
         if (glob->input.exit.clicked) {
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
         }
@@ -163,11 +164,9 @@ int glob_init(void) {
     // because if it is, then the cursor will be set to default
     glfwSetCursor(glob->window.glfw_win, cursor);
 
-    PR::WinInfo* win = &glob->window;
-
     // Rendering
-    glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)win->w,
-                                       (float)win->h, 0.0f);
+    glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)GAME_WIDTH,
+                                       (float)GAME_HEIGHT, 0.0f);
 
     InputController *in = &glob->input;
 
@@ -458,18 +457,19 @@ void callback_framebuffer_size(GLFWwindow* window,
                                int width, int height) {
     UNUSED(window);
     glViewport(0, 0, width, height);
-    glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)width,
-                                       (float)height, 0.0f);
-    for(size_t shader_index = 0;
-        shader_index < ARRAY_LENGTH(glob->rend_res.shaders);
-        ++shader_index) {
+    // glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)width,
+    //                                    (float)height, 0.0f);
+    // for(size_t shader_index = 0;
+    //     shader_index < ARRAY_LENGTH(glob->rend_res.shaders);
+    //     ++shader_index) {
 
-        shaderer_set_mat4(glob->rend_res.shaders[shader_index],
-                          "projection", glob->rend_res.ortho_proj);
-    }
+    //     shaderer_set_mat4(glob->rend_res.shaders[shader_index],
+    //                       "projection", glob->rend_res.ortho_proj);
+    // }
     glob->window.w = width;
     glob->window.h = height;
 }
+
 void callback_debug(GLenum source,
                     GLenum type,
                     GLuint id, GLenum severity,
