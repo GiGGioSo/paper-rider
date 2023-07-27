@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstring>
 
+#define POW2(x) ((x) * (x))
+
 #define DA_INITIAL_CAPACITY 32
 
 #define da_append(da, item, T)                                            \
@@ -36,6 +38,19 @@ do {                                                                      \
     (da)->capacity = 0;                                                   \
 } while (0)
 
-#define da_last(da) (da)->items[(da)->count-1]
+#define da_swap(da, i, j, T)                                              \
+do {                                                                      \
+    if (i >= (da)->count || j >= (da)->count) {                           \
+        std::cout << "[ERROR] Accessing element "                         \
+                  << ((i > j) ? i : j)                                    \
+                  << "from dymanic array of length " << (da)->count       \
+                  << std::endl;                                           \
+    }                                                                     \
+    T tmp = (da)->items[i];                                               \
+    (da)->items[i] = (da)->items[j];                                      \
+    (da)->items[j] = tmp;                                                 \
+} while (0)
+
+#define da_last(da) ((da)->items[(da)->count-1])
 
 #endif // PR_COMMON_H

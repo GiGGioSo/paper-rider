@@ -49,6 +49,8 @@ void input_controller_update(GLFWwindow *window, InputController* input,
     key_reset(&input->menu_left);
     key_reset(&input->menu_right);
     key_reset(&input->menu_click);
+    key_reset(&input->menu_custom_delete);
+    key_reset(&input->menu_custom_edit);
     key_reset(&input->menu_to_custom);
     key_reset(&input->menu_to_campaign);
 
@@ -120,12 +122,14 @@ void input_controller_update(GLFWwindow *window, InputController* input,
             key_pressed(&input->menu_to_custom);
         }
         if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_SQUARE] == GLFW_PRESS) {
+            key_pressed(&input->menu_custom_edit);
             key_pressed(&input->restart);
         }
         if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_CIRCLE] == GLFW_PRESS) {
             key_pressed(&input->quit);
         }
         if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_TRIANGLE] == GLFW_PRESS) {
+            key_pressed(&input->menu_custom_delete);
             key_pressed(&input->pause);
             key_pressed(&input->resume);
         }
@@ -145,10 +149,10 @@ void input_controller_update(GLFWwindow *window, InputController* input,
             key_pressed(&input->right);
             key_pressed(&input->menu_right);
         }
-        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]) > 0.1f) {
+        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]) > 0.3f) {
             input->up_down = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
         }
-        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > 0.1f) {
+        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > 0.3f) {
             input->left_right = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
         }
     }

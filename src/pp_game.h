@@ -15,8 +15,6 @@ void menu_draw(void);
 int level_prepare(PR::Menu *menu, PR::Level *level, const char* mapfile_path, bool is_new);
 void level_update(void);
 
-#define POW2(x) (x * x)
-
 inline float lerp(float x1, float x2, float t) {
     float result = (1.f - t) * x1 + t * x2;
     return result;

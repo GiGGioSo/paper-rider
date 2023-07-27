@@ -190,9 +190,10 @@ struct PR {
         Button show_campaign_button;
         Button show_custom_button;
 
-        int selected_button;
+        int selected_campaign_button;
         LevelButton campaign_buttons[CAMPAIGN_LEVELS_NUMBER];
 
+        int selected_custom_button;
         CustomLevelButtons custom_buttons;
         
         Button add_custom_button;
@@ -337,6 +338,7 @@ struct PR {
         ma_sound change_selection;
         ma_sound click_selected;
         ma_sound campaign_custom;
+        ma_sound delete_level;
         // Game
         ma_sound rider_detach;
         ma_sound rider_double_jump;

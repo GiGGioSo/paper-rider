@@ -39,9 +39,14 @@
 
 #define GRAVITY (630.f)
 
+#define RIDER_GRAVITY (1300.f)
+#define RIDER_VELOCITY_Y_LIMIT (1000.f)
+#define RIDER_INPUT_VELOCITY_LIMIT (900.f)
+#define RIDER_INPUT_VELOCITY_ACCELERATION (9000.f)
+#define RIDER_FIRST_JUMP (700.f)
+#define RIDER_SECOND_JUMP (400.f)
+
 #define PLANE_VELOCITY_LIMIT (1300.f)
-#define RIDER_VELOCITY_Y_LIMIT (800.f)
-#define RIDER_INPUT_VELOCITY_LIMIT (800.f)
 
 #define CAMERA_MAX_VELOCITY (1950.f)
 
@@ -118,8 +123,6 @@ void
 set_obstacle_option_buttons(PR::Button *buttons);
 void
 set_start_pos_option_buttons(PR::Button *buttons);
-Rect
-rect_in_screen_space(Rect rect);
 inline Rect
 rect_in_camera_space(Rect r, PR::Camera *cam);
 void
@@ -563,16 +566,16 @@ int load_custom_buttons_from_dir(const char *dir_path,
             return_defer(1);
         }
 
-        size_t ordered_indexes[1024];
+        // size_t ordered_indexes[1024];
 
         dirent *dp = NULL;
-        while ((dp = readdir(dir)) && buttons->count < 1024) {
+        while ((dp = readdir(dir))) {
 
             const char *extension = std::strrchr(dp->d_name, '.');
 
             if (std::strcmp(extension, ".prmap") == 0) {
 
-                char map_path[99] = "";
+                char map_path[256] = "";
                 assert((std::strlen(dir_path)+std::strlen(dp->d_name)+1 <=
                             ARRAY_LENGTH(map_path))
                         && "Map path too big for temporary buffer!");
@@ -604,25 +607,25 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 //  cmp(3, 5) <= 0 <-
                 //
                 // 1 2 3 5 7 9
-                if (buttons->count == 0) {
-                    ordered_indexes[0] = 0;
-                } else {
-                    // search for where to insert the new button
-                    size_t lowest_sorted_index = buttons->count;
-                    for (size_t i = 0; i < buttons->count; ++i) {
-                        if (ordered_indexes[i] < lowest_sorted_index &&
-                            std::strcmp(map_name, buttons->items[i].button.text) < 0) {
-                            lowest_sorted_index = ordered_indexes[i];
-                        }
-                    }
-                    // increase the position of any button that's after the new
-                    for (size_t i = 0; i < buttons->count; ++i) {
-                        if (ordered_indexes[i] >= lowest_sorted_index) {
-                            ordered_indexes[i]++;
-                        }
-                    }
-                    ordered_indexes[buttons->count] = lowest_sorted_index;
-                }
+                // if (buttons->count == 0) {
+                //     ordered_indexes[0] = 0;
+                // } else {
+                //     // search for where to insert the new button
+                //     size_t lowest_sorted_index = buttons->count;
+                //     for (size_t i = 0; i < buttons->count; ++i) {
+                //         if (ordered_indexes[i] < lowest_sorted_index &&
+                //             std::strcmp(map_name, buttons->items[i].button.text) < 0) {
+                //             lowest_sorted_index = ordered_indexes[i];
+                //         }
+                //     }
+                //     // increase the position of any button that's after the new
+                //     for (size_t i = 0; i < buttons->count; ++i) {
+                //         if (ordered_indexes[i] >= lowest_sorted_index) {
+                //             ordered_indexes[i]++;
+                //         }
+                //     }
+                //     ordered_indexes[buttons->count] = lowest_sorted_index;
+                // }
 
                 PR::CustomLevelButton lb;
                 lb.is_new_level = false;
@@ -642,19 +645,36 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
                 da_append(buttons, lb, PR::CustomLevelButton);
 
+                size_t current_index = buttons->count-1;
+
+                while(current_index > 0 &&
+                      std::strcmp(
+                          buttons->items[current_index-1].button.text,
+                          buttons->items[current_index].button.text) > 0) {
+                    da_swap(buttons,
+                            current_index-1, current_index,
+                            PR::CustomLevelButton);
+                    current_index--;
+                }
+                button_set_position(&buttons->items[current_index].button,
+                                    current_index);
+                button_edit_del_to_lb(&buttons->items[current_index].button,
+                                      &buttons->items[current_index].edit,
+                                      &buttons->items[current_index].del);
+
                 if (map_file) std::fclose(map_file);
                 
             }
         }
 
 
-        for(size_t i = 0; i < buttons->count; ++i) {
-            std::cout << i << " -> " << ordered_indexes[i] << std::endl;
-            button_set_position(&buttons->items[i].button, ordered_indexes[i]);
-            button_edit_del_to_lb(&buttons->items[i].button,
-                                  &buttons->items[i].edit,
-                                  &buttons->items[i].del);
-        }
+        // for(size_t i = 0; i < buttons->count; ++i) {
+        //     std::cout << i << " -> " << ordered_indexes[i] << std::endl;
+        //     button_set_position(&buttons->items[i].button, ordered_indexes[i]);
+        //     button_edit_del_to_lb(&buttons->items[i].button,
+        //                           &buttons->items[i].edit,
+        //                           &buttons->items[i].del);
+        // }
     }
 
     defer:
@@ -714,7 +734,7 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     //          starting the level
     //menu->showing_campaign_buttons = true;
 
-    menu->selected_button = 0;
+    menu->selected_campaign_button = 0;
 
     // NOTE: Button to select which buttons to show
     PR::Button *campaign = &menu->show_campaign_button;
@@ -899,9 +919,6 @@ void menu_update(void) {
         menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
         menu->camera_goal_position = GAME_HEIGHT * 0.5f;
         menu->deleting_level = false;
-        // if (ma_sound_is_playing(&sound->campaign_custom)) {
-        //     ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
-        // }
         ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
         ma_sound_start(&sound->campaign_custom);
     }
@@ -946,32 +963,32 @@ void menu_update(void) {
         // NOTE: The keybings are put before because
         //       the mouse has the priority if it was moved
 
-        int previous_selection = menu->selected_button;
+        int previous_campaign_selection = menu->selected_campaign_button;
         // Keybinding
         if (input->menu_up.clicked) {
-            if (menu->selected_button-3 >= 0) {
-                menu->selected_button -= 3;
+            if (menu->selected_campaign_button-3 >= 0) {
+                menu->selected_campaign_button -= 3;
             } else {
-                menu->selected_button = 0;
+                menu->selected_campaign_button = 0;
             }
         }
         if (input->menu_down.clicked) {
-            if (menu->selected_button+3 <
+            if (menu->selected_campaign_button+3 <
                     ARRAY_LENGTH(menu->campaign_buttons)) {
-                menu->selected_button += 3;
+                menu->selected_campaign_button += 3;
             } else {
-                menu->selected_button = ARRAY_LENGTH(menu->campaign_buttons)-1;
+                menu->selected_campaign_button = ARRAY_LENGTH(menu->campaign_buttons)-1;
             }
         }
         if (input->menu_left.clicked) {
-            if (menu->selected_button-1 >= 0) {
-                menu->selected_button--;
+            if (menu->selected_campaign_button-1 >= 0) {
+                menu->selected_campaign_button--;
             }
         }
         if (input->menu_right.clicked) {
-            if (menu->selected_button+1 <
+            if (menu->selected_campaign_button+1 <
                     ARRAY_LENGTH(menu->campaign_buttons)) {
-                menu->selected_button++;
+                menu->selected_campaign_button++;
             }
         }
         for(int levelbutton_index = 0;
@@ -987,17 +1004,18 @@ void menu_update(void) {
                                                              cam),
                                         input->mouseX, input->mouseY,
                                         lb->button.from_center)) {
-                    menu->selected_button = levelbutton_index;
-                } else if (menu->selected_button >= 0 &&
-                           menu->selected_button == levelbutton_index) {
+                    menu->selected_campaign_button = levelbutton_index;
+                } else if (menu->selected_campaign_button >= 0 &&
+                           menu->selected_campaign_button == levelbutton_index) {
                     // NOTE: If this is uncommented then if the mouse
-                    //          is moved outside of a button
-                    // menu->selected_button = -1;
+                    //          is moved outside of a button, no button will
+                    //          be selected
+                    // menu->selected_campaign_button = -1;
                 }
             }
             // Keybinding, with selection
-            if (menu->selected_button >= 0 &&
-                menu->selected_button == levelbutton_index) {
+            if (menu->selected_campaign_button >= 0 &&
+                menu->selected_campaign_button == levelbutton_index) {
 
                 lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
                 if (input->menu_click.clicked ||
@@ -1014,10 +1032,9 @@ void menu_update(void) {
                 lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
             }
         }
-        if (previous_selection != menu->selected_button) {
-            // if (ma_sound_is_playing(&sound->change_selection)) {
-            //     ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
-            // }
+        if (menu->selected_campaign_button != -1 &&
+            previous_campaign_selection != menu->selected_campaign_button) {
+
             ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
             ma_sound_start(&sound->change_selection);
         }
@@ -1072,21 +1089,30 @@ void menu_update(void) {
                         repos_index < menu->custom_buttons.count;
                         ++repos_index) {
 
-                        PR::CustomLevelButton but =
-                            menu->custom_buttons.items[repos_index];
+                        PR::CustomLevelButton *but =
+                            &menu->custom_buttons.items[repos_index];
 
-                        button_set_position(&but.button, repos_index);
-                        button_edit_del_to_lb(&but.button,
-                                              &but.edit, &but.del);
+                        button_set_position(&but->button, repos_index);
+                        button_edit_del_to_lb(&but->button,
+                                              &but->edit, &but->del);
                     }
 
                     PR::Button *add_level = &menu->add_custom_button;
                     button_set_position(add_level, menu->custom_buttons.count);
 
                     menu->deleting_level = false;
+
+                    if (menu->selected_custom_button >=
+                            (int) menu->custom_buttons.count) {
+                        menu->selected_custom_button =
+                            menu->custom_buttons.count-1;
+                    }
+
+                    // TODO: Sound when a level is deleted
+                    ma_sound_seek_to_pcm_frame(&sound->delete_level, 0);
+                    ma_sound_start(&sound->delete_level);
                 }
-            }
-            if (menu->delete_selection == PR::BUTTON_NO) {
+            } else if (menu->delete_selection == PR::BUTTON_NO) {
                 menu->delete_no.col = LEVEL_BUTTON_SELECTED_COLOR;
                 menu->delete_yes.col = LEVEL_BUTTON_DEFAULT_COLOR;
                 if (input->menu_click.clicked ||
@@ -1098,6 +1124,34 @@ void menu_update(void) {
                 }
             }
         } else {
+            int previous_custom_selection = menu->selected_custom_button;
+            // Keybinding
+            if (input->menu_up.clicked) {
+                if (menu->selected_custom_button-3 >= 0) {
+                    menu->selected_custom_button -= 3;
+                } else {
+                    menu->selected_custom_button = 0;
+                }
+            }
+            if (input->menu_down.clicked) {
+                if (menu->selected_custom_button+3 <
+                        (int) menu->custom_buttons.count+1) {
+                    menu->selected_custom_button += 3;
+                } else {
+                    menu->selected_custom_button = menu->custom_buttons.count;
+                }
+            }
+            if (input->menu_left.clicked) {
+                if (menu->selected_custom_button-1 >= 0) {
+                    menu->selected_custom_button--;
+                }
+            }
+            if (input->menu_right.clicked) {
+                if (menu->selected_custom_button+1 <
+                        (int)menu->custom_buttons.count+1) {
+                    menu->selected_custom_button++;
+                }
+            }
             for(size_t custombutton_index = 0;
                 custombutton_index < menu->custom_buttons.count;
                 ++custombutton_index) {
@@ -1115,7 +1169,9 @@ void menu_update(void) {
                             del_lb->from_center)) {
                     del_lb->col = DEL_BUTTON_SELECTED_COLOR;
                     edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
-                    lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
+                    if (input->was_mouse_moved) {
+                        menu->selected_custom_button = custombutton_index;
+                    }
 
                     if (input->mouse_left.clicked) {
                         menu->deleting_level = true;
@@ -1130,48 +1186,87 @@ void menu_update(void) {
                     
                     edit_lb->col = EDIT_BUTTON_SELECTED_COLOR;
                     del_lb->col = DEL_BUTTON_DEFAULT_COLOR;
-                    lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
+                    if (input->was_mouse_moved) {
+                        menu->selected_custom_button = custombutton_index;
+                    }
+
                     if (input->mouse_left.clicked) {
-                        CHANGE_CASE_TO(PR::LEVEL,
-                                       level_prepare,
-                                       lb->mapfile_path,
-                                       lb->button.text,
-                                       true,
-                                       lb->is_new_level);
+                        CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                                       lb->mapfile_path, lb->button.text,
+                                       true, lb->is_new_level);
                     }
                 } else {
                     edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
                     del_lb->col = DEL_BUTTON_DEFAULT_COLOR;
+                }
 
-                    // NOTE: Don't even check if it's inside the edit button
+                if (input->was_mouse_moved) {
                     if (rect_contains_point(
                                 rect_in_camera_space(lb->button.body, cam),
                                 input->mouseX, input->mouseY,
                                 lb->button.from_center)) {
                         
-                        lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
-                        if (input->mouse_left.clicked) {
-                            CHANGE_CASE_TO(PR::LEVEL,
-                                           level_prepare,
-                                           lb->mapfile_path, lb->button.text,
-                                           false,
-                                           lb->is_new_level);
-                        }
+                        menu->selected_custom_button = custombutton_index;
                     } else {
-                        lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
+                        // NOTE: if this is uncommented then if the mouse
+                        //          is moved outside of a button,
+                        //          no button will be selected
+                        // menu->selected_custom_button = -1;
                     }
+                }
+                if (menu->selected_custom_button >= 0 &&
+                    menu->selected_custom_button ==
+                        (int)custombutton_index) {
+                    
+                    lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
+                    if (input->menu_click.clicked ||
+                        (input->mouse_left.clicked &&
+                         rect_contains_point(
+                            rect_in_camera_space(lb->button.body, cam),
+                            input->mouseX, input->mouseY,
+                            lb->button.from_center))) {
+
+                        CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                                       lb->mapfile_path, lb->button.text,
+                                       false, lb->is_new_level);
+                    } else if (input->menu_custom_delete.clicked){
+                        menu->deleting_level = true;
+                        menu->deleting_index = custombutton_index;
+                        menu->delete_selection = PR::BUTTON_NO;
+                    } else if (input->menu_custom_edit.clicked) {
+                        CHANGE_CASE_TO(PR::LEVEL, level_prepare,
+                                       lb->mapfile_path, lb->button.text,
+                                       true, lb->is_new_level);
+                    }
+                } else {
+                    lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
                 }
             }
             // NOTE: Checking if the add custom level button is pressed
             PR::Button *add_level = &menu->add_custom_button;
 
-            if (rect_contains_point(rect_in_camera_space(add_level->body, cam),
-                                    input->mouseX, input->mouseY,
-                                    add_level->from_center)) {
+            if (input->was_mouse_moved) {
+                if (rect_contains_point(
+                        rect_in_camera_space(add_level->body, cam),
+                        input->mouseX, input->mouseY,
+                        add_level->from_center)) {
+                    menu->selected_custom_button = menu->custom_buttons.count;
+                } else {
+                    // NOTE: if this is uncommented then if the mouse
+                    //          is moved outside of a button,
+                    //          no button will be selected
+                    // menu->selected_custom_button = -1;
+                }
+            }
+            if (menu->selected_custom_button ==
+                    (int) menu->custom_buttons.count) {
                 add_level->col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->mouse_left.clicked) {
-                    // Level button display text
-                    
+                if (input->menu_click.clicked ||
+                    (input->mouse_left.clicked &&
+                     rect_contains_point(
+                         rect_in_camera_space(add_level->body, cam),
+                         input->mouseX, input->mouseY,
+                         add_level->from_center))) {
                     bool found = true;
                     size_t map_number = 1;
                     int map_name_size;
@@ -1204,7 +1299,7 @@ void menu_update(void) {
                                       "%s", map_name);
 
                         uint32_t random_id = (uint32_t)
-                            (((float)std::rand() / RAND_MAX) *999999) +1;
+                            (((float)std::rand() / RAND_MAX) * 999999) +1;
 
                         // Level map file path
                         int path_size =
@@ -1230,6 +1325,13 @@ void menu_update(void) {
                 }
             } else {
                 add_level->col = LEVEL_BUTTON_DEFAULT_COLOR;
+            }
+
+            if (menu->selected_custom_button != -1 &&
+                previous_custom_selection != menu->selected_custom_button) {
+
+                ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
+                ma_sound_start(&sound->change_selection);
             }
         }
     }
@@ -1425,7 +1527,7 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     p->render_zone.triangle = false;
     p->acc.x = 0.f;
     p->acc.y = 0.f;
-    p->mass = 0.005f; // kg
+    p->mass = 0.008f; // kg
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
@@ -1466,7 +1568,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
     rid->air_friction_acc = 120.f;
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
-    rid->input_max_accelleration = 7000.f;
     rid->inverse = false;
     std::snprintf(level->file_path,
                   std::strlen(mapfile_path)+1,
@@ -1886,13 +1987,13 @@ void level_update(void) {
                 if (input->left_right) {
                     rid->input_velocity +=
                         rid->inverse ?
-                        -rid->input_max_accelleration *
+                        -RIDER_INPUT_VELOCITY_ACCELERATION *
                             input->left_right * dt :
-                        rid->input_max_accelleration *
+                        RIDER_INPUT_VELOCITY_ACCELERATION *
                             input->left_right * dt;
                 } else {
                     rid->input_velocity +=
-                        rid->input_max_accelleration *
+                        RIDER_INPUT_VELOCITY_ACCELERATION *
                             -glm::sign(rid->input_velocity) * dt;
                 }
                 // NOTE: Base speed is the speed of the plane at the moment of the jump,
@@ -1905,22 +2006,33 @@ void level_update(void) {
                     rid->input_velocity = glm::sign(rid->input_velocity) *
                                           RIDER_INPUT_VELOCITY_LIMIT;
                 }
+                
                 rid->base_velocity -= glm::sign(rid->base_velocity) *
                                       rid->air_friction_acc * dt;
+                // If the player moves in the opposite direction of the
+                // base velocity, remove a net amount based on the intensity
+                // of the movement
+                if (glm::abs(input->left_right) > 0 &&
+                        glm::sign(input->left_right) !=
+                            glm::sign(rid->base_velocity)) {
+                    rid->base_velocity -= glm::sign(rid->base_velocity) *
+                                          glm::abs(input->left_right) *
+                                          3000 * dt;
+                }
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
-                rid->vel.y += rid->inverse ? -GRAVITY * 1.5f * dt :
-                                             GRAVITY * 1.5f * dt;
+                rid->vel.y += rid->inverse ? -RIDER_GRAVITY * dt :
+                                             RIDER_GRAVITY * dt;
 
                 // NOTE: Rider double jump if available
                 if(rid->second_jump && input->jump.clicked) {
                     if ((!rid->inverse && rid->vel.y < 0) ||
                          (rid->inverse && rid->vel.y > 0)) {
-                        rid->vel.y -= rid->inverse ? -400.f:
-                                                     400.f;
+                        rid->vel.y += rid->inverse ? RIDER_SECOND_JUMP :
+                                                     -RIDER_SECOND_JUMP;
                     } else {
-                        rid->vel.y = rid->inverse ? 400.f:
-                                                    -400.f;
+                        rid->vel.y = rid->inverse ? RIDER_SECOND_JUMP:
+                                                    -RIDER_SECOND_JUMP;
                     }
                     rid->second_jump = false;
                 }
@@ -1967,13 +2079,13 @@ void level_update(void) {
                 if (input->left_right) {
                     rid->input_velocity +=
                         rid->inverse ?
-                        -rid->input_max_accelleration *
+                        -RIDER_INPUT_VELOCITY_ACCELERATION *
                             input->left_right * dt :
-                        rid->input_max_accelleration *
+                        RIDER_INPUT_VELOCITY_ACCELERATION *
                             input->left_right * dt;
                 } else {
                     rid->input_velocity +=
-                        rid->input_max_accelleration *
+                        RIDER_INPUT_VELOCITY_ACCELERATION *
                             -glm::sign(rid->input_velocity) * dt;
                 }
                 // NOTE: Base speed is the speed of the plane at the moment of the jump,
@@ -1990,18 +2102,18 @@ void level_update(void) {
                                       rid->air_friction_acc * dt;
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
-                rid->vel.y += rid->inverse ? -GRAVITY * 1.5f * dt :
-                                             GRAVITY * 1.5f * dt;
+                rid->vel.y += rid->inverse ? -RIDER_GRAVITY * dt :
+                                             RIDER_GRAVITY * dt;
 
                 // NOTE: Rider double jump if available
                 if(rid->second_jump && input->jump.clicked) {
                     if ((!rid->inverse && rid->vel.y < 0) ||
                          (rid->inverse && rid->vel.y > 0)) {
-                        rid->vel.y -= rid->inverse ? -400.f:
-                                                     400.f;
+                        rid->vel.y += rid->inverse ? RIDER_SECOND_JUMP:
+                                                     -RIDER_SECOND_JUMP;
                     } else {
-                        rid->vel.y = rid->inverse ? 400.f:
-                                                    -400.f;
+                        rid->vel.y = rid->inverse ? RIDER_SECOND_JUMP:
+                                                    -RIDER_SECOND_JUMP;
                     }
                     rid->second_jump = false;
                 }
@@ -4401,8 +4513,10 @@ inline void rider_jump_from_plane(PR::Rider *rid, PR::Plane *p) {
     rid->attached = false;
     rid->second_jump = true;
     rid->base_velocity = p->vel.x;
-    rid->vel.y = rid->inverse ? p->vel.y*0.5f + 500.f :
-                                p->vel.y*0.5f - 500.f;
+    rid->vel.y = rid->inverse ? p->vel.y*0.5f + RIDER_FIRST_JUMP :
+                                p->vel.y*0.5f - RIDER_FIRST_JUMP;
+    // rid->vel.y = rid->inverse ? RIDER_FIRST_JUMP :
+    //                             -RIDER_FIRST_JUMP;
     rid->body.angle = 0.f;
     rid->jump_time_elapsed = 0.f;
 }
@@ -4525,12 +4639,12 @@ void set_portal_option_buttons(PR::Button *buttons) {
 
         button->from_center = true;
         button->body.triangle = false;
-        button->body.pos.x = glob->window.w * (option_button_index+1) /
+        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
                              (SELECTED_PORTAL_OPTIONS+1);
-        button->body.pos.y = glob->window.h * 9 / 10;
-        button->body.dim.x = glob->window.w /
+        button->body.pos.y = GAME_HEIGHT * 9 / 10;
+        button->body.dim.x = GAME_WIDTH /
                              (SELECTED_PORTAL_OPTIONS+2);
-        button->body.dim.y = glob->window.h / 10;
+        button->body.dim.y = GAME_HEIGHT / 10;
 
         switch(option_button_index) {
             case 0:
@@ -4579,12 +4693,11 @@ void set_boost_option_buttons(PR::Button *buttons) {
 
         button->from_center = true;
         button->body.triangle = false;
-        button->body.pos.x = glob->window.w * (option_button_index+1) /
+        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
                              (SELECTED_BOOST_OPTIONS+1);
-        button->body.pos.y = glob->window.h * 9 / 10;
-        button->body.dim.x = glob->window.w /
-                             (SELECTED_BOOST_OPTIONS+2);
-        button->body.dim.y = glob->window.h / 10;
+        button->body.pos.y = GAME_HEIGHT * 9 / 10;
+        button->body.dim.x = GAME_WIDTH / (SELECTED_BOOST_OPTIONS+2);
+        button->body.dim.y = GAME_HEIGHT / 10;
 
         switch(option_button_index) {
             case 0:
@@ -4641,12 +4754,11 @@ void set_obstacle_option_buttons(PR::Button *buttons) {
 
         button->from_center = true;
         button->body.triangle = false;
-        button->body.pos.x = glob->window.w * (option_button_index+1) /
+        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
                              (SELECTED_OBSTACLE_OPTIONS+1);
-        button->body.pos.y = glob->window.h * 9 / 10;
-        button->body.dim.x = glob->window.w /
-                             (SELECTED_OBSTACLE_OPTIONS+2);
-        button->body.dim.y = glob->window.h / 10;
+        button->body.pos.y = GAME_HEIGHT * 9 / 10;
+        button->body.dim.x = GAME_WIDTH / (SELECTED_OBSTACLE_OPTIONS+2);
+        button->body.dim.y = GAME_HEIGHT / 10;
 
         switch(option_button_index) {
             case 0:
@@ -4700,12 +4812,11 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
         PR::Button *button = buttons + option_button_index;
 
         button->from_center = true;
-        button->body.pos.x = glob->window.w * (option_button_index+1) /
+        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
                              (SELECTED_START_POS_OPTIONS+1);
-        button->body.pos.y = glob->window.h * 9 / 10;
-        button->body.dim.x = glob->window.w /
-                             (SELECTED_START_POS_OPTIONS+2);
-        button->body.dim.y = glob->window.h / 10;
+        button->body.pos.y = GAME_HEIGHT * 9 / 10;
+        button->body.dim.x = GAME_WIDTH / (SELECTED_START_POS_OPTIONS+2);
+        button->body.dim.y = GAME_HEIGHT / 10;
 
         switch(option_button_index) {
             case 0:
@@ -4731,17 +4842,6 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
         }
         button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
     }
-}
-
-Rect rect_in_screen_space(Rect rect) {
-    float proportion_x = (float)glob->window.w / GAME_WIDTH;
-    float proportion_y = (float)glob->window.h / GAME_HEIGHT;
-    rect.pos.x *= proportion_x;
-    rect.pos.y *= proportion_y;
-    rect.dim.x *= proportion_x;
-    rect.dim.y *= proportion_y;
-
-    return rect;
 }
 
 inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {

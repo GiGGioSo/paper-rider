@@ -78,6 +78,8 @@ struct InputController {
     Key menu_left;
     Key menu_right;
     Key menu_click;
+    Key menu_custom_delete;
+    Key menu_custom_edit;
     Key menu_to_custom;
     Key menu_to_campaign;
 
