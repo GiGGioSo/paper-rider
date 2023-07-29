@@ -1399,6 +1399,17 @@ void menu_update(void) {
 void menu_draw(void) {
     if (glob->state.current_case != PR::MENU) return;
 
+    Rect full_screen = {
+        .pos = glm::vec2(0.f, 0.f),
+        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .angle = 0.f,
+        .triangle = false,
+    };
+    renderer_add_queue_uni(
+            full_screen,
+            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            false);
+
     PR::Menu *menu = &glob->current_menu;
     PR::Camera *cam = &glob->current_menu.camera;
 
@@ -1886,6 +1897,17 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 }
 
 void level_update(void) {
+    Rect full_screen = {
+        .pos = glm::vec2(0.f, 0.f),
+        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .angle = 0.f,
+        .triangle = false,
+    };
+    renderer_add_queue_uni(
+            full_screen,
+            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            false);
+
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
     PR::Camera *cam = &glob->current_level.camera;

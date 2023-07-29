@@ -12,6 +12,12 @@
 #include "pp_renderer.h"
 #include "pp_game.h"
 
+#define PR_WINDOW_FULLSCREEN 0
+#define PR_WINDOW_BORDERLESS 1
+#define PR_WINDOW_WINDOWED 2
+
+#define PR_WINDOW_MODE PR_WINDOW_WINDOWED
+
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window, int width, int height);
 void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user);
@@ -34,8 +40,9 @@ int main() {
 
     glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
-    glob->window.w = 800;
-    glob->window.h = 600;
+    // These values are used only if PR_WINDOW_MODE == 2
+    glob->window.width = 800;
+    glob->window.height = 600;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -44,11 +51,34 @@ int main() {
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    glob->window.glfw_win =
-        glfwCreateWindow(glob->window.w, glob->window.h,
-                         glob->window.title, NULL, NULL);
+    if (PR_WINDOW_MODE == PR_WINDOW_FULLSCREEN) {
+        GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
+
+        glob->window.glfw_win =
+            glfwCreateWindow(mode->width, mode->height, glob->window.title,
+                             glfwGetPrimaryMonitor(), NULL);
+    } else if (PR_WINDOW_MODE == PR_WINDOW_BORDERLESS) {
+        glfwWindowHint(GLFW_DECORATED, NULL);
+
+        GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
+        glob->window.width = mode->width;
+        glob->window.height = mode->height;
+
+        glob->window.glfw_win =
+            glfwCreateWindow(glob->window.width, glob->window.height,
+                             glob->window.title, NULL, NULL);
+    } else if (PR_WINDOW_MODE == PR_WINDOW_WINDOWED) {
+        glob->window.glfw_win =
+            glfwCreateWindow(glob->window.width, glob->window.height,
+                             glob->window.title, NULL, NULL);
+    } else {
+        std::cout << "[ERROR] Unknown window mode: "
+                  << PR_WINDOW_MODE << std::endl;
+    }
     if (glob->window.glfw_win == NULL) {
         std::cout << "[ERROR] Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -64,9 +94,6 @@ int main() {
 
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-    //glEnable(GL_DEPTH_TEST);
-    //glDepthFunc(GL_GEQUAL);
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Callbacks
@@ -76,7 +103,13 @@ int main() {
     glDebugMessageCallback(&callback_debug, NULL);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
-    glViewport(0, 0, glob->window.w, glob->window.h);
+    // Get the actual size of the window that got created
+    glfwGetFramebufferSize(glob->window.glfw_win,
+                           &glob->window.width, &glob->window.height);
+    // Manually call the callback to set correct glViewPort and blackbars
+    callback_framebuffer_size(glob->window.glfw_win,
+                              glob->window.width,
+                              glob->window.height);
 
     glob_init();
 
@@ -104,12 +137,15 @@ int main() {
 
         }
 
-        glClearColor(0.3f, 0.8f, 0.9f, 1.0f);
+        glClearColor(0.f, 0.f, 0.f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // NOTE: Update input
         input_controller_update(glob->window.glfw_win, &glob->input,
-                                (float)glob->window.w, (float)glob->window.h);
+                                glob->window.vertical_bar,
+                                glob->window.horizontal_bar,
+                                glob->window.width,
+                                glob->window.height);
         if (glob->input.exit.clicked) {
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
         }
@@ -119,7 +155,6 @@ int main() {
             case PR::MENU:
             {
                 menu_update();
-                // menu_draw();
                 break;
             }
             case PR::LEVEL:
@@ -456,18 +491,30 @@ void callback_gamepad(int gamepad_id, int event) {
 void callback_framebuffer_size(GLFWwindow* window,
                                int width, int height) {
     UNUSED(window);
-    glViewport(0, 0, width, height);
-    // glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)width,
-    //                                    (float)height, 0.0f);
-    // for(size_t shader_index = 0;
-    //     shader_index < ARRAY_LENGTH(glob->rend_res.shaders);
-    //     ++shader_index) {
 
-    //     shaderer_set_mat4(glob->rend_res.shaders[shader_index],
-    //                       "projection", glob->rend_res.ortho_proj);
-    // }
-    glob->window.w = width;
-    glob->window.h = height;
+    PR::WinInfo *win = &glob->window;
+
+    int height_from_width = width * 3 / 4;
+    int width_from_height = height * 4 / 3;
+
+    if (height_from_width == height) {
+        win->vertical_bar = 0;
+        win->horizontal_bar = 0;
+        win->width = width;
+        win->height = height;
+    } else if (height_from_width > height) { // vertical bars
+        win->vertical_bar = (width+1 - width_from_height) / 2;
+        win->horizontal_bar = 0;
+        win->width = width_from_height;
+        win->height = height;
+    } else if (height_from_width < height) { // horizontal bars
+        win->vertical_bar = 0;
+        win->horizontal_bar = (height+1 - height_from_width) / 2;
+        win->width = width;
+        win->height = height_from_width;
+    }
+    glViewport(win->vertical_bar, win->horizontal_bar,
+               win->width, win->height);
 }
 
 void callback_debug(GLenum source,

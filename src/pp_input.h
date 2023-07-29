@@ -94,6 +94,6 @@ struct InputController {
 /* Updates the InputController global struct
  *
  */
-void input_controller_update(GLFWwindow* window, InputController* input, const float screen_w, const float screen_h);
+void input_controller_update(GLFWwindow *window, InputController *input, const int vertical_bar, const int horizontal_bar, const int screen_w, const int screen_h);
 
 #endif

@@ -370,8 +370,10 @@ struct PR {
     GameState state;
 
     struct WinInfo {
-        uint32_t w;
-        uint32_t h;
+        int vertical_bar;
+        int horizontal_bar;
+        int width;
+        int height;
         const char* title;
         GLFWwindow* glfw_win;
     };
