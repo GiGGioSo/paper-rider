@@ -50,6 +50,28 @@
 
 #define CAMERA_MAX_VELOCITY (1950.f)
 
+// #define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
+//     PR::Level t_level = glob->current_level;\
+//     level_set_to_null(&t_level);\
+//     t_level.editing_available = (edit);\
+//     std::snprintf(t_level.name, std::strlen(level_name)+1, "%s", (level_name));\
+//     PR::Menu t_menu = glob->current_menu;\
+//     menu_set_to_null(&t_menu);\
+//     int preparation_result = (prepare_func)(&t_menu, &t_level,\
+//                                             (map_path), (is_new));\
+//     if (preparation_result == 0) {\
+//         free_menu_level(&glob->current_menu, &glob->current_level);\
+//         glob->current_level = t_level;\
+//         glob->current_menu = t_menu;\
+//         glob->state.current_case = new_case;\
+//         return;\
+//     } else {\
+//         std::cout << "[ERROR] Could not prepare case: "\
+//                   << get_case_name(new_case)\
+//                   << std::endl;\
+//     }\
+// } while(0)
+
 #define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
     PR::Level t_level = glob->current_level;\
     level_set_to_null(&t_level);\
@@ -869,45 +891,6 @@ void menu_update(void) {
     PR::Menu *menu = &glob->current_menu;
     PR::Sound *sound = &glob->sound;
 
-    size_t buttons_shown_number =
-        menu->showing_campaign_buttons ? CAMPAIGN_LEVELS_NUMBER :
-                                         menu->custom_buttons.count;
-
-    // NOTE: Consider the cursor only if it's inside the window
-    if (0 < input->mouseX && input->mouseX < GAME_WIDTH &&
-        0 < input->mouseY && input->mouseY < GAME_HEIGHT) {
-
-        // NOTE: 0.2f is an arbitrary amount
-        if (menu->camera_goal_position > GAME_HEIGHT*0.5f &&
-            input->mouseY < GAME_HEIGHT * 0.2f) {
-            float cam_velocity = (1.f - (input->mouseY / (GAME_HEIGHT*0.20))) *
-                                 CAMERA_MAX_VELOCITY;
-            menu->camera_goal_position -=
-                cam_velocity * glob->state.delta_time;
-        }
-
-        // NOTE: 15 because there can be 15 buttons in the screen together
-        //       +2 because i do:
-        //          +3 to count for the empty row left at the top
-        //          -1 so that when a row is exactly filled at the end
-        //              it doesn't count that as another row
-        size_t rows_in_screen = (((buttons_shown_number+2) % 15) / 3) + 1;
-        float screens_of_buttons = ((buttons_shown_number+2) / 15) +
-                                    rows_in_screen / 5.f;
-
-        if (menu->camera_goal_position < GAME_HEIGHT*screens_of_buttons &&
-            input->mouseY > GAME_HEIGHT * 0.8f) {
-            float cam_velocity =
-                ((input->mouseY - GAME_HEIGHT*0.8f) / (GAME_HEIGHT*0.20)) *
-                CAMERA_MAX_VELOCITY;
-            menu->camera_goal_position +=
-                cam_velocity * glob->state.delta_time;
-        }
-    }
-
-    cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
-         glob->state.delta_time * cam->speed_multiplier);
-
     if (input->menu_to_campaign.clicked ||
         (input->mouse_left.clicked &&
          rect_contains_point(
@@ -958,6 +941,8 @@ void menu_update(void) {
         ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
         ma_sound_start(&sound->campaign_custom);
     }
+
+    bool was_selection_moved = false;
 
     if (menu->showing_campaign_buttons) {
         // NOTE: The keybings are put before because
@@ -1035,6 +1020,7 @@ void menu_update(void) {
         if (menu->selected_campaign_button != -1 &&
             previous_campaign_selection != menu->selected_campaign_button) {
 
+            was_selection_moved = true;
             ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
             ma_sound_start(&sound->change_selection);
         }
@@ -1330,11 +1316,82 @@ void menu_update(void) {
             if (menu->selected_custom_button != -1 &&
                 previous_custom_selection != menu->selected_custom_button) {
 
+                was_selection_moved = true;
                 ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
                 ma_sound_start(&sound->change_selection);
             }
         }
     }
+
+    // NOTE: Move menu camera based on input method used
+    if (menu->camera_follow_selection) {
+        int selected_index =
+            menu->showing_campaign_buttons ? menu->selected_campaign_button :
+                                             menu->selected_custom_button;
+
+        if (selected_index != -1) {
+            size_t row = selected_index / 3;
+            float selected_goal_position =
+                (row * 2.f + 3.f) / 10.f * GAME_HEIGHT;
+            menu->camera_goal_position =
+                (selected_goal_position > GAME_HEIGHT * 0.5f) ?
+                    selected_goal_position : GAME_HEIGHT * 0.5f;
+
+        } else {
+            menu->camera_goal_position = GAME_HEIGHT * 0.5f;
+        }
+        if (input->was_mouse_moved) {
+            menu->camera_follow_selection = false;
+        }
+    } else {
+        size_t buttons_shown_number =
+            menu->showing_campaign_buttons ? CAMPAIGN_LEVELS_NUMBER :
+                                             menu->custom_buttons.count;
+        // NOTE: Consider the cursor only if it's inside the window
+        if (0 < input->mouseX && input->mouseX < GAME_WIDTH &&
+            0 < input->mouseY && input->mouseY < GAME_HEIGHT) {
+
+            // NOTE: 0.2f is an arbitrary amount
+            if (menu->camera_goal_position > GAME_HEIGHT*0.5f &&
+                input->mouseY < GAME_HEIGHT * 0.2f) {
+                float cam_velocity = (1.f - (input->mouseY / (GAME_HEIGHT*0.20))) *
+                                     CAMERA_MAX_VELOCITY;
+                menu->camera_goal_position -=
+                    cam_velocity * glob->state.delta_time;
+            }
+
+            // NOTE: 15 because there can be 15 buttons in the screen together
+            //       +2 because i do:
+            //          +3 to count for the empty row left at the top
+            //          -1 so that when a row is exactly filled at the end
+            //              it doesn't count that as another row
+            size_t rows_in_screen = (((buttons_shown_number+2) % 15) / 3) + 1;
+            float screens_of_buttons = ((buttons_shown_number+2) / 15) +
+                                        rows_in_screen / 5.f;
+
+            if (menu->camera_goal_position < GAME_HEIGHT*screens_of_buttons &&
+                input->mouseY > GAME_HEIGHT * 0.8f) {
+                float cam_velocity =
+                    ((input->mouseY - GAME_HEIGHT*0.8f) / (GAME_HEIGHT*0.20)) *
+                    CAMERA_MAX_VELOCITY;
+                menu->camera_goal_position +=
+                    cam_velocity * glob->state.delta_time;
+            }
+        }
+        // NOTE: Check if you have to change camera movement mode
+        if (was_selection_moved &&
+                (input->menu_up.clicked ||
+                 input->menu_down.clicked ||
+                 input->menu_left.clicked ||
+                 input->menu_right.clicked)) {
+            menu->camera_follow_selection = true;
+        }
+    }
+    cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
+         glob->state.delta_time * cam->speed_multiplier);
+
+
+    menu_draw();
 
     return; 
 }

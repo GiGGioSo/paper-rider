@@ -185,6 +185,7 @@ struct PR {
     struct Menu {
         Camera camera;
         float camera_goal_position;
+        bool camera_follow_selection;
 
         bool showing_campaign_buttons;
         Button show_campaign_button;

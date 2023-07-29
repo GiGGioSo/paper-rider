@@ -119,7 +119,7 @@ int main() {
             case PR::MENU:
             {
                 menu_update();
-                menu_draw();
+                // menu_draw();
                 break;
             }
             case PR::LEVEL:
