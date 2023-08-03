@@ -155,7 +155,7 @@ struct PR {
         bool from_center;
         Rect body;
         glm::vec4 col;
-        char text[99];
+        char text[256];
     };
     struct LevelButton {
         Button button;
@@ -176,13 +176,32 @@ struct PR {
         size_t capacity;
     };
 
+    enum StartMenuSelection {
+        START_BUTTON_PLAY,
+        START_BUTTON_OPTIONS,
+        START_BUTTON_QUIT
+    };
+
+    struct StartMenu {
+        StartMenuSelection selection;
+
+        Button play;
+        Button options;
+        Button quit;
+    };
+    StartMenu current_start_menu;
+
+    struct OptionsMenu {
+        Button to_start_menu;
+    };
+    OptionsMenu current_options_menu;
+
     enum DeleteButtonChoice {
         BUTTON_YES,
         BUTTON_NO,
     };
-
     #define CAMPAIGN_LEVELS_NUMBER 2
-    struct Menu {
+    struct PlayMenu {
         Camera camera;
         float camera_goal_position;
         bool camera_follow_selection;
@@ -199,6 +218,8 @@ struct PR {
         
         Button add_custom_button;
 
+        Button to_start_menu;
+
         DeleteButtonChoice delete_selection;
         bool deleting_level;
         Button delete_yes;
@@ -206,7 +227,7 @@ struct PR {
         size_t deleting_index;
         Rect deleting_frame;
     };
-    Menu current_menu;
+    PlayMenu current_play_menu;
 
     enum ObjectType {
         PORTAL_TYPE = 0,
@@ -340,6 +361,7 @@ struct PR {
         ma_sound click_selected;
         ma_sound campaign_custom;
         ma_sound delete_level;
+        ma_sound to_start_menu;
         // Game
         ma_sound rider_detach;
         ma_sound rider_double_jump;
@@ -360,8 +382,10 @@ struct PR {
     InputController input;
 
     enum GameCase {
-        MENU = 0,
-        LEVEL = 1,
+        START_MENU = 0,
+        PLAY_MENU = 1,
+        OPTIONS_MENU = 2,
+        LEVEL = 3,
     };
     struct GameState {
         float delta_time;

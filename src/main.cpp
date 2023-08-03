@@ -51,7 +51,7 @@ int main() {
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     if (PR_WINDOW_MODE == PR_WINDOW_FULLSCREEN) {
         GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
@@ -152,15 +152,31 @@ int main() {
 
 
         switch (glob->state.current_case) {
-            case PR::MENU:
+            case PR::START_MENU:
             {
-                menu_update();
+                start_menu_update();
+                break;
+            }
+            case PR::PLAY_MENU:
+            {
+                play_menu_update();
+                break;
+            }
+            case PR::OPTIONS_MENU:
+            {
+                options_menu_update();
                 break;
             }
             case PR::LEVEL:
             {
                 level_update();
                 break;
+            }
+            default:
+            {
+                std::cout << "Unknown state: "
+                          << glob->state.current_case
+                          << std::endl;
             }
         }
 
@@ -387,6 +403,16 @@ int glob_init(void) {
                   << std::endl;
         return 1;
     }
+    result = ma_sound_init_from_file(&sound->engine,
+                                     "./res/sounds/menu_select.wav",
+                                     MA_SOUND_FLAG_DECODE,
+                                     &sound->sfx_group, NULL,
+                                     &sound->to_start_menu);
+    if (result != MA_SUCCESS) {
+        std::cout << "[ERROR] Could not initialize the sound campaign_custom!"
+                  << std::endl;
+        return 1;
+    }
     /*
     result = ma_sound_init_from_file(&sound->engine,
                                      "./res/sounds/discord-join.mp3",
@@ -432,14 +458,12 @@ int glob_init(void) {
 
     std::cout << "Loaded all audio files successfully!" << std::endl;
 
-    menu_set_to_null(&glob->current_menu);
+    start_menu_set_to_null(&glob->current_start_menu);
+    play_menu_set_to_null(&glob->current_play_menu);
+    options_menu_set_to_null(&glob->current_options_menu);
     level_set_to_null(&glob->current_level);
-    glob->state.current_case = PR::MENU;
-    // NOTE: I need to set it here because I do not reset
-    //       it when preparing the menu, so that the player comes back to
-    //       where he was before
-    glob->current_menu.showing_campaign_buttons = true;
-    menu_prepare(&glob->current_menu, &glob->current_level, "", false);
+
+    CHANGE_CASE_TO_START_MENU(0);
 
     return 0;
 }
@@ -452,6 +476,7 @@ void glob_free(void) {
     ma_sound_uninit(&s->change_selection);
     ma_sound_uninit(&s->click_selected);
     ma_sound_uninit(&s->campaign_custom);
+    ma_sound_uninit(&s->to_start_menu);
     ma_sound_uninit(&s->rider_detach);
     ma_sound_uninit(&s->rider_double_jump);
     ma_sound_uninit(&s->plane_crash);

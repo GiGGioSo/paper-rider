@@ -55,14 +55,14 @@
 //     level_set_to_null(&t_level);\
 //     t_level.editing_available = (edit);\
 //     std::snprintf(t_level.name, std::strlen(level_name)+1, "%s", (level_name));\
-//     PR::Menu t_menu = glob->current_menu;\
+//     PR::PlayMenu t_menu = glob->current_play_menu;\
 //     menu_set_to_null(&t_menu);\
 //     int preparation_result = (prepare_func)(&t_menu, &t_level,\
 //                                             (map_path), (is_new));\
 //     if (preparation_result == 0) {\
-//         free_menu_level(&glob->current_menu, &glob->current_level);\
+//         free_menu_level(&glob->current_play_menu, &glob->current_level);\
 //         glob->current_level = t_level;\
-//         glob->current_menu = t_menu;\
+//         glob->current_play_menu = t_menu;\
 //         glob->state.current_case = new_case;\
 //         return;\
 //     } else {\
@@ -72,27 +72,8 @@
 //     }\
 // } while(0)
 
-#define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
-    PR::Level t_level = glob->current_level;\
-    level_set_to_null(&t_level);\
-    t_level.editing_available = (edit);\
-    std::snprintf(t_level.name, std::strlen(level_name)+1, "%s", (level_name));\
-    PR::Menu t_menu = glob->current_menu;\
-    menu_set_to_null(&t_menu);\
-    int preparation_result = (prepare_func)(&t_menu, &t_level,\
-                                            (map_path), (is_new));\
-    if (preparation_result == 0) {\
-        free_menu_level(&glob->current_menu, &glob->current_level);\
-        glob->current_level = t_level;\
-        glob->current_menu = t_menu;\
-        glob->state.current_case = new_case;\
-        return;\
-    } else {\
-        std::cout << "[ERROR] Could not prepare case: "\
-                  << get_case_name(new_case)\
-                  << std::endl;\
-    }\
-} while(0)
+#define START_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
+#define START_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
 #define EDIT_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
 #define EDIT_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
@@ -201,7 +182,8 @@ update_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 void
 draw_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 
-void free_menu_level(PR::Menu *menu, PR::Level *level) {
+void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
+                    PR::StartMenu *start, PR::OptionsMenu *opt) {
     // Menu freeing
     da_clear(&menu->custom_buttons);
 
@@ -217,9 +199,17 @@ void free_menu_level(PR::Menu *menu, PR::Level *level) {
             level->particle_systems[ps_index].particles = NULL;
         }
     }
+
+    // Start menu freeing
+    // Nothing to free
+    UNUSED(start);
+
+    // Options menu freeing
+    // Nothing to free
+    UNUSED(opt);
 }
 
-void menu_set_to_null(PR::Menu *menu) {
+void play_menu_set_to_null(PR::PlayMenu *menu) {
     menu->custom_buttons = {NULL, 0, 0};
 }
 
@@ -233,6 +223,16 @@ void level_set_to_null(PR::Level *level) {
         level->particle_systems[ps_index].particles_number = 0;
         level->particle_systems[ps_index].particles = NULL;
     }
+}
+
+void start_menu_set_to_null(PR::StartMenu *start) {
+    // Nothing to set to null
+    UNUSED(start);
+}
+
+void options_menu_set_to_null(PR::OptionsMenu *opt) {
+    // Nothing to set to null
+    UNUSED(opt);
 }
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
@@ -746,15 +746,279 @@ const char *campaign_levels_filepath[2] = {
     "./campaign_maps/level2.prmap"
 };
 
-int menu_prepare(PR::Menu *menu, PR::Level *level,
-                 const char* mapfile_path, bool is_new_level) {
-    UNUSED(level);
-    UNUSED(is_new_level);
-    UNUSED(mapfile_path);
+int start_menu_prepare(PR::StartMenu *start) {
+    start->selection = PR::START_BUTTON_PLAY;
 
+    start->play = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
+            .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+            .angle = 0.f,
+            .triangle = false
+        },
+        .col = START_BUTTON_DEFAULT_COLOR,
+        .text = "PLAY"
+    };
+
+    start->options = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
+            .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+            .angle = 0.f,
+            .triangle = false
+        },
+        .col = START_BUTTON_DEFAULT_COLOR,
+        .text = "OPTIONS"
+    };
+
+    start->quit = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
+            .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+            .angle = 0.f,
+            .triangle = false
+        },
+        .col = START_BUTTON_DEFAULT_COLOR,
+        .text = "QUIT"
+    };
+
+    // NOTE: Make the cursor show
+    glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    PR::Sound *sound = &glob->sound;
+    if (!ma_sound_is_playing(&sound->menu_music)) {
+        ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
+        ma_sound_start(&sound->menu_music);
+    }
+
+    return 0;
+}
+void start_menu_update() {
+    PR::StartMenu *start = &glob->current_start_menu;
+    InputController *input = &glob->input;
+    PR::Sound *sound = &glob->sound;
+
+    // ### CHANGING SELECTION ###
+    // # Changing selection with keybindings #
+    PR::StartMenuSelection before_selection = start->selection;
+    if (input->menu_up.clicked) {
+        if (start->selection == PR::START_BUTTON_QUIT) {
+            start->selection = PR::START_BUTTON_OPTIONS;
+        } else if (start->selection == PR::START_BUTTON_OPTIONS) {
+            start->selection = PR::START_BUTTON_PLAY;
+        }
+    }
+    if (input->menu_down.clicked) {
+        if (start->selection == PR::START_BUTTON_PLAY) {
+            start->selection = PR::START_BUTTON_OPTIONS;
+        } else if (start->selection == PR::START_BUTTON_OPTIONS) {
+            start->selection = PR::START_BUTTON_QUIT;
+        }
+    }
+    // # Changing selection with the mouse #
+    if (start->selection != PR::START_BUTTON_PLAY &&
+        input->was_mouse_moved &&
+        rect_contains_point(start->play.body,
+                            input->mouseX, input->mouseY,
+                            start->play.from_center)) {
+        start->selection = PR::START_BUTTON_PLAY;
+    }
+    if (start->selection != PR::START_BUTTON_OPTIONS &&
+        input->was_mouse_moved &&
+        rect_contains_point(start->options.body,
+                            input->mouseX, input->mouseY,
+                            start->options.from_center)) {
+        start->selection = PR::START_BUTTON_OPTIONS;
+    }
+    if (start->selection != PR::START_BUTTON_QUIT &&
+        input->was_mouse_moved &&
+        rect_contains_point(start->quit.body,
+                            input->mouseX, input->mouseY,
+                            start->quit.from_center)) {
+        start->selection = PR::START_BUTTON_QUIT;
+    }
+
+    // # Change button color based on selection #
+    if (start->selection == PR::START_BUTTON_PLAY) {
+        start->play.col = START_BUTTON_SELECTED_COLOR;
+        start->options.col = START_BUTTON_DEFAULT_COLOR;
+        start->quit.col = START_BUTTON_DEFAULT_COLOR;
+    } else if (start->selection == PR::START_BUTTON_OPTIONS) {
+        start->options.col = START_BUTTON_SELECTED_COLOR;
+        start->play.col = START_BUTTON_DEFAULT_COLOR;
+        start->quit.col = START_BUTTON_DEFAULT_COLOR;
+    } else if (start->selection == PR::START_BUTTON_QUIT) {
+        start->quit.col = START_BUTTON_SELECTED_COLOR;
+        start->play.col = START_BUTTON_DEFAULT_COLOR;
+        start->options.col = START_BUTTON_DEFAULT_COLOR;
+    }
+
+    // ### CLICKING THE SELECTION ###
+    // # PLAY #
+    if ((input->menu_click.clicked &&
+            start->selection == PR::START_BUTTON_PLAY) ||
+        (input->mouse_left.clicked &&
+            rect_contains_point(start->play.body,
+                                input->mouseX, input->mouseY,
+                                start->play.from_center))) {
+        glob->current_play_menu.showing_campaign_buttons = true;
+        ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
+        ma_sound_start(&sound->click_selected);
+        CHANGE_CASE_TO_PLAY_MENU(void());
+    }
+    // # OPTIONS #
+    if ((input->menu_click.clicked &&
+            start->selection == PR::START_BUTTON_OPTIONS) ||
+        (input->mouse_left.clicked &&
+            rect_contains_point(start->options.body,
+                                input->mouseX, input->mouseY,
+                                start->options.from_center))) {
+        ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
+        ma_sound_start(&sound->click_selected);
+        CHANGE_CASE_TO_OPTIONS_MENU(void());
+    }
+    // # QUIT #
+    if ((input->menu_click.clicked &&
+            start->selection == PR::START_BUTTON_QUIT) ||
+        (input->mouse_left.clicked &&
+            rect_contains_point(start->quit.body,
+                                input->mouseX, input->mouseY,
+                                start->quit.from_center))) {
+        ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
+        ma_sound_start(&sound->click_selected);
+        glfwSetWindowShouldClose(glob->window.glfw_win, true);
+    }
+
+    // ### SOUND ###
+    if (start->selection != before_selection) {
+        ma_sound_seek_to_pcm_frame(&sound->change_selection, 0);
+        ma_sound_start(&sound->change_selection);
+    }
+
+    // ### RENDERING ###
+    Rect full_screen = {
+        .pos = glm::vec2(0.f, 0.f),
+        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .angle = 0.f,
+        .triangle = false,
+    };
+    renderer_add_queue_uni(
+            full_screen,
+            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            false);
+    // # PLAY #
+    renderer_add_queue_uni(start->play.body,
+                           start->play.col,
+                           start->play.from_center);
+    renderer_add_queue_text(start->play.body.pos.x,
+                            start->play.body.pos.y,
+                            start->play.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
+    // # OPTIONS #
+    renderer_add_queue_uni(start->options.body,
+                           start->options.col,
+                           start->options.from_center);
+    renderer_add_queue_text(start->options.body.pos.x,
+                            start->options.body.pos.y,
+                            start->options.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
+    // # QUIT #
+    renderer_add_queue_uni(start->quit.body,
+                           start->quit.col,
+                           start->quit.from_center);
+    renderer_add_queue_text(start->quit.body.pos.x,
+                            start->quit.body.pos.y,
+                            start->quit.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
+    // # Issue draw calls #
+    renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+}
+
+int options_menu_prepare(PR::OptionsMenu *opt) {
+    opt->to_start_menu = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
+            .dim = glm::vec2(GAME_WIDTH / 20.f, GAME_HEIGHT / 15.f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = LEVEL_BUTTON_DEFAULT_COLOR,
+        .text = "<-"
+    };
+
+    // NOTE: Make the cursor show
+    glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+    PR::Sound *sound = &glob->sound;
+    if (!ma_sound_is_playing(&sound->menu_music)) {
+        ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
+        ma_sound_start(&sound->menu_music);
+    }
+
+    return 0;
+}
+void options_menu_update() {
+    PR::OptionsMenu *opt = &glob->current_options_menu;
+    PR::Sound *sound = &glob->sound;
+    InputController *input = &glob->input;
+
+    // # Check if going back to the start menu #
+    if (input->menu_to_start_menu.clicked ||
+        (input->mouse_left.clicked &&
+            rect_contains_point(opt->to_start_menu.body,
+                                input->mouseX, input->mouseY,
+                                opt->to_start_menu.from_center))) {
+        ma_sound_seek_to_pcm_frame(&sound->to_start_menu, 0);
+        ma_sound_start(&sound->to_start_menu);
+        CHANGE_CASE_TO_START_MENU(void());
+    }
+
+    // ### RENDERING ###
+    Rect full_screen = {
+        .pos = glm::vec2(0.f, 0.f),
+        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .angle = 0.f,
+        .triangle = false,
+    };
+    renderer_add_queue_uni(
+            full_screen,
+            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            false);
+
+    // render the `go_to_start_menu` button
+    renderer_add_queue_uni(opt->to_start_menu.body,
+                           opt->to_start_menu.col,
+                           opt->to_start_menu.from_center);
+    renderer_add_queue_text(opt->to_start_menu.body.pos.x,
+                            opt->to_start_menu.body.pos.y,
+                            opt->to_start_menu.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
+
+    renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+}
+
+int play_menu_prepare(PR::PlayMenu *menu) {
     // NOTE: By not setting this, it will remain the same as before
     //          starting the level
     //menu->showing_campaign_buttons = true;
+
+    menu->to_start_menu = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
+            .dim = glm::vec2(GAME_WIDTH / 20.f, GAME_HEIGHT / 15.f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = LEVEL_BUTTON_DEFAULT_COLOR,
+        .text = "<-"
+    };
 
     menu->selected_campaign_button = 0;
 
@@ -880,15 +1144,18 @@ int menu_prepare(PR::Menu *menu, PR::Level *level,
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     PR::Sound *sound = &glob->sound;
-    ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
-    ma_sound_start(&sound->menu_music);
+    if (!ma_sound_is_playing(&sound->menu_music)) {
+        ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
+        ma_sound_start(&sound->menu_music);
+    }
+
     return 0;
 }
 
-void menu_update(void) {
+void play_menu_update(void) {
     InputController *input = &glob->input;
-    PR::Camera *cam = &glob->current_menu.camera;
-    PR::Menu *menu = &glob->current_menu;
+    PR::Camera *cam = &glob->current_play_menu.camera;
+    PR::PlayMenu *menu = &glob->current_play_menu;
     PR::Sound *sound = &glob->sound;
 
     if (input->menu_to_campaign.clicked ||
@@ -1009,9 +1276,9 @@ void menu_update(void) {
                                                               cam),
                                          input->mouseX, input->mouseY,
                                          lb->button.from_center))) {
-                    CHANGE_CASE_TO(PR::LEVEL,
-                                   level_prepare, lb->mapfile_path,
-                                   lb->button.text, false, lb->is_new_level);
+                    CHANGE_CASE_TO_LEVEL(
+                            lb->mapfile_path, lb->button.text,
+                            false, lb->is_new_level, void());
                 }
             } else {
                 lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -1177,9 +1444,9 @@ void menu_update(void) {
                     }
 
                     if (input->mouse_left.clicked) {
-                        CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                                       lb->mapfile_path, lb->button.text,
-                                       true, lb->is_new_level);
+                        CHANGE_CASE_TO_LEVEL(
+                                lb->mapfile_path, lb->button.text,
+                                true, lb->is_new_level, void());
                     }
                 } else {
                     edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
@@ -1212,17 +1479,17 @@ void menu_update(void) {
                             input->mouseX, input->mouseY,
                             lb->button.from_center))) {
 
-                        CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                                       lb->mapfile_path, lb->button.text,
-                                       false, lb->is_new_level);
+                        CHANGE_CASE_TO_LEVEL(
+                                lb->mapfile_path, lb->button.text,
+                                false, lb->is_new_level, void());
                     } else if (input->menu_custom_delete.clicked){
                         menu->deleting_level = true;
                         menu->deleting_index = custombutton_index;
                         menu->delete_selection = PR::BUTTON_NO;
                     } else if (input->menu_custom_edit.clicked) {
-                        CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                                       lb->mapfile_path, lb->button.text,
-                                       true, lb->is_new_level);
+                        CHANGE_CASE_TO_LEVEL(
+                                lb->mapfile_path, lb->button.text,
+                                true, lb->is_new_level, void());
                     }
                 } else {
                     lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -1390,15 +1657,18 @@ void menu_update(void) {
     cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
          glob->state.delta_time * cam->speed_multiplier);
 
+    // # Check if going back to the start menu #
+    if (input->menu_to_start_menu.clicked ||
+        (input->mouse_left.clicked &&
+            rect_contains_point(menu->to_start_menu.body,
+                                input->mouseX, input->mouseY,
+                                menu->to_start_menu.from_center))) {
+        ma_sound_seek_to_pcm_frame(&sound->to_start_menu, 0);
+        ma_sound_start(&sound->to_start_menu);
+        CHANGE_CASE_TO_START_MENU(void());
+    }
 
-    menu_draw();
-
-    return; 
-}
-
-void menu_draw(void) {
-    if (glob->state.current_case != PR::MENU) return;
-
+    // ### DRAWING ###
     Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
         .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
@@ -1409,9 +1679,6 @@ void menu_draw(void) {
             full_screen,
             glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
             false);
-
-    PR::Menu *menu = &glob->current_menu;
-    PR::Camera *cam = &glob->current_menu.camera;
 
     Rect campaign_rend_rect =
         rect_in_camera_space(menu->show_campaign_button.body, cam);
@@ -1502,8 +1769,16 @@ void menu_draw(void) {
                                 button_rend_rect.pos.y,
                                 add_level.text, glm::vec4(1.0f),
                                 &glob->rend_res.fonts[0], true);
-
     }
+
+    // render the `go_to_start_menu` button
+    renderer_add_queue_uni(menu->to_start_menu.body,
+                           menu->to_start_menu.col,
+                           menu->to_start_menu.from_center);
+    renderer_add_queue_text(menu->to_start_menu.body.pos.x,
+                            menu->to_start_menu.body.pos.y,
+                            menu->to_start_menu.text, glm::vec4(1.0f),
+                            &glob->rend_res.fonts[0], true);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -1537,12 +1812,12 @@ void menu_draw(void) {
     }
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+
+    return; 
 }
 
-int level_prepare(PR::Menu *menu, PR::Level *level,
+int level_prepare(PR::Level *level,
                   const char *mapfile_path, bool is_new_level) {
-
-    UNUSED(menu);
 
     PR::WinInfo *win = &glob->window;
 
@@ -1778,7 +2053,6 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
         */
     }
 
-
     PR::ParticleSystem *boost_ps = &level->particle_systems[0];
     boost_ps->particles_number = 200;
     if (boost_ps->particles_number) {
@@ -1890,6 +2164,10 @@ int level_prepare(PR::Menu *menu, PR::Level *level,
 
     // NOTE: Hide the cursor only if it succeded in doing everything else
     glfwSetInputMode(win->glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+    if (level->editing_available) {
+        level_activate_edit_mode(level);
+    }
 
     PR::Sound *sound = &glob->sound;
     ma_sound_stop(&sound->menu_music);
@@ -2262,7 +2540,6 @@ void level_update(void) {
             level->text_wave_time = 0.f;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            // CHANGE_CASE_TO(PR::MENU, menu_prepare, "", false);
         }
     }
 
@@ -2441,6 +2718,10 @@ void level_update(void) {
             p->body.pos = level->start_pos.pos;
             p->body.angle = level->start_pos.angle;
         }
+
+        renderer_add_queue_text(GAME_WIDTH * 0.9f, GAME_HEIGHT * 0.03f,
+                                "EDITING", glm::vec4(1.f),
+                                &glob->rend_res.fonts[0], true);
 
         // NOTE: Loop over window edged pacman style,
         //       but only on the top and bottom
@@ -3925,9 +4206,9 @@ void level_update(void) {
                 rect_contains_point(b_restart.body,
                                     input->mouseX, input->mouseY,
                                     b_restart.from_center))) {
-            CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                           level->file_path, level->name,
-                           level->editing_available, level->is_new);
+            CHANGE_CASE_TO_LEVEL(
+                    level->file_path, level->name,
+                    level->editing_available, level->is_new, void());
         }
         // ## QUIT
         if (input->quit.clicked ||
@@ -3937,7 +4218,7 @@ void level_update(void) {
                 rect_contains_point(b_quit.body,
                                     input->mouseX, input->mouseY,
                                     b_quit.from_center))) {
-            CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
+            CHANGE_CASE_TO_PLAY_MENU(void());
         }
 
         // ### Highlight selection ###
@@ -4098,9 +4379,9 @@ void level_update(void) {
                 rect_contains_point(b_restart.body,
                                     input->mouseX, input->mouseY,
                                     b_restart.from_center))) {
-            CHANGE_CASE_TO(PR::LEVEL, level_prepare,
-                           level->file_path, level->name,
-                           level->editing_available, level->is_new);
+            CHANGE_CASE_TO_LEVEL(
+                    level->file_path, level->name,
+                    level->editing_available, level->is_new, void());
         }
         // ## QUIT
         if (input->quit.clicked ||
@@ -4110,7 +4391,7 @@ void level_update(void) {
                 rect_contains_point(b_quit.body,
                                     input->mouseX, input->mouseY,
                                     b_quit.from_center))) {
-            CHANGE_CASE_TO(PR::MENU, menu_prepare, "", "", false, false);
+            CHANGE_CASE_TO_PLAY_MENU(void());
         }
 
         // ### Highlight selection ###
@@ -4257,9 +4538,7 @@ inline void plane_activate_crash_animation(PR::Plane *p) {
 
 inline void portal_render(PR::Portal *portal) {
     PR::Camera *cam = &glob->current_level.camera;
-    //PR::WinInfo *win = &glob->window;
     if (portal->type == PR::SHUFFLE_COLORS) {
-
         Rect b = portal->body;
 
         Rect q1;
@@ -4316,8 +4595,13 @@ inline void boostpad_render(PR::BoostPad *pad) {
 
     Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
 
-    // if (pad_in_cam_pos.pos.x < -((float)win->w) ||
-    //     pad_in_cam_pos.pos.x > win->w * 2.f) return;
+    if (glm::abs(pad_in_cam_pos.pos.x) >
+            glm::abs(pad_in_cam_pos.dim.x) + glm::abs(pad_in_cam_pos.dim.y) +
+            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
+     || glm::abs(pad_in_cam_pos.pos.y) >
+            glm::abs(pad_in_cam_pos.dim.x) + glm::abs(pad_in_cam_pos.dim.y) +
+            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
+    ) return;
 
     renderer_add_queue_uni(pad_in_cam_pos,
                           glm::vec4(0.f, 1.f, 0.f, 1.f),
@@ -4343,8 +4627,13 @@ inline void obstacle_render(PR::Obstacle *obs) {
     PR::Camera *cam = &glob->current_level.camera;
     Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
-    // if (obs_in_cam_pos.pos.x < -((float)win->w) ||
-    //     obs_in_cam_pos.pos.x > win->w * 2.f) return;
+    if (glm::abs(obs_in_cam_pos.pos.x) >
+            glm::abs(obs_in_cam_pos.dim.x) + glm::abs(obs_in_cam_pos.dim.y) +
+            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
+     || glm::abs(obs_in_cam_pos.pos.y) >
+            glm::abs(obs_in_cam_pos.dim.x) + glm::abs(obs_in_cam_pos.dim.y) +
+            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
+    ) return;
 
     renderer_add_queue_uni(obs_in_cam_pos,
                           get_obstacle_color(obs),

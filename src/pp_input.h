@@ -82,6 +82,7 @@ struct InputController {
     Key menu_custom_edit;
     Key menu_to_custom;
     Key menu_to_campaign;
+    Key menu_to_start_menu;
 
     // NOTE: Debug
     Key debug;

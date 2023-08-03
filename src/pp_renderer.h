@@ -49,29 +49,37 @@ struct Renderer {
     unsigned int text_vertex_count;
 };
 
-TexCoords texcoords_in_texture_space(size_t x, size_t y, size_t w, size_t h, Texture tex, bool inverse);
+TexCoords
+texcoords_in_texture_space(size_t x, size_t y, size_t w, size_t h, Texture tex, bool inverse);
 
-void renderer_init(Renderer* renderer);
+void
+renderer_init(Renderer* renderer);
 
 // NOTE: Unicolor rendering
-void renderer_add_queue_uni(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered);
+void
+renderer_add_queue_uni(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered);
 
-inline void renderer_add_queue_uni(Rect rec, glm::vec4 c, bool centered) {
+inline void
+renderer_add_queue_uni(Rect rec, glm::vec4 c, bool centered) {
     renderer_add_queue_uni(rec.pos.x, rec.pos.y,
                           rec.dim.x, rec.dim.y, rec.angle,
                           c, rec.triangle, centered);
 }
 
-void renderer_draw_uni(Shader s);
+void
+renderer_draw_uni(Shader s);
 
 
 // NOTE: Textured rendering
 // This is intended to be used with a single texture containing everything
-void renderer_create_texture(Texture* t, const char* filename);
+void
+renderer_create_texture(Texture* t, const char* filename);
 
-void renderer_add_queue_tex(float x, float y, float w, float h, float r, bool centered, float tx, float ty, float tw, float th);
+void
+renderer_add_queue_tex(float x, float y, float w, float h, float r, bool centered, float tx, float ty, float tw, float th);
 
-inline void renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
+inline void
+renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
     renderer_add_queue_tex(rec.pos.x, rec.pos.y,
                            rec.dim.x, rec.dim.y,
                            rec.angle, centered,
@@ -79,13 +87,17 @@ inline void renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
                            t.tw, t.th);
 }
 
-void renderer_draw_tex(Shader s, Texture* t);
+void
+renderer_draw_tex(Shader s, Texture* t);
 
 // NOTE: Text rendering
-int renderer_create_font_atlas(Font *font);
+int
+renderer_create_font_atlas(Font *font);
 
-void renderer_add_queue_text(float x, float y, const char* text, glm::vec4 c, Font* font, bool centered);
+void
+renderer_add_queue_text(float x, float y, const char* text, glm::vec4 c, Font* font, bool centered);
 
-void renderer_draw_text(Font* font, Shader s);
+void
+renderer_draw_text(Font* font, Shader s);
 
 #endif // PR_RENDERER_H

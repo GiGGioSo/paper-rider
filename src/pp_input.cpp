@@ -56,6 +56,7 @@ void input_controller_update(GLFWwindow *window, InputController *input,
     key_reset(&input->menu_custom_edit);
     key_reset(&input->menu_to_custom);
     key_reset(&input->menu_to_campaign);
+    key_reset(&input->menu_to_start_menu);
 
     // Debug
     key_reset(&input->debug);
@@ -130,6 +131,7 @@ void input_controller_update(GLFWwindow *window, InputController *input,
         }
         if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_CIRCLE] == GLFW_PRESS) {
             key_pressed(&input->quit);
+            key_pressed(&input->menu_to_start_menu);
         }
         if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_TRIANGLE] == GLFW_PRESS) {
             key_pressed(&input->menu_custom_delete);
@@ -202,5 +204,8 @@ void input_controller_update(GLFWwindow *window, InputController *input,
     }
     if(IS_KEY_PRESSED(GLFW_KEY_R)) {
         key_pressed(&input->reset_pos);
+    }
+    if(IS_KEY_PRESSED(GLFW_KEY_Q)) {
+        key_pressed(&input->menu_to_start_menu);
     }
 }
