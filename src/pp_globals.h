@@ -112,7 +112,6 @@ struct PR {
     };
     struct Camera {
         glm::vec2 pos;
-
         float speed_multiplier;
     };
     struct Atmosphere {
@@ -156,6 +155,7 @@ struct PR {
         Rect body;
         glm::vec4 col;
         char text[256];
+        bool enabled;
     };
     struct LevelButton {
         Button button;
@@ -175,6 +175,12 @@ struct PR {
         size_t count;
         size_t capacity;
     };
+    struct MenuCamera {
+        glm::vec2 pos;
+        float speed_multiplier;
+        float goal_position;
+        bool follow_selection;
+    };
 
     enum StartMenuSelection {
         START_BUTTON_PLAY,
@@ -191,8 +197,31 @@ struct PR {
     };
     StartMenu current_start_menu;
 
+    struct OptionDropdown {
+        Button select;
+        size_t options_number;
+        Button *options;
+    };
+    struct OptionSlider {
+        Button select;
+        float value;
+    };
+
     struct OptionsMenu {
+        MenuCamera camera;
+
         Button to_start_menu;
+
+        bool showing_general_pane;
+        Button to_general_pane;
+        Button to_controls_pane;
+        // General options
+        OptionSlider master_volume;
+        OptionSlider sfx_volume;
+        OptionSlider music_volume;
+        OptionDropdown display_mode;
+        OptionDropdown resolution;
+        // TODO: Keybinding options
     };
     OptionsMenu current_options_menu;
 
@@ -202,9 +231,7 @@ struct PR {
     };
     #define CAMPAIGN_LEVELS_NUMBER 2
     struct PlayMenu {
-        Camera camera;
-        float camera_goal_position;
-        bool camera_follow_selection;
+        MenuCamera camera;
 
         bool showing_campaign_buttons;
         Button show_campaign_button;
@@ -359,7 +386,7 @@ struct PR {
         // Menu
         ma_sound change_selection;
         ma_sound click_selected;
-        ma_sound campaign_custom;
+        ma_sound change_pane;
         ma_sound delete_level;
         ma_sound to_start_menu;
         // Game

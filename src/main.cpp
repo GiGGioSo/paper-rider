@@ -397,9 +397,9 @@ int glob_init(void) {
                                      "./res/sounds/menu_select.wav",
                                      MA_SOUND_FLAG_DECODE,
                                      &sound->sfx_group, NULL,
-                                     &sound->campaign_custom);
+                                     &sound->change_pane);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound campaign_custom!"
+        std::cout << "[ERROR] Could not initialize the sound change_pane!"
                   << std::endl;
         return 1;
     }
@@ -463,6 +463,7 @@ int glob_init(void) {
     options_menu_set_to_null(&glob->current_options_menu);
     level_set_to_null(&glob->current_level);
 
+    glob->current_start_menu.selection = PR::START_BUTTON_PLAY;
     CHANGE_CASE_TO_START_MENU(0);
 
     return 0;
@@ -475,7 +476,7 @@ void glob_free(void) {
     ma_sound_uninit(&s->gameover_music);
     ma_sound_uninit(&s->change_selection);
     ma_sound_uninit(&s->click_selected);
-    ma_sound_uninit(&s->campaign_custom);
+    ma_sound_uninit(&s->change_pane);
     ma_sound_uninit(&s->to_start_menu);
     ma_sound_uninit(&s->rider_detach);
     ma_sound_uninit(&s->rider_double_jump);

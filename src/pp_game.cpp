@@ -95,6 +95,8 @@ boostpad_render(PR::BoostPad *pad);
 inline void
 obstacle_render(PR::Obstacle *obs);
 inline void
+button_render(PR::Button *but, glm::vec4 col, Font *font);
+inline void
 portal_render_info(PR::Portal *portal, float tx, float ty);
 inline void
 boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
@@ -128,6 +130,8 @@ void
 set_start_pos_option_buttons(PR::Button *buttons);
 inline Rect
 rect_in_camera_space(Rect r, PR::Camera *cam);
+inline Rect
+rect_in_menu_camera_space(Rect r, PR::MenuCamera *cam);
 void
 level_deactivate_edit_mode(PR::Level *level);
 void
@@ -747,8 +751,6 @@ const char *campaign_levels_filepath[2] = {
 };
 
 int start_menu_prepare(PR::StartMenu *start) {
-    start->selection = PR::START_BUTTON_PLAY;
-
     start->play = {
         .from_center = true,
         .body = {
@@ -909,30 +911,9 @@ void start_menu_update() {
             full_screen,
             glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
             false);
-    // # PLAY #
-    renderer_add_queue_uni(start->play.body,
-                           start->play.col,
-                           start->play.from_center);
-    renderer_add_queue_text(start->play.body.pos.x,
-                            start->play.body.pos.y,
-                            start->play.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
-    // # OPTIONS #
-    renderer_add_queue_uni(start->options.body,
-                           start->options.col,
-                           start->options.from_center);
-    renderer_add_queue_text(start->options.body.pos.x,
-                            start->options.body.pos.y,
-                            start->options.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
-    // # QUIT #
-    renderer_add_queue_uni(start->quit.body,
-                           start->quit.col,
-                           start->quit.from_center);
-    renderer_add_queue_text(start->quit.body.pos.x,
-                            start->quit.body.pos.y,
-                            start->quit.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
+    button_render(&start->play, glm::vec4(1.f), &glob->rend_res.fonts[0]);
+    button_render(&start->options, glm::vec4(1.f), &glob->rend_res.fonts[0]);
+    button_render(&start->quit, glm::vec4(1.f), &glob->rend_res.fonts[0]);
     // # Issue draw calls #
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -948,8 +929,41 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .triangle = false,
         },
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
-        .text = "<-"
+        .text = "<-",
+        .enabled = true,
     };
+
+    opt->showing_general_pane = true;
+    opt->to_general_pane = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.1f),
+            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.125f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = LEVEL_BUTTON_SELECTED_COLOR,
+        .text = "GENERAL\0",
+        .enabled = true,
+    };
+    opt->to_controls_pane = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * 0.7f, GAME_HEIGHT * 0.1f),
+            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.125f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = LEVEL_BUTTON_DEFAULT_COLOR,
+        .text = "BUTTON\0",
+        .enabled = true,
+    };
+
+    PR::MenuCamera *cam = &opt->camera;
+    cam->pos.x = GAME_WIDTH * 0.5f;
+    cam->pos.y = GAME_HEIGHT * 0.5f;
+    cam->speed_multiplier = 6.f;
+    cam->goal_position = cam->pos.y;
 
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -965,6 +979,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
 void options_menu_update() {
     PR::OptionsMenu *opt = &glob->current_options_menu;
     PR::Sound *sound = &glob->sound;
+    PR::MenuCamera *cam = &opt->camera;
     InputController *input = &glob->input;
 
     // # Check if going back to the start menu #
@@ -976,6 +991,39 @@ void options_menu_update() {
         ma_sound_seek_to_pcm_frame(&sound->to_start_menu, 0);
         ma_sound_start(&sound->to_start_menu);
         CHANGE_CASE_TO_START_MENU(void());
+    }
+    // # Check if changing options pane #
+    if (!opt->showing_general_pane &&
+        (input->menu_pane_left.clicked ||
+          (input->mouse_left.clicked &&
+           rect_contains_point(
+                rect_in_menu_camera_space(opt->to_general_pane.body, cam),
+                input->mouseX, input->mouseY,
+                opt->to_general_pane.from_center)))) {
+        opt->showing_general_pane = true;
+        opt->to_general_pane.col = LEVEL_BUTTON_SELECTED_COLOR;
+        opt->to_controls_pane.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
+        ma_sound_start(&sound->change_pane);
+    }
+    if (opt->showing_general_pane &&
+        (input->menu_pane_right.clicked ||
+          (input->mouse_left.clicked &&
+           rect_contains_point(
+             rect_in_menu_camera_space(opt->to_controls_pane.body, cam),
+             input->mouseX, input->mouseY,
+             opt->to_controls_pane.from_center)))) {
+        opt->showing_general_pane = false;
+        opt->to_controls_pane.col = LEVEL_BUTTON_SELECTED_COLOR;
+        opt->to_general_pane.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
+        ma_sound_start(&sound->change_pane);
+    }
+
+    if (opt->showing_general_pane) {
+        // TODO: Do something with the options
+    } else {
+        // TODO: Do something with the options
     }
 
     // ### RENDERING ###
@@ -991,13 +1039,24 @@ void options_menu_update() {
             false);
 
     // render the `go_to_start_menu` button
-    renderer_add_queue_uni(opt->to_start_menu.body,
-                           opt->to_start_menu.col,
-                           opt->to_start_menu.from_center);
-    renderer_add_queue_text(opt->to_start_menu.body.pos.x,
-                            opt->to_start_menu.body.pos.y,
-                            opt->to_start_menu.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
+    button_render(&opt->to_start_menu, glm::vec4(1.f),
+                  &glob->rend_res.fonts[0]);
+
+    // render GENERAL and CONTROLS buttons
+    button_render(&opt->to_general_pane, glm::vec4(1.f),
+                  &glob->rend_res.fonts[0]);
+    button_render(&opt->to_controls_pane, glm::vec4(1.f),
+                  &glob->rend_res.fonts[0]);
+
+    if (opt->showing_general_pane) {
+        renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
+                                "GENERAL PANE", glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+    } else {
+        renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
+                                "CONTROLS PANE", glm::vec4(1.0f),
+                                &glob->rend_res.fonts[0], true);
+    }
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -1101,11 +1160,11 @@ int play_menu_prepare(PR::PlayMenu *menu) {
         std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
     }
 
-    PR::Camera *cam = &menu->camera;
+    PR::MenuCamera *cam = &menu->camera;
     cam->pos.x = GAME_WIDTH * 0.5f;
     cam->pos.y = GAME_HEIGHT * 0.5f;
     cam->speed_multiplier = 6.f;
-    menu->camera_goal_position = cam->pos.y;
+    cam->goal_position = cam->pos.y;
 
     menu->deleting_frame = {
         .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
@@ -1154,28 +1213,29 @@ int play_menu_prepare(PR::PlayMenu *menu) {
 
 void play_menu_update(void) {
     InputController *input = &glob->input;
-    PR::Camera *cam = &glob->current_play_menu.camera;
     PR::PlayMenu *menu = &glob->current_play_menu;
+    PR::MenuCamera *cam = &menu->camera;
     PR::Sound *sound = &glob->sound;
 
-    if (input->menu_to_campaign.clicked ||
-        (input->mouse_left.clicked &&
-         rect_contains_point(
-                rect_in_camera_space(menu->show_campaign_button.body, cam),
+    if (!menu->showing_campaign_buttons &&
+         (input->menu_pane_left.clicked ||
+          (input->mouse_left.clicked &&
+           rect_contains_point(
+                rect_in_menu_camera_space(menu->show_campaign_button.body, cam),
                 input->mouseX, input->mouseY,
-                menu->show_campaign_button.from_center))) {
+                menu->show_campaign_button.from_center)))) {
         menu->showing_campaign_buttons = true;
         menu->show_campaign_button.col = SHOW_BUTTON_SELECTED_COLOR;
         menu->show_custom_button.col = SHOW_BUTTON_DEFAULT_COLOR;
-        menu->camera_goal_position = GAME_HEIGHT * 0.5f;
+        cam->goal_position = GAME_HEIGHT * 0.5f;
         menu->deleting_level = false;
-        ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
-        ma_sound_start(&sound->campaign_custom);
+        ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
+        ma_sound_start(&sound->change_pane);
     }
-    if (input->menu_to_custom.clicked ||
+    if (input->menu_pane_right.clicked ||
         (input->mouse_left.clicked &&
          rect_contains_point(
-             rect_in_camera_space(menu->show_custom_button.body, cam),
+             rect_in_menu_camera_space(menu->show_custom_button.body, cam),
              input->mouseX, input->mouseY,
              menu->show_custom_button.from_center))) {
         int result = 0;
@@ -1191,7 +1251,7 @@ void play_menu_update(void) {
             menu->showing_campaign_buttons = false;
             menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
             menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
-            menu->camera_goal_position = GAME_HEIGHT * 0.5f;
+            cam->goal_position = GAME_HEIGHT * 0.5f;
 
             PR::Button *add_level = &menu->add_custom_button;
             button_set_position(add_level, menu->custom_buttons.count);
@@ -1202,11 +1262,11 @@ void play_menu_update(void) {
             std::cout << "[ERROR] Could not load custom map files"
                       << std::endl;
         }
-        // if (ma_sound_is_playing(&sound->campaign_custom)) {
-        //     ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
+        // if (ma_sound_is_playing(&sound->change_pane)) {
+        //     ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
         // }
-        ma_sound_seek_to_pcm_frame(&sound->campaign_custom, 0);
-        ma_sound_start(&sound->campaign_custom);
+        ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
+        ma_sound_start(&sound->change_pane);
     }
 
     bool was_selection_moved = false;
@@ -1252,7 +1312,7 @@ void play_menu_update(void) {
 
             // Mouse
             if (input->was_mouse_moved) {
-                if (rect_contains_point(rect_in_camera_space(lb->button.body,
+                if (rect_contains_point(rect_in_menu_camera_space(lb->button.body,
                                                              cam),
                                         input->mouseX, input->mouseY,
                                         lb->button.from_center)) {
@@ -1272,7 +1332,7 @@ void play_menu_update(void) {
                 lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
                 if (input->menu_click.clicked ||
                     (input->mouse_left.clicked &&
-                     rect_contains_point(rect_in_camera_space(lb->button.body,
+                     rect_contains_point(rect_in_menu_camera_space(lb->button.body,
                                                               cam),
                                          input->mouseX, input->mouseY,
                                          lb->button.from_center))) {
@@ -1417,12 +1477,12 @@ void play_menu_update(void) {
                     &menu->custom_buttons.items[custombutton_index];
 
                 if (rect_contains_point(
-                            rect_in_camera_space(del_lb->body, cam),
+                            rect_in_menu_camera_space(del_lb->body, cam),
                             input->mouseX, input->mouseY,
                             del_lb->from_center)) {
-                    del_lb->col = DEL_BUTTON_SELECTED_COLOR;
-                    edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
                     if (input->was_mouse_moved) {
+                        del_lb->col = DEL_BUTTON_SELECTED_COLOR;
+                        edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
                         menu->selected_custom_button = custombutton_index;
                     }
 
@@ -1433,13 +1493,13 @@ void play_menu_update(void) {
                     }
                     
                 } else if (rect_contains_point(
-                            rect_in_camera_space(edit_lb->body, cam),
+                            rect_in_menu_camera_space(edit_lb->body, cam),
                             input->mouseX, input->mouseY,
                             edit_lb->from_center)) {
                     
-                    edit_lb->col = EDIT_BUTTON_SELECTED_COLOR;
-                    del_lb->col = DEL_BUTTON_DEFAULT_COLOR;
                     if (input->was_mouse_moved) {
+                        edit_lb->col = EDIT_BUTTON_SELECTED_COLOR;
+                        del_lb->col = DEL_BUTTON_DEFAULT_COLOR;
                         menu->selected_custom_button = custombutton_index;
                     }
 
@@ -1455,7 +1515,7 @@ void play_menu_update(void) {
 
                 if (input->was_mouse_moved) {
                     if (rect_contains_point(
-                                rect_in_camera_space(lb->button.body, cam),
+                                rect_in_menu_camera_space(lb->button.body, cam),
                                 input->mouseX, input->mouseY,
                                 lb->button.from_center)) {
                         
@@ -1475,7 +1535,7 @@ void play_menu_update(void) {
                     if (input->menu_click.clicked ||
                         (input->mouse_left.clicked &&
                          rect_contains_point(
-                            rect_in_camera_space(lb->button.body, cam),
+                            rect_in_menu_camera_space(lb->button.body, cam),
                             input->mouseX, input->mouseY,
                             lb->button.from_center))) {
 
@@ -1500,7 +1560,7 @@ void play_menu_update(void) {
 
             if (input->was_mouse_moved) {
                 if (rect_contains_point(
-                        rect_in_camera_space(add_level->body, cam),
+                        rect_in_menu_camera_space(add_level->body, cam),
                         input->mouseX, input->mouseY,
                         add_level->from_center)) {
                     menu->selected_custom_button = menu->custom_buttons.count;
@@ -1517,7 +1577,7 @@ void play_menu_update(void) {
                 if (input->menu_click.clicked ||
                     (input->mouse_left.clicked &&
                      rect_contains_point(
-                         rect_in_camera_space(add_level->body, cam),
+                         rect_in_menu_camera_space(add_level->body, cam),
                          input->mouseX, input->mouseY,
                          add_level->from_center))) {
                     bool found = true;
@@ -1591,7 +1651,7 @@ void play_menu_update(void) {
     }
 
     // NOTE: Move menu camera based on input method used
-    if (menu->camera_follow_selection) {
+    if (cam->follow_selection) {
         int selected_index =
             menu->showing_campaign_buttons ? menu->selected_campaign_button :
                                              menu->selected_custom_button;
@@ -1600,15 +1660,15 @@ void play_menu_update(void) {
             size_t row = selected_index / 3;
             float selected_goal_position =
                 (row * 2.f + 3.f) / 10.f * GAME_HEIGHT;
-            menu->camera_goal_position =
+            cam->goal_position =
                 (selected_goal_position > GAME_HEIGHT * 0.5f) ?
                     selected_goal_position : GAME_HEIGHT * 0.5f;
 
         } else {
-            menu->camera_goal_position = GAME_HEIGHT * 0.5f;
+            cam->goal_position = GAME_HEIGHT * 0.5f;
         }
         if (input->was_mouse_moved) {
-            menu->camera_follow_selection = false;
+            cam->follow_selection = false;
         }
     } else {
         size_t buttons_shown_number =
@@ -1619,11 +1679,12 @@ void play_menu_update(void) {
             0 < input->mouseY && input->mouseY < GAME_HEIGHT) {
 
             // NOTE: 0.2f is an arbitrary amount
-            if (menu->camera_goal_position > GAME_HEIGHT*0.5f &&
+            if (cam->goal_position > GAME_HEIGHT*0.5f &&
                 input->mouseY < GAME_HEIGHT * 0.2f) {
-                float cam_velocity = (1.f - (input->mouseY / (GAME_HEIGHT*0.20))) *
+                float cam_velocity =
+                    (1.f - (input->mouseY / (GAME_HEIGHT*0.20))) *
                                      CAMERA_MAX_VELOCITY;
-                menu->camera_goal_position -=
+                cam->goal_position -=
                     cam_velocity * glob->state.delta_time;
             }
 
@@ -1636,12 +1697,12 @@ void play_menu_update(void) {
             float screens_of_buttons = ((buttons_shown_number+2) / 15) +
                                         rows_in_screen / 5.f;
 
-            if (menu->camera_goal_position < GAME_HEIGHT*screens_of_buttons &&
+            if (cam->goal_position < GAME_HEIGHT*screens_of_buttons &&
                 input->mouseY > GAME_HEIGHT * 0.8f) {
                 float cam_velocity =
                     ((input->mouseY - GAME_HEIGHT*0.8f) / (GAME_HEIGHT*0.20)) *
                     CAMERA_MAX_VELOCITY;
-                menu->camera_goal_position +=
+                cam->goal_position +=
                     cam_velocity * glob->state.delta_time;
             }
         }
@@ -1651,10 +1712,10 @@ void play_menu_update(void) {
                  input->menu_down.clicked ||
                  input->menu_left.clicked ||
                  input->menu_right.clicked)) {
-            menu->camera_follow_selection = true;
+            cam->follow_selection = true;
         }
     }
-    cam->pos.y = lerp(cam->pos.y, menu->camera_goal_position,
+    cam->pos.y = lerp(cam->pos.y, cam->goal_position,
          glob->state.delta_time * cam->speed_multiplier);
 
     // # Check if going back to the start menu #
@@ -1681,7 +1742,7 @@ void play_menu_update(void) {
             false);
 
     Rect campaign_rend_rect =
-        rect_in_camera_space(menu->show_campaign_button.body, cam);
+        rect_in_menu_camera_space(menu->show_campaign_button.body, cam);
     renderer_add_queue_uni(campaign_rend_rect,
                            menu->show_campaign_button.col,
                            menu->show_campaign_button.from_center);
@@ -1691,7 +1752,7 @@ void play_menu_update(void) {
                             &glob->rend_res.fonts[0], true);
 
     Rect custom_rend_rect =
-        rect_in_camera_space(menu->show_custom_button.body, cam);
+        rect_in_menu_camera_space(menu->show_custom_button.body, cam);
     renderer_add_queue_uni(custom_rend_rect,
                            menu->show_custom_button.col,
                            menu->show_custom_button.from_center);
@@ -1708,7 +1769,7 @@ void play_menu_update(void) {
             PR::LevelButton *lb =
                 &menu->campaign_buttons[levelbutton_index];
 
-            Rect button_rend_rect = rect_in_camera_space(lb->button.body, cam);
+            Rect button_rend_rect = rect_in_menu_camera_space(lb->button.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
                                    lb->button.col,
@@ -1726,7 +1787,7 @@ void play_menu_update(void) {
             PR::CustomLevelButton lb =
                 menu->custom_buttons.items[custombutton_index];
 
-            Rect button_rend_rect = rect_in_camera_space(lb.button.body, cam);
+            Rect button_rend_rect = rect_in_menu_camera_space(lb.button.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
                                    lb.button.col,
@@ -1736,7 +1797,7 @@ void play_menu_update(void) {
                                     lb.button.text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
 
-            button_rend_rect = rect_in_camera_space(lb.edit.body, cam);
+            button_rend_rect = rect_in_menu_camera_space(lb.edit.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
                                    lb.edit.col,
@@ -1748,7 +1809,7 @@ void play_menu_update(void) {
                                     lb.edit.text, glm::vec4(1.0f),
                                     &glob->rend_res.fonts[0], true);
 
-            button_rend_rect = rect_in_camera_space(lb.del.body, cam);
+            button_rend_rect = rect_in_menu_camera_space(lb.del.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
                                    lb.del.col,
@@ -1761,7 +1822,7 @@ void play_menu_update(void) {
 
         // NOTE: Drawing the button to add a level
         PR::Button add_level = menu->add_custom_button;
-        Rect button_rend_rect = rect_in_camera_space(add_level.body, cam);
+        Rect button_rend_rect = rect_in_menu_camera_space(add_level.body, cam);
         renderer_add_queue_uni(button_rend_rect,
                                add_level.col,
                                add_level.from_center);
@@ -1772,13 +1833,8 @@ void play_menu_update(void) {
     }
 
     // render the `go_to_start_menu` button
-    renderer_add_queue_uni(menu->to_start_menu.body,
-                           menu->to_start_menu.col,
-                           menu->to_start_menu.from_center);
-    renderer_add_queue_text(menu->to_start_menu.body.pos.x,
-                            menu->to_start_menu.body.pos.y,
-                            menu->to_start_menu.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
+    button_render(&menu->to_start_menu, glm::vec4(1.f),
+                  &glob->rend_res.fonts[0]);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -1786,20 +1842,10 @@ void play_menu_update(void) {
     if (menu->deleting_level) {
         renderer_add_queue_uni(menu->deleting_frame,
                                glm::vec4(0.9f, 0.9f, 0.9f, 1.f), true);
-        renderer_add_queue_uni(menu->delete_yes.body,
-                               menu->delete_yes.col,
-                               menu->delete_yes.from_center);
-        renderer_add_queue_text(menu->delete_yes.body.pos.x,
-                                menu->delete_yes.body.pos.y,
-                                menu->delete_yes.text, glm::vec4(1.0f),
-                                &glob->rend_res.fonts[0], true);
-        renderer_add_queue_uni(menu->delete_no.body,
-                               menu->delete_no.col,
-                               menu->delete_no.from_center);
-        renderer_add_queue_text(menu->delete_no.body.pos.x,
-                                menu->delete_no.body.pos.y,
-                                menu->delete_no.text, glm::vec4(1.0f),
-                                &glob->rend_res.fonts[0], true);
+        button_render(&menu->delete_yes, glm::vec4(1.f),
+                      &glob->rend_res.fonts[0]);
+        button_render(&menu->delete_no, glm::vec4(1.f),
+                      &glob->rend_res.fonts[0]);
         renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.3f,
                                 "DELETE THE LEVEL:",
                                 glm::vec4(0.0f, 0.0f, 0.0f, 1.f),
@@ -2537,6 +2583,7 @@ void level_update(void) {
             level->game_over = true;
             level->gamemenu_selected = PR::BUTTON_RESTART;
             level->game_won = true;
+            rid->attached = false;
             level->text_wave_time = 0.f;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -3179,32 +3226,13 @@ void level_update(void) {
             }
         }
 
-        renderer_add_queue_uni(add_portal.body,
-                               add_portal.col,
-                               add_portal.from_center);
         // TODO: Selected an appropriate font for this
-        renderer_add_queue_text(add_portal.body.pos.x,
-                                add_portal.body.pos.y,
-                                add_portal.text, glm::vec4(1.0f),
-                                &glob->rend_res.fonts[1], true);
-
-        renderer_add_queue_uni(add_boost.body,
-                               add_boost.col,
-                               add_boost.from_center);
-        // TODO: Selected an appropriate font for this
-        renderer_add_queue_text(add_boost.body.pos.x,
-                                add_boost.body.pos.y,
-                                add_boost.text, glm::vec4(1.0f),
-                                &glob->rend_res.fonts[1], true);
-
-        renderer_add_queue_uni(add_obstacle.body,
-                               add_obstacle.col,
-                               add_obstacle.from_center);
-        // TODO: Selected an appropriate font for this
-        renderer_add_queue_text(add_obstacle.body.pos.x,
-                                add_obstacle.body.pos.y,
-                                add_obstacle.text, glm::vec4(1.0f),
-                                &glob->rend_res.fonts[1], true);
+        button_render(&add_portal, glm::vec4(1.f),
+                      &glob->rend_res.fonts[1]);
+        button_render(&add_boost, glm::vec4(1.f),
+                      &glob->rend_res.fonts[1]);
+        button_render(&add_obstacle, glm::vec4(1.f),
+                      &glob->rend_res.fonts[1]);
 
         renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
@@ -3293,9 +3321,11 @@ void level_update(void) {
                                             button->body.dim.y * 0.5f;
                         minus1.col = button->col * 0.5f;
                         minus1.col.a = 1.f;
+                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR::Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR::Button plus1;
                         plus1.from_center = true;
@@ -3309,9 +3339,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = button->col * 0.5f;
                         plus1.col.a = 1.f;
+                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR::Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
 
                         if (input->mouse_left.clicked ||
@@ -3396,42 +3428,17 @@ void level_update(void) {
                                 }
                             }
                         }
-                        renderer_add_queue_uni(button->body,
-                                               button->col,
-                                               button->from_center);
                         // TODO: Selected an appropriate font for this
-                        renderer_add_queue_text(button->body.pos.x,
-                                                button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus1.body,
-                                               plus1.col,
-                                               plus1.from_center);
-                        renderer_add_queue_text(plus1.body.pos.x,
-                                                plus1.body.pos.y,
-                                                "+1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus5.body,
-                                               plus5.col,
-                                               plus5.from_center);
-                        renderer_add_queue_text(plus5.body.pos.x,
-                                                plus5.body.pos.y,
-                                                "+5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus1.body,
-                                               minus1.col,
-                                               minus1.from_center);
-                        renderer_add_queue_text(minus1.body.pos.x,
-                                                minus1.body.pos.y,
-                                                "-1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus5.body,
-                                               minus5.col,
-                                               minus5.from_center);
-                        renderer_add_queue_text(minus5.body.pos.x,
-                                                minus5.body.pos.y,
-                                                "-5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
+                        button_render(button, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
                     } else {
 
                         if (input->mouse_left.clicked &&
@@ -3459,14 +3466,9 @@ void level_update(void) {
                             }
                         }
 
-                        renderer_add_queue_uni(button->body,
-                                               button->col,
-                                               button->from_center);
                         // TODO: Selected an appropriate font for this
-                        renderer_add_queue_text(button->body.pos.x,
-                                                button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
+                        button_render(button, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
                     }
 
                 }
@@ -3529,9 +3531,11 @@ void level_update(void) {
                                             button->body.dim.y * 0.5f;
                         minus1.col = button->col * 0.5f;
                         minus1.col.a = 1.f;
+                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR::Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR::Button plus1;
                         plus1.from_center = true;
@@ -3545,9 +3549,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = button->col * 0.5f;
                         plus1.col.a = 1.f;
+                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR::Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
                         if (input->mouse_left.clicked ||
                             input->mouse_right.pressed) {
@@ -3669,41 +3675,16 @@ void level_update(void) {
                                 }
                             }
                         }
-                        renderer_add_queue_uni(button->body,
-                                               button->col,
-                                               button->from_center);
-                        renderer_add_queue_text(button->body.pos.x,
-                                                button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus1.body,
-                                               plus1.col,
-                                               plus1.from_center);
-                        renderer_add_queue_text(plus1.body.pos.x,
-                                                plus1.body.pos.y,
-                                                "+1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus5.body,
-                                               plus5.col,
-                                               plus5.from_center);
-                        renderer_add_queue_text(plus5.body.pos.x,
-                                                plus5.body.pos.y,
-                                                "+5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus1.body,
-                                               minus1.col,
-                                               minus1.from_center);
-                        renderer_add_queue_text(minus1.body.pos.x,
-                                                minus1.body.pos.y,
-                                                "-1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus5.body,
-                                               minus5.col,
-                                               minus5.from_center);
-                        renderer_add_queue_text(minus5.body.pos.x,
-                                                minus5.body.pos.y,
-                                                "-5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
+                        button_render(button, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
                     }
 
 
@@ -3742,9 +3723,11 @@ void level_update(void) {
                                             button->body.dim.y * 0.5f;
                         minus1.col = button->col * 0.5f;
                         minus1.col.a = 1.f;
+                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR::Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR::Button plus1;
                         plus1.from_center = true;
@@ -3758,9 +3741,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = button->col * 0.5f;
                         plus1.col.a = 1.f;
+                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR::Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
 
                         if (input->mouse_left.clicked ||
@@ -3859,43 +3844,17 @@ void level_update(void) {
                                 }
                             }
                         }
-                        renderer_add_queue_uni(button->body,
-                                               button->col,
-                                               button->from_center);
                         // TODO: Selected an appropriate font for this
-                        renderer_add_queue_text(button->body.pos.x,
-                                                button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus1.body,
-                                               plus1.col,
-                                               plus1.from_center);
-                        renderer_add_queue_text(plus1.body.pos.x,
-                                                plus1.body.pos.y,
-                                                "+1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus5.body,
-                                               plus5.col,
-                                               plus5.from_center);
-                        renderer_add_queue_text(plus5.body.pos.x,
-                                                plus5.body.pos.y,
-                                                "+5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus1.body,
-                                               minus1.col,
-                                               minus1.from_center);
-                        renderer_add_queue_text(minus1.body.pos.x,
-                                                minus1.body.pos.y,
-                                                "-1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus5.body,
-                                               minus5.col,
-                                               minus5.from_center);
-                        renderer_add_queue_text(minus5.body.pos.x,
-                                                minus5.body.pos.y,
-                                                "-5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-
+                        button_render(button, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
                     } else {
 
                         if (input->mouse_left.clicked &&
@@ -3920,14 +3879,9 @@ void level_update(void) {
                                     break;
                             }
                         }
-                        renderer_add_queue_uni(button->body,
-                                               button->col,
-                                               button->from_center);
                         // TODO: Selected an appropriate font for this
-                        renderer_add_queue_text(button->body.pos.x,
-                                                button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
+                        button_render(button, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
                     }
 
 
@@ -3968,15 +3922,17 @@ void level_update(void) {
                         minus1.body.dim.x = button->body.dim.x * 0.2f;
                         minus1.body.dim.y = minus1.body.dim.x;
                         minus1.body.pos.x = button->body.pos.x -
-                                            button->body.dim.x * 0.5f +
-                                            minus1.body.dim.x * 0.5f;
+                                                button->body.dim.x * 0.5f +
+                                                minus1.body.dim.x * 0.5f;
                         minus1.body.pos.y = button->body.pos.y -
-                                            button->body.dim.y * 0.5f;
+                                                button->body.dim.y * 0.5f;
                         minus1.col = button->col * 0.5f;
                         minus1.col.a = 1.f;
+                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR::Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
+                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR::Button plus1;
                         plus1.from_center = true;
@@ -3990,9 +3946,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = button->col * 0.5f;
                         plus1.col.a = 1.f;
+                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR::Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
+                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
 
                         if (input->mouse_left.clicked ||
@@ -4083,42 +4041,17 @@ void level_update(void) {
                                 }
                             }
                         }
-                        renderer_add_queue_uni(button->body,
-                                               button->col,
-                                               button->from_center);
                         // TODO: Selected an appropriate font for this
-                        renderer_add_queue_text(button->body.pos.x,
-                                                button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus1.body,
-                                               plus1.col,
-                                               plus1.from_center);
-                        renderer_add_queue_text(plus1.body.pos.x,
-                                                plus1.body.pos.y,
-                                                "+1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(plus5.body,
-                                               plus5.col,
-                                               plus5.from_center);
-                        renderer_add_queue_text(plus5.body.pos.x,
-                                                plus5.body.pos.y,
-                                                "+5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus1.body,
-                                               minus1.col,
-                                               minus1.from_center);
-                        renderer_add_queue_text(minus1.body.pos.x,
-                                                minus1.body.pos.y,
-                                                "-1", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
-                        renderer_add_queue_uni(minus5.body,
-                                               minus5.col,
-                                               minus5.from_center);
-                        renderer_add_queue_text(minus5.body.pos.x,
-                                                minus5.body.pos.y,
-                                                "-5", glm::vec4(1.0f),
-                                                &glob->rend_res.fonts[1], true);
+                        button_render(button, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&plus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus1, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
+                        button_render(&minus5, glm::vec4(1.f),
+                                      &glob->rend_res.fonts[1]);
                     } else {
                         // UNREACHABLE
                     }
@@ -4640,6 +4573,12 @@ inline void obstacle_render(PR::Obstacle *obs) {
                           false);
 }
 
+inline void button_render(PR::Button *but, glm::vec4 col, Font *font) {
+    renderer_add_queue_uni(but->body, but->col, but->from_center);
+    renderer_add_queue_text(but->body.pos.x, but->body.pos.y,
+                            but->text, col, font, true);
+}
+
 inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
@@ -4883,8 +4822,6 @@ inline void rider_jump_from_plane(PR::Rider *rid, PR::Plane *p) {
     rid->base_velocity = p->vel.x;
     rid->vel.y = rid->inverse ? p->vel.y*0.5f + RIDER_FIRST_JUMP :
                                 p->vel.y*0.5f - RIDER_FIRST_JUMP;
-    // rid->vel.y = rid->inverse ? RIDER_FIRST_JUMP :
-    //                             -RIDER_FIRST_JUMP;
     rid->body.angle = 0.f;
     rid->jump_time_elapsed = 0.f;
 }
@@ -5213,6 +5150,18 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
 }
 
 inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
+    Rect res;
+
+    res.pos = r.pos - cam->pos +
+        glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+    res.dim = r.dim;
+    res.angle = r.angle;
+    res.triangle = r.triangle;
+
+    return res;
+}
+
+inline Rect rect_in_menu_camera_space(Rect r, PR::MenuCamera *cam) {
     Rect res;
 
     res.pos = r.pos - cam->pos +
