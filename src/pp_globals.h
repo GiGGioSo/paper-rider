@@ -198,13 +198,17 @@ struct PR {
     StartMenu current_start_menu;
 
     struct OptionDropdown {
-        Button select;
+        Button selected;
         size_t options_number;
         Button *options;
+        char label[256];
     };
     struct OptionSlider {
-        Button select;
+        Rect background;
+        char label[256];
         float value;
+        char value_text[32];
+        Rect selection;
     };
 
     struct OptionsMenu {
@@ -371,6 +375,10 @@ struct PR {
      */
 
     struct Sound {
+        float master_volume;
+        float sfx_volume;
+        float music_volume;
+
         ma_engine engine;
 
         // ### Sound groups (to control volume levels) ###

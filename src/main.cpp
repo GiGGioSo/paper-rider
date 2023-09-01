@@ -312,6 +312,9 @@ int glob_init(void) {
 
     // ### Sound initialization ###
     PR::Sound *sound = &glob->sound;
+    sound->master_volume = 1.f;
+    sound->sfx_volume = 1.f;
+    sound->music_volume = 1.f;
     // Engine
     ma_result result;
     result = ma_engine_init(NULL, &sound->engine);

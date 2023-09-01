@@ -186,6 +186,14 @@ update_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 void
 draw_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 
+// UI OptionSlider funcionts
+void
+option_slider_init_selection(PR::OptionSlider *slider);
+void
+option_slider_update_value(PR::OptionSlider *slider, float value);
+void
+option_slider_render(PR::OptionSlider *slider);
+
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
     // Menu freeing
@@ -959,6 +967,18 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
         .enabled = true,
     };
 
+    opt->master_volume = {
+        .background = {
+            .pos = glm::vec2(GAME_WIDTH * 0.75f, GAME_HEIGHT * 0.5f),
+            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .label = "MASTER VOLUME\0",
+    };
+    opt->master_volume.value = glob->sound.master_volume;
+    option_slider_init_selection(&opt->master_volume);
+
     PR::MenuCamera *cam = &opt->camera;
     cam->pos.x = GAME_WIDTH * 0.5f;
     cam->pos.y = GAME_HEIGHT * 0.5f;
@@ -981,6 +1001,7 @@ void options_menu_update() {
     PR::Sound *sound = &glob->sound;
     PR::MenuCamera *cam = &opt->camera;
     InputController *input = &glob->input;
+    //float dt = glob->state.delta_time;
 
     // # Check if going back to the start menu #
     if (input->menu_to_start_menu.clicked ||
@@ -1021,6 +1042,16 @@ void options_menu_update() {
     }
 
     if (opt->showing_general_pane) {
+        if (input->left.clicked) {
+            option_slider_update_value(&opt->master_volume,
+                                       opt->master_volume.value - 0.1f);
+        }
+        if (input->right.clicked) {
+            option_slider_update_value(&opt->master_volume,
+                                       opt->master_volume.value + 0.1f);
+        }
+        ma_engine_set_volume(&glob->sound.engine, opt->master_volume.value);
+        glob->sound.master_volume = opt->master_volume.value;
         // TODO: Do something with the options
     } else {
         // TODO: Do something with the options
@@ -1049,9 +1080,14 @@ void options_menu_update() {
                   &glob->rend_res.fonts[0]);
 
     if (opt->showing_general_pane) {
-        renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
-                                "GENERAL PANE", glm::vec4(1.0f),
+        // renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
+        //                         "GENERAL PANE", glm::vec4(1.0f),
+        //                         &glob->rend_res.fonts[0], true);
+        // Master volume rendering
+        renderer_add_queue_text(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.5f,
+                                opt->master_volume.label, glm::vec4(1.0f),
                                 &glob->rend_res.fonts[0], true);
+        option_slider_render(&opt->master_volume);
     } else {
         renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
                                 "CONTROLS PANE", glm::vec4(1.0f),
@@ -5544,5 +5580,52 @@ void draw_particle_rider_crash(PR::ParticleSystem *ps,
     renderer_add_queue_uni(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
                             particle->color, true);
+}
+
+// UI OptionSlider functions
+void option_slider_update_value(PR::OptionSlider *slider, float value) {
+    if (value < 0) value = 0.f;
+    else if (value > 1) value = 1.f;
+    float pad = 0.1f;
+    float pad_dim = slider->background.dim.y * pad;
+    slider->value = value;
+    slider->selection.dim.x =
+        (slider->background.dim.x - pad_dim * 2.f) * value;
+    snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
+             "%.1f", slider->value);
+}
+void option_slider_init_selection(PR::OptionSlider *slider) {
+    float pad = 0.1f;
+    float pad_dim = slider->background.dim.y * pad;
+    slider->selection.pos.x = slider->background.pos.x -
+                                slider->background.dim.x * 0.5f +
+                                pad_dim;
+    slider->selection.pos.y = slider->background.pos.y -
+                                slider->background.dim.y * 0.5f +
+                                pad_dim;
+    slider->selection.dim.y = slider->background.dim.y - pad_dim * 2.f;
+    slider->selection.angle = 0.f;
+    slider->selection.triangle = false;
+    slider->selection.dim.x =
+        (slider->background.dim.x - pad_dim * 2.f) * slider->value;
+
+    snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
+             "%.1f", slider->value);
+}
+
+void option_slider_render(PR::OptionSlider *slider) {
+    renderer_add_queue_uni(slider->background,
+                           glm::vec4(0.f, 0.f, 0.f, 1.f), true);
+    renderer_add_queue_uni(slider->selection,
+                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false);
+    renderer_add_queue_text(
+            slider->background.pos.x -
+                slider->background.dim.x * 0.5f -
+                50.f,
+            slider->background.pos.y,
+            slider->value_text,
+            glm::vec4(1.0f),
+            &glob->rend_res.fonts[0],
+            true);
 }
 
