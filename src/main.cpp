@@ -41,8 +41,8 @@ int main() {
     glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
     // These values are used only if PR_WINDOW_MODE == 2
-    glob->window.width = 800;
-    glob->window.height = 600;
+    glob->window.width = 1200;
+    glob->window.height = 900;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);

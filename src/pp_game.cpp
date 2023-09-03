@@ -193,7 +193,8 @@ void
 option_slider_update_value(PR::OptionSlider *slider, float value);
 void
 option_slider_render(PR::OptionSlider *slider);
-
+void
+option_slider_handle_mouse(PR::OptionSlider *slider, float mouseX, float mouseY, Key mouse_button);
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
     // Menu freeing
@@ -1044,12 +1045,15 @@ void options_menu_update() {
     if (opt->showing_general_pane) {
         if (input->left.clicked) {
             option_slider_update_value(&opt->master_volume,
-                                       opt->master_volume.value - 0.1f);
+                                       opt->master_volume.value - 0.05f);
         }
         if (input->right.clicked) {
             option_slider_update_value(&opt->master_volume,
-                                       opt->master_volume.value + 0.1f);
+                                       opt->master_volume.value + 0.05f);
         }
+        option_slider_handle_mouse(&opt->master_volume,
+                                   input->mouseX, input->mouseY,
+                                   input->mouse_left);
         ma_engine_set_volume(&glob->sound.engine, opt->master_volume.value);
         glob->sound.master_volume = opt->master_volume.value;
         // TODO: Do something with the options
@@ -1116,6 +1120,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
     };
 
     menu->selected_campaign_button = 0;
+    menu->selected_custom_button = 0;
 
     // NOTE: Button to select which buttons to show
     PR::Button *campaign = &menu->show_campaign_button;
@@ -1282,12 +1287,17 @@ void play_menu_update(void) {
         if (result == 0) {
             // NOTE: Free the previous present custom buttons
             da_clear(&menu->custom_buttons);
-            // NOTE: Reassing the updated and checked values
+            // NOTE: Reassign the updated and checked values
             menu->custom_buttons = temp_custom_buttons;
             menu->showing_campaign_buttons = false;
             menu->show_campaign_button.col = SHOW_BUTTON_DEFAULT_COLOR;
             menu->show_custom_button.col = SHOW_BUTTON_SELECTED_COLOR;
             cam->goal_position = GAME_HEIGHT * 0.5f;
+
+            if (menu->selected_custom_button >
+                    (int)menu->custom_buttons.count) {
+                menu->selected_custom_button = menu->custom_buttons.count;
+            }
 
             PR::Button *add_level = &menu->add_custom_button;
             button_set_position(add_level, menu->custom_buttons.count);
@@ -5583,19 +5593,8 @@ void draw_particle_rider_crash(PR::ParticleSystem *ps,
 }
 
 // UI OptionSlider functions
-void option_slider_update_value(PR::OptionSlider *slider, float value) {
-    if (value < 0) value = 0.f;
-    else if (value > 1) value = 1.f;
-    float pad = 0.1f;
-    float pad_dim = slider->background.dim.y * pad;
-    slider->value = value;
-    slider->selection.dim.x =
-        (slider->background.dim.x - pad_dim * 2.f) * value;
-    snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
-             "%.1f", slider->value);
-}
 void option_slider_init_selection(PR::OptionSlider *slider) {
-    float pad = 0.1f;
+    float pad = 0.2f;
     float pad_dim = slider->background.dim.y * pad;
     slider->selection.pos.x = slider->background.pos.x -
                                 slider->background.dim.x * 0.5f +
@@ -5612,7 +5611,40 @@ void option_slider_init_selection(PR::OptionSlider *slider) {
     snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
              "%.1f", slider->value);
 }
-
+void option_slider_update_value(PR::OptionSlider *slider, float value) {
+    if (value < 0) value = 0.f;
+    else if (value > 1) value = 1.f;
+    float pad_dim = glm::abs(slider->selection.pos.x -
+                                slider->background.pos.x +
+                                slider->background.dim.x * 0.5f);
+    slider->value = value;
+    slider->selection.dim.x =
+        (slider->background.dim.x - pad_dim * 2.f) * value;
+    snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
+             "%.2f", slider->value);
+}
+void option_slider_handle_mouse(PR::OptionSlider *slider,
+                                float mouseX, float mouseY, Key mouse_button) {
+    // Update mouse_hooked
+    if (mouse_button.clicked &&
+        !slider->mouse_hooked &&
+        rect_contains_point(slider->background, mouseX, mouseY, true)) {
+        slider->mouse_hooked = true;
+    }
+    if (!mouse_button.pressed) {
+        slider->mouse_hooked = false;
+    }
+    // If still hooked: update. Otherwise skip
+    if (slider->mouse_hooked) {
+        float pad_dim = glm::abs(slider->selection.pos.x -
+                                    slider->background.pos.x +
+                                    slider->background.dim.x * 0.5f);
+        float new_value =
+            (float)(mouseX - slider->selection.pos.x) /
+                (float)(slider->background.dim.x - pad_dim * 2.f);
+        option_slider_update_value(slider, new_value);
+    }
+}
 void option_slider_render(PR::OptionSlider *slider) {
     renderer_add_queue_uni(slider->background,
                            glm::vec4(0.f, 0.f, 0.f, 1.f), true);
@@ -5621,7 +5653,7 @@ void option_slider_render(PR::OptionSlider *slider) {
     renderer_add_queue_text(
             slider->background.pos.x -
                 slider->background.dim.x * 0.5f -
-                50.f,
+                70.f,
             slider->background.pos.y,
             slider->value_text,
             glm::vec4(1.0f),

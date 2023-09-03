@@ -207,6 +207,7 @@ struct PR {
         Rect background;
         char label[256];
         float value;
+        bool mouse_hooked;
         char value_text[32];
         Rect selection;
     };
