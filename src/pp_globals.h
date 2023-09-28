@@ -197,6 +197,14 @@ struct PR {
     };
     StartMenu current_start_menu;
 
+    enum OptionsMenuSelection {
+        OPTION_NONE,
+        OPTION_MASTER_VOLUME,
+        OPTION_SFX_VOLUME,
+        OPTION_MUSIC_VOLUME,
+        OPTION_DISPLAY_MODE,
+        OPTION_RESOLUTION,
+    };
     struct OptionDropdown {
         Button selected;
         size_t options_number;
@@ -211,16 +219,17 @@ struct PR {
         char value_text[32];
         Rect selection;
     };
-
     struct OptionsMenu {
         MenuCamera camera;
 
         Button to_start_menu;
 
+        OptionsMenuSelection current_selection;
+
         bool showing_general_pane;
         Button to_general_pane;
         Button to_controls_pane;
-        // General options
+        // General pane options
         OptionSlider master_volume;
         OptionSlider sfx_volume;
         OptionSlider music_volume;
@@ -350,30 +359,6 @@ struct PR {
 
 #define DEFAULT_FONT_SIZE (64.f)
 #define OBJECT_INFO_FONT_SIZE (24.f)
-
-    /*
-    ma_engine_init(ma_engine_config *conf, ma_engine *engine)
-
-    ma_sound_group_init();
-
-    ma_sound_init_from_file(&engine, "my_sound.wav", flags, pGroup, NULL, &sound);
-    Useful flags:
-     - MA_SOUND_FLAG_DECODE: Decode the file at loading time
-     - MA_SOUND_FLAG_STREAM: Do not load sound in memory, but load while playing (Use it for music tracks, maybe)
-
-    To play the same sound twice at the same time,
-    you need to create two separate ma_sound.
-    To create a copy of an existing sound, use:
-        ma_sound_init_copy(ma_engine *eng, ma_sound *existingSound,
-                           flags, sound_ground, ma_sound *dst)
-        (this can be used only if `existingSound` was created using
-            the ma_sound_init_from_file function and
-            WITHOUT the flag MA_SOUND_FLAG_STREAM)
-
-     ma_sound_start()
-     ma_sound_stop()
-
-     */
 
     struct Sound {
         float master_volume;

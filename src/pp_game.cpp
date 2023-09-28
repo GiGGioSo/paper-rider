@@ -87,6 +87,9 @@
 #define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
 
+#define OPTION_SLIDER_DEFAULT_COLOR (glm::vec4(1.0f))
+#define OPTION_SLIDER_SELECTED_COLOR (glm::vec4(1.0f, 0.5f, 0.5f, 1.0f))
+
 // Utilities functions for code reuse
 inline void
 portal_render(PR::Portal *portal);
@@ -188,13 +191,16 @@ draw_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
 
 // UI OptionSlider funcionts
 void
-option_slider_init_selection(PR::OptionSlider *slider);
+option_slider_init_selection(PR::OptionSlider *slider, float pad);
 void
 option_slider_update_value(PR::OptionSlider *slider, float value);
 void
-option_slider_render(PR::OptionSlider *slider);
+option_slider_render(PR::OptionSlider *slider, glm::vec4 color);
 void
 option_slider_handle_mouse(PR::OptionSlider *slider, float mouseX, float mouseY, Key mouse_button);
+void
+options_menu_selection_handle_mouse(PR::OptionsMenu *opt, float mouseX, float mouseY, bool showing_general_pane);
+
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
     // Menu freeing
@@ -970,7 +976,8 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
 
     opt->master_volume = {
         .background = {
-            .pos = glm::vec2(GAME_WIDTH * 0.75f, GAME_HEIGHT * 0.5f),
+            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+                             GAME_HEIGHT * (0.2f + (0.f + 0.4f) / 5.f)),
             .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
             .angle = 0.f,
             .triangle = false,
@@ -978,7 +985,33 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
         .label = "MASTER VOLUME\0",
     };
     opt->master_volume.value = glob->sound.master_volume;
-    option_slider_init_selection(&opt->master_volume);
+    option_slider_init_selection(&opt->master_volume, 0.1f);
+
+    opt->sfx_volume = {
+        .background = {
+            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+                             GAME_HEIGHT * (0.2f + (0.8f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .label = "SFX VOLUME\0",
+    };
+    opt->sfx_volume.value = glob->sound.sfx_volume;
+    option_slider_init_selection(&opt->sfx_volume, 0.1f);
+
+    opt->music_volume = {
+        .background = {
+            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+                             GAME_HEIGHT * (0.2f + (1.6f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .label = "MUSIC VOLUME\0",
+    };
+    opt->music_volume.value = glob->sound.music_volume;
+    option_slider_init_selection(&opt->music_volume, 0.1f);
 
     PR::MenuCamera *cam = &opt->camera;
     cam->pos.x = GAME_WIDTH * 0.5f;
@@ -1042,20 +1075,107 @@ void options_menu_update() {
         ma_sound_start(&sound->change_pane);
     }
 
+    if (input->was_mouse_moved) {
+        options_menu_selection_handle_mouse(
+                opt, input->mouseX, input->mouseY,
+                opt->showing_general_pane);
+    }
+
     if (opt->showing_general_pane) {
-        if (input->left.clicked) {
-            option_slider_update_value(&opt->master_volume,
-                                       opt->master_volume.value - 0.05f);
+        // NOTE: Change selection with keybindings
+        if (input->menu_down.clicked) {
+            switch (opt->current_selection) {
+                case PR::OPTION_NONE:
+                    opt->current_selection = PR::OPTION_MASTER_VOLUME;
+                    break;
+                case PR::OPTION_MASTER_VOLUME:
+                    opt->current_selection = PR::OPTION_SFX_VOLUME;
+                    break;
+                case PR::OPTION_SFX_VOLUME:
+                    opt->current_selection = PR::OPTION_MUSIC_VOLUME;
+                    break;
+                case PR::OPTION_MUSIC_VOLUME:
+                    opt->current_selection = PR::OPTION_DISPLAY_MODE;
+                    break;
+                case PR::OPTION_DISPLAY_MODE:
+                    opt->current_selection = PR::OPTION_RESOLUTION;
+                    break;
+                case PR::OPTION_RESOLUTION:
+                    break;
+            }
         }
-        if (input->right.clicked) {
-            option_slider_update_value(&opt->master_volume,
-                                       opt->master_volume.value + 0.05f);
+        if (input->menu_up.clicked) {
+            switch (opt->current_selection) {
+                case PR::OPTION_NONE:
+                    break;
+                case PR::OPTION_MASTER_VOLUME:
+                    opt->current_selection = PR::OPTION_NONE;
+                    break;
+                case PR::OPTION_SFX_VOLUME:
+                    opt->current_selection = PR::OPTION_MASTER_VOLUME;
+                    break;
+                case PR::OPTION_MUSIC_VOLUME:
+                    opt->current_selection = PR::OPTION_SFX_VOLUME;
+                    break;
+                case PR::OPTION_DISPLAY_MODE:
+                    opt->current_selection = PR::OPTION_MUSIC_VOLUME;
+                    break;
+                case PR::OPTION_RESOLUTION:
+                    opt->current_selection = PR::OPTION_DISPLAY_MODE;
+                    break;
+            }
         }
-        option_slider_handle_mouse(&opt->master_volume,
-                                   input->mouseX, input->mouseY,
-                                   input->mouse_left);
-        ma_engine_set_volume(&glob->sound.engine, opt->master_volume.value);
-        glob->sound.master_volume = opt->master_volume.value;
+
+        // NOTE: Act on the selection
+        if (opt->current_selection == PR::OPTION_MASTER_VOLUME) {
+            if (input->menu_left.clicked) {
+                option_slider_update_value(&opt->master_volume,
+                                           opt->master_volume.value - 0.05f);
+            }
+            if (input->menu_right.clicked) {
+                option_slider_update_value(&opt->master_volume,
+                                           opt->master_volume.value + 0.05f);
+            }
+            option_slider_handle_mouse(&opt->master_volume,
+                                       input->mouseX, input->mouseY,
+                                       input->mouse_left);
+            ma_engine_set_volume(&sound->engine, opt->master_volume.value);
+            sound->master_volume = opt->master_volume.value;
+        } else if (opt->current_selection == PR::OPTION_SFX_VOLUME) {
+            if (input->menu_left.clicked) {
+                option_slider_update_value(&opt->sfx_volume,
+                                           opt->sfx_volume.value - 0.05f);
+            }
+            if (input->menu_right.clicked) {
+                option_slider_update_value(&opt->sfx_volume,
+                                           opt->sfx_volume.value + 0.05f);
+            }
+            option_slider_handle_mouse(&opt->sfx_volume,
+                                       input->mouseX, input->mouseY,
+                                       input->mouse_left);
+            ma_sound_group_set_volume(&sound->sfx_group,
+                                      opt->sfx_volume.value);
+            sound->sfx_volume = opt->sfx_volume.value;
+        } else if (opt->current_selection == PR::OPTION_MUSIC_VOLUME) {
+            if (input->menu_left.clicked) {
+                option_slider_update_value(&opt->music_volume,
+                                           opt->music_volume.value - 0.05f);
+            }
+            if (input->menu_right.clicked) {
+                option_slider_update_value(&opt->music_volume,
+                                           opt->music_volume.value + 0.05f);
+            }
+            option_slider_handle_mouse(&opt->music_volume,
+                                       input->mouseX, input->mouseY,
+                                       input->mouse_left);
+            ma_sound_group_set_volume(&sound->music_group,
+                                      opt->music_volume.value);
+            sound->music_volume = opt->music_volume.value;
+        } else if (opt->current_selection == PR::OPTION_DISPLAY_MODE) {
+        } else if (opt->current_selection == PR::OPTION_RESOLUTION) {
+        } else if (opt->current_selection == PR::OPTION_NONE) {
+            // do nothing
+        }
         // TODO: Do something with the options
     } else {
         // TODO: Do something with the options
@@ -1087,11 +1207,31 @@ void options_menu_update() {
         // renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
         //                         "GENERAL PANE", glm::vec4(1.0f),
         //                         &glob->rend_res.fonts[0], true);
+        glm::vec4 color = glm::vec4(1.f);
         // Master volume rendering
-        renderer_add_queue_text(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.5f,
-                                opt->master_volume.label, glm::vec4(1.0f),
+        color = (opt->current_selection == PR::OPTION_MASTER_VOLUME) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        renderer_add_queue_text(GAME_WIDTH * 0.25f,
+                                opt->master_volume.background.pos.y,
+                                opt->master_volume.label, color,
                                 &glob->rend_res.fonts[0], true);
-        option_slider_render(&opt->master_volume);
+        option_slider_render(&opt->master_volume, color);
+        // Sfx volume rendering
+        color = (opt->current_selection == PR::OPTION_SFX_VOLUME) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        renderer_add_queue_text(GAME_WIDTH * 0.25f,
+                                opt->sfx_volume.background.pos.y,
+                                opt->sfx_volume.label, color,
+                                &glob->rend_res.fonts[0], true);
+        option_slider_render(&opt->sfx_volume, color);
+        // Music volume rendering
+        color = (opt->current_selection == PR::OPTION_MUSIC_VOLUME) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        renderer_add_queue_text(GAME_WIDTH * 0.25f,
+                                opt->music_volume.background.pos.y,
+                                opt->music_volume.label, color,
+                                &glob->rend_res.fonts[0], true);
+        option_slider_render(&opt->music_volume, color);
     } else {
         renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
                                 "CONTROLS PANE", glm::vec4(1.0f),
@@ -1359,12 +1499,12 @@ void play_menu_update(void) {
             // Mouse
             if (input->was_mouse_moved) {
                 if (rect_contains_point(rect_in_menu_camera_space(lb->button.body,
-                                                             cam),
-                                        input->mouseX, input->mouseY,
-                                        lb->button.from_center)) {
+                                cam),
+                            input->mouseX, input->mouseY,
+                            lb->button.from_center)) {
                     menu->selected_campaign_button = levelbutton_index;
                 } else if (menu->selected_campaign_button >= 0 &&
-                           menu->selected_campaign_button == levelbutton_index) {
+                        menu->selected_campaign_button == levelbutton_index) {
                     // NOTE: If this is uncommented then if the mouse
                     //          is moved outside of a button, no button will
                     //          be selected
@@ -5418,7 +5558,6 @@ void animation_queue_render(Rect b, PR::Animation *a, bool inverse) {
     }
     renderer_add_queue_tex(b, tc, false);
 }
-
 void animation_reset(PR::Animation *a) {
     a->current = 0;
     a->active = false;
@@ -5593,8 +5732,10 @@ void draw_particle_rider_crash(PR::ParticleSystem *ps,
 }
 
 // UI OptionSlider functions
-void option_slider_init_selection(PR::OptionSlider *slider) {
-    float pad = 0.2f;
+void option_slider_init_selection(PR::OptionSlider *slider, float pad) {
+    if (pad < 0) {
+        pad = 0.2f;
+    }
     float pad_dim = slider->background.dim.y * pad;
     slider->selection.pos.x = slider->background.pos.x -
                                 slider->background.dim.x * 0.5f +
@@ -5609,11 +5750,11 @@ void option_slider_init_selection(PR::OptionSlider *slider) {
         (slider->background.dim.x - pad_dim * 2.f) * slider->value;
 
     snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
-             "%.1f", slider->value);
+             "%.2f", slider->value);
 }
 void option_slider_update_value(PR::OptionSlider *slider, float value) {
-    if (value < 0) value = 0.f;
-    else if (value > 1) value = 1.f;
+    if (value < 0.01f) value = 0.f;
+    else if (value > 0.99f) value = 1.f;
     float pad_dim = glm::abs(slider->selection.pos.x -
                                 slider->background.pos.x +
                                 slider->background.dim.x * 0.5f);
@@ -5645,19 +5786,50 @@ void option_slider_handle_mouse(PR::OptionSlider *slider,
         option_slider_update_value(slider, new_value);
     }
 }
-void option_slider_render(PR::OptionSlider *slider) {
+void option_slider_render(PR::OptionSlider *slider, glm::vec4 color) {
     renderer_add_queue_uni(slider->background,
                            glm::vec4(0.f, 0.f, 0.f, 1.f), true);
     renderer_add_queue_uni(slider->selection,
-                           glm::vec4(1.0f, 1.0f, 1.0f, 1.f), false);
+                           color, false);
     renderer_add_queue_text(
             slider->background.pos.x -
                 slider->background.dim.x * 0.5f -
                 70.f,
             slider->background.pos.y,
             slider->value_text,
-            glm::vec4(1.0f),
+            color,
             &glob->rend_res.fonts[0],
             true);
 }
 
+void options_menu_selection_handle_mouse(
+        PR::OptionsMenu *opt,
+        float mouseX, float mouseY,
+        bool showing_general_pane) {
+
+    if (mouseX < 0 || mouseX > GAME_WIDTH) return;
+
+    if (showing_general_pane) {
+        if (opt->master_volume.mouse_hooked ||
+            opt->sfx_volume.mouse_hooked ||
+            opt->music_volume.mouse_hooked) return;
+
+        float position = (mouseY - GAME_HEIGHT * 0.2f) / (GAME_HEIGHT * 0.8f);
+
+        if (position < 0) {
+            opt->current_selection = PR::OPTION_NONE;
+        } else if (position <= 0.2f) {
+            opt->current_selection = PR::OPTION_MASTER_VOLUME;
+        } else if (position <= 0.4f) {
+            opt->current_selection = PR::OPTION_SFX_VOLUME;
+        } else if (position <= 0.6f) {
+            opt->current_selection = PR::OPTION_MUSIC_VOLUME;
+        } else if (position <= 0.8f) {
+            opt->current_selection = PR::OPTION_DISPLAY_MODE;
+        } else {
+            opt->current_selection = PR::OPTION_RESOLUTION;
+        }
+    } else {
+        // TODO
+    }
+}
