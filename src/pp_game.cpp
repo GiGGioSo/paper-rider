@@ -90,6 +90,9 @@
 #define OPTION_SLIDER_DEFAULT_COLOR (glm::vec4(1.0f))
 #define OPTION_SLIDER_SELECTED_COLOR (glm::vec4(1.0f, 0.5f, 0.5f, 1.0f))
 
+#define OPTION_BUTTON_DEFAULT_COLOR (glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
+#define OPTION_BUTTON_SELECTED_COLOR (glm::vec4(0.4f, 0.4f, 0.4f, 1.0f))
+
 // Utilities functions for code reuse
 inline void
 portal_render(PR::Portal *portal);
@@ -98,7 +101,7 @@ boostpad_render(PR::BoostPad *pad);
 inline void
 obstacle_render(PR::Obstacle *obs);
 inline void
-button_render(PR::Button *but, glm::vec4 col, Font *font);
+button_render(PR::Button but, glm::vec4 col, Font *font);
 inline void
 portal_render_info(PR::Portal *portal, float tx, float ty);
 inline void
@@ -200,6 +203,24 @@ void
 option_slider_handle_mouse(PR::OptionSlider *slider, float mouseX, float mouseY, Key mouse_button);
 void
 options_menu_selection_handle_mouse(PR::OptionsMenu *opt, float mouseX, float mouseY, bool showing_general_pane);
+
+void
+display_mode_update(PR::WinInfo *win, PR::DisplayMode dm);
+
+void
+window_resolution_set(PR::WinInfo *win, PR::WindowResolution res);
+PR::WindowResolution
+window_resolution_prev(PR::WindowResolution res);
+PR::WindowResolution
+window_resolution_next(PR::WindowResolution res);
+const char *
+window_resolution_to_str(PR::WindowResolution res);
+PR::WindowResolution
+window_resolution_from_dim(int width, int height);
+int
+window_resolution_width(PR::WindowResolution res);
+int
+window_resolution_height(PR::WindowResolution res);
 
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
@@ -926,9 +947,9 @@ void start_menu_update() {
             full_screen,
             glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
             false);
-    button_render(&start->play, glm::vec4(1.f), &glob->rend_res.fonts[0]);
-    button_render(&start->options, glm::vec4(1.f), &glob->rend_res.fonts[0]);
-    button_render(&start->quit, glm::vec4(1.f), &glob->rend_res.fonts[0]);
+    button_render(start->play, glm::vec4(1.f), &glob->rend_res.fonts[0]);
+    button_render(start->options, glm::vec4(1.f), &glob->rend_res.fonts[0]);
+    button_render(start->quit, glm::vec4(1.f), &glob->rend_res.fonts[0]);
     // # Issue draw calls #
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -945,7 +966,6 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
         },
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
         .text = "<-",
-        .enabled = true,
     };
 
     opt->showing_general_pane = true;
@@ -959,7 +979,6 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
         },
         .col = LEVEL_BUTTON_SELECTED_COLOR,
         .text = "GENERAL\0",
-        .enabled = true,
     };
     opt->to_controls_pane = {
         .from_center = true,
@@ -970,10 +989,10 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .triangle = false,
         },
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
-        .text = "BUTTON\0",
-        .enabled = true,
+        .text = "KEYBINDINGS\0",
     };
 
+    // # Master volume slider initialization #
     opt->master_volume = {
         .background = {
             .pos = glm::vec2(GAME_WIDTH * 0.75f,
@@ -987,6 +1006,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
     opt->master_volume.value = glob->sound.master_volume;
     option_slider_init_selection(&opt->master_volume, 0.1f);
 
+    // # Sfx volume slider initialization #
     opt->sfx_volume = {
         .background = {
             .pos = glm::vec2(GAME_WIDTH * 0.75f,
@@ -1000,6 +1020,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
     opt->sfx_volume.value = glob->sound.sfx_volume;
     option_slider_init_selection(&opt->sfx_volume, 0.1f);
 
+    // # Music volume slider initialization #
     opt->music_volume = {
         .background = {
             .pos = glm::vec2(GAME_WIDTH * 0.75f,
@@ -1013,11 +1034,81 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
     opt->music_volume.value = glob->sound.music_volume;
     option_slider_init_selection(&opt->music_volume, 0.1f);
 
+    // # Display mode buttons initialization #
+    opt->display_mode_fullscreen = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * (0.5f + 1.f/12.f), 
+                             GAME_HEIGHT * (0.2f + (2.4f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        // TODO: Change this to a proper color
+        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .text = "FULLSCREEN\0",
+    };
+    opt->display_mode_borderless = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * (0.5f + 3.f/12.f), 
+                             GAME_HEIGHT * (0.2f + (2.4f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        // TODO: Change this to a proper color
+        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .text = "BORDERLESS\0",
+    };
+    opt->display_mode_windowed = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * (0.5f + 5.f/12.f), 
+                             GAME_HEIGHT * (0.2f + (2.4f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        // TODO: Change this to a proper color
+        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .text = "WINDOWED\0",
+    };
+
+    // # Resolution button initialization
+    opt->resolution_up = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * (0.5f + 0.4f), 
+                             GAME_HEIGHT * (0.2f + (3.2f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.04f, GAME_HEIGHT * 0.06f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .text = ">\0",
+    };
+    opt->resolution_down = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * (0.5f + 0.1f), 
+                             GAME_HEIGHT * (0.2f + (3.2f + 0.4f) / 5.f)),
+            .dim = glm::vec2(GAME_WIDTH * 0.04f, GAME_HEIGHT * 0.06f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .text = "<\0",
+    };
+
     PR::MenuCamera *cam = &opt->camera;
     cam->pos.x = GAME_WIDTH * 0.5f;
     cam->pos.y = GAME_HEIGHT * 0.5f;
     cam->speed_multiplier = 6.f;
     cam->goal_position = cam->pos.y;
+
+    opt->resolution_selection =
+        window_resolution_from_dim(glob->window.width, glob->window.height);
 
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1035,6 +1126,7 @@ void options_menu_update() {
     PR::Sound *sound = &glob->sound;
     PR::MenuCamera *cam = &opt->camera;
     InputController *input = &glob->input;
+    PR::WinInfo *win = &glob->window;
     //float dt = glob->state.delta_time;
 
     // # Check if going back to the start menu #
@@ -1081,52 +1173,56 @@ void options_menu_update() {
                 opt->showing_general_pane);
     }
 
+    // Will need it later when chaging the resolution
+    Rect unsaved_resolution_background = {
+        .pos = glm::vec2(GAME_WIDTH * 0.75f,
+                opt->resolution_up.body.pos.y),
+        .dim = glm::vec2(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.15f),
+        .angle = 0.f,
+        .triangle = false,
+    };
+
     if (opt->showing_general_pane) {
         // NOTE: Change selection with keybindings
         if (input->menu_down.clicked) {
             switch (opt->current_selection) {
                 case PR::OPTION_NONE:
-                    opt->current_selection = PR::OPTION_MASTER_VOLUME;
-                    break;
+                    opt->current_selection = PR::OPTION_MASTER_VOLUME; break;
                 case PR::OPTION_MASTER_VOLUME:
-                    opt->current_selection = PR::OPTION_SFX_VOLUME;
-                    break;
+                    opt->current_selection = PR::OPTION_SFX_VOLUME; break;
                 case PR::OPTION_SFX_VOLUME:
-                    opt->current_selection = PR::OPTION_MUSIC_VOLUME;
-                    break;
+                    opt->current_selection = PR::OPTION_MUSIC_VOLUME; break;
                 case PR::OPTION_MUSIC_VOLUME:
-                    opt->current_selection = PR::OPTION_DISPLAY_MODE;
-                    break;
+                    opt->current_selection = PR::OPTION_DISPLAY_MODE; break;
                 case PR::OPTION_DISPLAY_MODE:
-                    opt->current_selection = PR::OPTION_RESOLUTION;
-                    break;
-                case PR::OPTION_RESOLUTION:
-                    break;
+                    if (win->display_mode != PR::WINDOWED) break;
+                    opt->current_selection = PR::OPTION_RESOLUTION; break;
+                case PR::OPTION_RESOLUTION: break;
+                default: break;
             }
         }
         if (input->menu_up.clicked) {
             switch (opt->current_selection) {
-                case PR::OPTION_NONE:
-                    break;
+                case PR::OPTION_NONE: break;
                 case PR::OPTION_MASTER_VOLUME:
-                    opt->current_selection = PR::OPTION_NONE;
-                    break;
+                    opt->current_selection = PR::OPTION_NONE; break;
                 case PR::OPTION_SFX_VOLUME:
-                    opt->current_selection = PR::OPTION_MASTER_VOLUME;
-                    break;
+                    opt->current_selection = PR::OPTION_MASTER_VOLUME; break;
                 case PR::OPTION_MUSIC_VOLUME:
-                    opt->current_selection = PR::OPTION_SFX_VOLUME;
-                    break;
+                    opt->current_selection = PR::OPTION_SFX_VOLUME; break;
                 case PR::OPTION_DISPLAY_MODE:
-                    opt->current_selection = PR::OPTION_MUSIC_VOLUME;
-                    break;
+                    opt->current_selection = PR::OPTION_MUSIC_VOLUME; break;
                 case PR::OPTION_RESOLUTION:
-                    opt->current_selection = PR::OPTION_DISPLAY_MODE;
-                    break;
+                    opt->current_selection = PR::OPTION_DISPLAY_MODE; break;
+                default: break;
             }
         }
 
         // NOTE: Act on the selection
+        // If the display option is no more selected, reset the selection (?)
+        if (opt->current_selection != PR::OPTION_DISPLAY_MODE) {
+            opt->display_mode_selection = win->display_mode;
+        }
         if (opt->current_selection == PR::OPTION_MASTER_VOLUME) {
             if (input->menu_left.clicked) {
                 option_slider_update_value(&opt->master_volume,
@@ -1172,11 +1268,114 @@ void options_menu_update() {
                                       opt->music_volume.value);
             sound->music_volume = opt->music_volume.value;
         } else if (opt->current_selection == PR::OPTION_DISPLAY_MODE) {
+            PR::DisplayMode old_display_mode = win->display_mode;
+
+            // Changing display mode selection with keybindings
+            if (input->menu_left.clicked) {
+                switch (opt->display_mode_selection) {
+                    case PR::FULLSCREEN: break;
+                    case PR::BORDERLESS:
+                        opt->display_mode_selection = PR::FULLSCREEN; break;
+                    case PR::WINDOWED:
+                        opt->display_mode_selection = PR::BORDERLESS; break;
+                    default: break;
+                }
+            }
+            if (input->menu_right.clicked) {
+                switch (opt->display_mode_selection) {
+                    case PR::FULLSCREEN:
+                        opt->display_mode_selection = PR::BORDERLESS; break;
+                    case PR::BORDERLESS:
+                        opt->display_mode_selection = PR::WINDOWED; break;
+                    case PR::WINDOWED: break;
+                    default: break;
+                }
+            }
+
+            if (input->menu_click.clicked) {
+                win->display_mode = opt->display_mode_selection;
+            }
+
+            // Changing display mode selection with the mouse
+            if (input->was_mouse_moved || input->mouse_left.clicked) {
+                if (rect_contains_point(opt->display_mode_fullscreen.body,
+                            input->mouseX, input->mouseY, true)) {
+                    opt->display_mode_selection = PR::FULLSCREEN;
+                    if (input->mouse_left.clicked) {
+                        win->display_mode = PR::FULLSCREEN;
+                    }
+                } else if(rect_contains_point(opt->display_mode_borderless.body,
+                            input->mouseX, input->mouseY, true)) {
+                    opt->display_mode_selection = PR::BORDERLESS;
+                    if (input->mouse_left.clicked) {
+                        win->display_mode = PR::BORDERLESS;
+                    }
+                } else if (rect_contains_point(opt->display_mode_windowed.body,
+                            input->mouseX, input->mouseY, true)) {
+                    opt->display_mode_selection = PR::WINDOWED;
+                    if (input->mouse_left.clicked) {
+                        win->display_mode = PR::WINDOWED;
+                    }
+                }
+            }
+            // Change the background color of the display mode buttons
+            // based on which display mode is now in use
+            opt->display_mode_fullscreen.col =
+                (win->display_mode == PR::FULLSCREEN) ?
+                OPTION_BUTTON_SELECTED_COLOR :
+                OPTION_BUTTON_DEFAULT_COLOR;
+            opt->display_mode_borderless.col =
+                (win->display_mode == PR::BORDERLESS) ?
+                OPTION_BUTTON_SELECTED_COLOR :
+                OPTION_BUTTON_DEFAULT_COLOR;
+            opt->display_mode_windowed.col =
+                (win->display_mode == PR::WINDOWED) ?
+                OPTION_BUTTON_SELECTED_COLOR :
+                OPTION_BUTTON_DEFAULT_COLOR;
+
+            // Update the display mode if it was changed
+            if (win->display_mode != old_display_mode) {
+                display_mode_update(win, win->display_mode);
+                ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
+                ma_sound_start(&sound->click_selected);
+            }
         } else if (opt->current_selection == PR::OPTION_RESOLUTION) {
+            // Changing window resolution with the keybindings
+            if (input->menu_left.clicked) {
+                opt->resolution_selection =
+                    window_resolution_prev(opt->resolution_selection);
+            }
+            if (input->menu_right.clicked) {
+                opt->resolution_selection =
+                    window_resolution_next(opt->resolution_selection);
+            }
+
+            // Changing window resolution with the mouse
+            if (input->mouse_left.clicked) {
+                if (rect_contains_point(opt->resolution_up.body,
+                        input->mouseX, input->mouseY, true)) {
+                    opt->resolution_selection =
+                        window_resolution_next(opt->resolution_selection);
+                } else if(rect_contains_point(opt->resolution_down.body,
+                            input->mouseX, input->mouseY, true)) {
+                    opt->resolution_selection =
+                        window_resolution_prev(opt->resolution_selection);
+                }
+            }
+
+            // Apply the changes when we click on the wanted resolution
+            if ((input->menu_click.clicked ||
+                 (input->mouse_left.clicked &&
+                  rect_contains_point(unsaved_resolution_background,
+                     input->mouseX,
+                     input->mouseY, true))) &&
+                (opt->resolution_selection !=
+                 window_resolution_from_dim(win->width, win->height))) {
+                window_resolution_set(win, opt->resolution_selection);
+            }
         } else if (opt->current_selection == PR::OPTION_NONE) {
             // do nothing
         }
-        // TODO: Do something with the options
     } else {
         // TODO: Do something with the options
     }
@@ -1194,19 +1393,16 @@ void options_menu_update() {
             false);
 
     // render the `go_to_start_menu` button
-    button_render(&opt->to_start_menu, glm::vec4(1.f),
+    button_render(opt->to_start_menu, glm::vec4(1.f),
                   &glob->rend_res.fonts[0]);
 
     // render GENERAL and CONTROLS buttons
-    button_render(&opt->to_general_pane, glm::vec4(1.f),
+    button_render(opt->to_general_pane, glm::vec4(1.f),
                   &glob->rend_res.fonts[0]);
-    button_render(&opt->to_controls_pane, glm::vec4(1.f),
+    button_render(opt->to_controls_pane, glm::vec4(1.f),
                   &glob->rend_res.fonts[0]);
 
     if (opt->showing_general_pane) {
-        // renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
-        //                         "GENERAL PANE", glm::vec4(1.0f),
-        //                         &glob->rend_res.fonts[0], true);
         glm::vec4 color = glm::vec4(1.f);
         // Master volume rendering
         color = (opt->current_selection == PR::OPTION_MASTER_VOLUME) ?
@@ -1232,6 +1428,59 @@ void options_menu_update() {
                                 opt->music_volume.label, color,
                                 &glob->rend_res.fonts[0], true);
         option_slider_render(&opt->music_volume, color);
+
+        // Resolution changing rendering
+        color = (opt->current_selection == PR::OPTION_RESOLUTION) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        renderer_add_queue_text(GAME_WIDTH * 0.25f,
+                                opt->resolution_up.body.pos.y,
+                                "RESOLUTION", color,
+                                &glob->rend_res.fonts[0], true);
+        renderer_add_queue_text(
+                GAME_WIDTH * 0.75f,
+                opt->resolution_up.body.pos.y,
+                window_resolution_to_str(opt->resolution_selection),
+                color,
+                &glob->rend_res.fonts[0], true);
+        if (opt->resolution_selection !=
+                window_resolution_from_dim(win->width, win->height)) {
+            renderer_add_queue_uni(unsaved_resolution_background,
+                                   OPTION_BUTTON_DEFAULT_COLOR,
+                                   true);
+        }
+        button_render(opt->resolution_up,
+                      color, &glob->rend_res.fonts[0]);
+        button_render(opt->resolution_down,
+                      color, &glob->rend_res.fonts[0]);
+
+        // Display mode rendering
+        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        renderer_add_queue_text(GAME_WIDTH * 0.25f,
+                                opt->display_mode_fullscreen.body.pos.y,
+                                "DISPLAY MODE", color,
+                                &glob->rend_res.fonts[0], true);
+        // Draw stuff now because I'm gonna change the font
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+
+        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE &&
+                 opt->display_mode_selection == PR::FULLSCREEN) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        button_render(opt->display_mode_fullscreen,
+                      color, &glob->rend_res.fonts[1]);
+        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE &&
+                 opt->display_mode_selection == PR::BORDERLESS) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        button_render(opt->display_mode_borderless,
+                      color, &glob->rend_res.fonts[1]);
+        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE &&
+                 opt->display_mode_selection == PR::WINDOWED) ?
+                OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
+        button_render(opt->display_mode_windowed,
+                      color, &glob->rend_res.fonts[1]);
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_text(&glob->rend_res.fonts[1], glob->rend_res.shaders[2]);
     } else {
         renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
                                 "CONTROLS PANE", glm::vec4(1.0f),
@@ -1391,7 +1640,6 @@ int play_menu_prepare(PR::PlayMenu *menu) {
 
     return 0;
 }
-
 void play_menu_update(void) {
     InputController *input = &glob->input;
     PR::PlayMenu *menu = &glob->current_play_menu;
@@ -2019,7 +2267,7 @@ void play_menu_update(void) {
     }
 
     // render the `go_to_start_menu` button
-    button_render(&menu->to_start_menu, glm::vec4(1.f),
+    button_render(menu->to_start_menu, glm::vec4(1.f),
                   &glob->rend_res.fonts[0]);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -2028,9 +2276,9 @@ void play_menu_update(void) {
     if (menu->deleting_level) {
         renderer_add_queue_uni(menu->deleting_frame,
                                glm::vec4(0.9f, 0.9f, 0.9f, 1.f), true);
-        button_render(&menu->delete_yes, glm::vec4(1.f),
+        button_render(menu->delete_yes, glm::vec4(1.f),
                       &glob->rend_res.fonts[0]);
-        button_render(&menu->delete_no, glm::vec4(1.f),
+        button_render(menu->delete_no, glm::vec4(1.f),
                       &glob->rend_res.fonts[0]);
         renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.3f,
                                 "DELETE THE LEVEL:",
@@ -2405,7 +2653,6 @@ int level_prepare(PR::Level *level,
     ma_sound_stop(&sound->menu_music);
     return 0;
 }
-
 void level_update(void) {
     Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
@@ -3413,11 +3660,11 @@ void level_update(void) {
         }
 
         // TODO: Selected an appropriate font for this
-        button_render(&add_portal, glm::vec4(1.f),
+        button_render(add_portal, glm::vec4(1.f),
                       &glob->rend_res.fonts[1]);
-        button_render(&add_boost, glm::vec4(1.f),
+        button_render(add_boost, glm::vec4(1.f),
                       &glob->rend_res.fonts[1]);
-        button_render(&add_obstacle, glm::vec4(1.f),
+        button_render(add_obstacle, glm::vec4(1.f),
                       &glob->rend_res.fonts[1]);
 
         renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -3615,15 +3862,15 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(button, glm::vec4(1.f),
+                        button_render(*button, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus1, glm::vec4(1.f),
+                        button_render(plus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus5, glm::vec4(1.f),
+                        button_render(plus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus1, glm::vec4(1.f),
+                        button_render(minus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus5, glm::vec4(1.f),
+                        button_render(minus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
                     } else {
 
@@ -3653,7 +3900,7 @@ void level_update(void) {
                         }
 
                         // TODO: Selected an appropriate font for this
-                        button_render(button, glm::vec4(1.f),
+                        button_render(*button, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
                     }
 
@@ -3861,15 +4108,15 @@ void level_update(void) {
                                 }
                             }
                         }
-                        button_render(button, glm::vec4(1.f),
+                        button_render(*button, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus1, glm::vec4(1.f),
+                        button_render(plus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus5, glm::vec4(1.f),
+                        button_render(plus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus1, glm::vec4(1.f),
+                        button_render(minus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus5, glm::vec4(1.f),
+                        button_render(minus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
                     }
 
@@ -4031,15 +4278,15 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(button, glm::vec4(1.f),
+                        button_render(*button, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus1, glm::vec4(1.f),
+                        button_render(plus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus5, glm::vec4(1.f),
+                        button_render(plus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus1, glm::vec4(1.f),
+                        button_render(minus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus5, glm::vec4(1.f),
+                        button_render(minus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
                     } else {
 
@@ -4066,7 +4313,7 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(button, glm::vec4(1.f),
+                        button_render(*button, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
                     }
 
@@ -4228,15 +4475,15 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(button, glm::vec4(1.f),
+                        button_render(*button, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus1, glm::vec4(1.f),
+                        button_render(plus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&plus5, glm::vec4(1.f),
+                        button_render(plus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus1, glm::vec4(1.f),
+                        button_render(minus1, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(&minus5, glm::vec4(1.f),
+                        button_render(minus5, glm::vec4(1.f),
                                       &glob->rend_res.fonts[1]);
                     } else {
                         // UNREACHABLE
@@ -4759,10 +5006,10 @@ inline void obstacle_render(PR::Obstacle *obs) {
                           false);
 }
 
-inline void button_render(PR::Button *but, glm::vec4 col, Font *font) {
-    renderer_add_queue_uni(but->body, but->col, but->from_center);
-    renderer_add_queue_text(but->body.pos.x, but->body.pos.y,
-                            but->text, col, font, true);
+inline void button_render(PR::Button but, glm::vec4 col, Font *font) {
+    renderer_add_queue_uni(but.body, but.col, but.from_center);
+    renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
+                            but.text, col, font, true);
 }
 
 inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
@@ -5802,10 +6049,9 @@ void option_slider_render(PR::OptionSlider *slider, glm::vec4 color) {
             true);
 }
 
-void options_menu_selection_handle_mouse(
-        PR::OptionsMenu *opt,
-        float mouseX, float mouseY,
-        bool showing_general_pane) {
+void options_menu_selection_handle_mouse(PR::OptionsMenu *opt,
+                                         float mouseX, float mouseY,
+                                         bool showing_general_pane) {
 
     if (mouseX < 0 || mouseX > GAME_WIDTH) return;
 
@@ -5827,9 +6073,119 @@ void options_menu_selection_handle_mouse(
         } else if (position <= 0.8f) {
             opt->current_selection = PR::OPTION_DISPLAY_MODE;
         } else {
-            opt->current_selection = PR::OPTION_RESOLUTION;
+            if (glob->window.display_mode == PR::WINDOWED) {
+                opt->current_selection = PR::OPTION_RESOLUTION;
+            }
         }
     } else {
-        // TODO
+        // TODO: Keybindings pane
     }
+}
+
+void display_mode_update(PR::WinInfo *win, PR::DisplayMode dm) {
+    std::cout << "New display mode: " << dm << std::endl;
+
+    GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
+
+    if (dm == PR::FULLSCREEN) {
+        glfwSetWindowMonitor(win->glfw_win, main_monitor, 0, 0,
+                             mode->width, mode->height,
+                             GLFW_DONT_CARE);
+    } else if (dm == PR::BORDERLESS) {
+        glfwSetWindowAttrib(win->glfw_win, GLFW_DECORATED, false);
+        glfwSetWindowMonitor(win->glfw_win, NULL, 0, 0,
+                             mode->width, mode->height,
+                             GLFW_DONT_CARE);
+    } else if (dm == PR::WINDOWED) {
+        int windowed_w = window_resolution_width(win->windowed_resolution);
+        int windowed_h = window_resolution_height(win->windowed_resolution);
+        glfwSetWindowAttrib(win->glfw_win, GLFW_DECORATED, true);
+        glfwSetWindowMonitor(win->glfw_win, NULL,
+                             (mode->width - windowed_w) * 0.5f,
+                             (mode->height - windowed_h) * 0.5f,
+                             windowed_w, windowed_h,
+                             GLFW_DONT_CARE);
+    } else {
+        std::cout << "[ERROR] Unknown window mode: " << dm << std::endl;
+    }
+}
+
+void window_resolution_set(PR::WinInfo *win, PR::WindowResolution res) {
+    if (win->display_mode != PR::WINDOWED || res == PR::R_NONE) return;
+
+    win->windowed_resolution = res;
+
+    glfwSetWindowSize(win->glfw_win, window_resolution_width(res),
+                      window_resolution_height(res));
+}
+PR::WindowResolution window_resolution_prev(PR::WindowResolution res) {
+    switch(res) {
+        case PR::R1440x1080: return PR::R1280X960;
+        case PR::R1280X960: return PR::R1200x900;
+        case PR::R1200x900: return PR::R960x720;
+        case PR::R960x720: return PR::R800x600;
+        case PR::R800x600: return PR::R640x480;
+        case PR::R640x480: return PR::R400x300;
+        case PR::R400x300: return PR::R320x240;
+        case PR::R320x240: return PR::R320x240;
+        default:
+            std::cout << "Unknown window resolution: " << res << std::endl;
+            return PR::R_NONE;
+    }
+}
+PR::WindowResolution window_resolution_next(PR::WindowResolution res) {
+    switch(res) {
+        case PR::R1440x1080: return PR::R1440x1080;
+        case PR::R1280X960: return PR::R1440x1080;
+        case PR::R1200x900: return PR::R1280X960;
+        case PR::R960x720: return PR::R1200x900;
+        case PR::R800x600: return PR::R960x720;
+        case PR::R640x480: return PR::R800x600;
+        case PR::R400x300: return PR::R640x480;
+        case PR::R320x240: return PR::R400x300;
+        default:
+            std::cout << "Unknown window resolution: " << res << std::endl;
+            return PR::R_NONE;
+    }
+}
+const char *window_resolution_to_str(PR::WindowResolution res) {
+    switch(res) {
+        case PR::R1440x1080: return "1440x1080";
+        case PR::R1280X960: return "1280x960";
+        case PR::R1200x900: return "1200x900";
+        case PR::R960x720: return "960x720";
+        case PR::R800x600: return "800x600";
+        case PR::R640x480: return "640x480";
+        case PR::R400x300: return "400x300";
+        case PR::R320x240: return "320x240";
+        default: return "UKNOWN";
+    }
+}
+PR::WindowResolution window_resolution_from_dim(int width, int height) {
+    if (width == 1440 && height == 1080) {
+        return PR::R1440x1080;
+    } else if (width == 1280 && height == 960) {
+        return PR::R1280X960;
+    } else if (width == 1200 && height == 900) {
+        return PR::R1200x900;
+    } else if (width == 960 && height == 720) {
+        return PR::R960x720;
+    } else if (width == 800 && height == 600) {
+        return PR::R800x600;
+    } else if (width == 640 && height == 480) {
+        return PR::R640x480;
+    } else if (width == 400 && height == 300) {
+        return PR::R400x300;
+    } else if (width == 320 && height == 240) {
+        return PR::R320x240;
+    } else {
+        return PR::R_NONE;
+    }
+}
+int window_resolution_width(PR::WindowResolution res) {
+    return (int)res / 3;
+}
+int window_resolution_height(PR::WindowResolution res) {
+    return (int)res * 0.25f;
 }

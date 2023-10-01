@@ -17,6 +17,22 @@
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
 struct PR {
+    enum DisplayMode {
+        FULLSCREEN = 0,
+        BORDERLESS = 1,
+        WINDOWED = 2,
+    };
+    enum WindowResolution {
+        R1440x1080 = 4320,
+        R1280X960 = 3840,
+        R1200x900 = 3600,
+        R960x720 = 2880,
+        R800x600 = 2400,
+        R640x480 = 1920,
+        R400x300 = 1200,
+        R320x240 = 960,
+        R_NONE = 0,
+    };
 
     struct Animation {
         bool active;
@@ -155,7 +171,6 @@ struct PR {
         Rect body;
         glm::vec4 col;
         char text[256];
-        bool enabled;
     };
     struct LevelButton {
         Button button;
@@ -205,12 +220,6 @@ struct PR {
         OPTION_DISPLAY_MODE,
         OPTION_RESOLUTION,
     };
-    struct OptionDropdown {
-        Button selected;
-        size_t options_number;
-        Button *options;
-        char label[256];
-    };
     struct OptionSlider {
         Rect background;
         char label[256];
@@ -233,8 +242,13 @@ struct PR {
         OptionSlider master_volume;
         OptionSlider sfx_volume;
         OptionSlider music_volume;
-        OptionDropdown display_mode;
-        OptionDropdown resolution;
+        DisplayMode display_mode_selection;
+        Button display_mode_fullscreen;
+        Button display_mode_borderless;
+        Button display_mode_windowed;
+        WindowResolution resolution_selection;
+        Button resolution_up;
+        Button resolution_down;
         // TODO: Keybinding options
     };
     OptionsMenu current_options_menu;
@@ -419,6 +433,8 @@ struct PR {
         int horizontal_bar;
         int width;
         int height;
+        WindowResolution windowed_resolution;
+        DisplayMode display_mode;
         const char* title;
         GLFWwindow* glfw_win;
     };

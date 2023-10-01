@@ -40,9 +40,11 @@ int main() {
 
     glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "PaperPlane";
-    // These values are used only if PR_WINDOW_MODE == 2
+    glob->window.display_mode = PR::WINDOWED;
+    // These values are used only if display_mode == PR::WINDOWED
     glob->window.width = 1200;
     glob->window.height = 900;
+    glob->window.windowed_resolution = PR::R1200x900;
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -51,16 +53,16 @@ int main() {
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    if (PR_WINDOW_MODE == PR_WINDOW_FULLSCREEN) {
+    if (glob->window.display_mode == PR::FULLSCREEN) {
         GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
 
         glob->window.glfw_win =
             glfwCreateWindow(mode->width, mode->height, glob->window.title,
                              glfwGetPrimaryMonitor(), NULL);
-    } else if (PR_WINDOW_MODE == PR_WINDOW_BORDERLESS) {
+    } else if (glob->window.display_mode == PR::BORDERLESS) {
         glfwWindowHint(GLFW_DECORATED, NULL);
 
         GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
@@ -71,13 +73,13 @@ int main() {
         glob->window.glfw_win =
             glfwCreateWindow(glob->window.width, glob->window.height,
                              glob->window.title, NULL, NULL);
-    } else if (PR_WINDOW_MODE == PR_WINDOW_WINDOWED) {
+    } else if (glob->window.display_mode == PR::WINDOWED) {
         glob->window.glfw_win =
             glfwCreateWindow(glob->window.width, glob->window.height,
                              glob->window.title, NULL, NULL);
     } else {
         std::cout << "[ERROR] Unknown window mode: "
-                  << PR_WINDOW_MODE << std::endl;
+                  << glob->window.display_mode << std::endl;
     }
     if (glob->window.glfw_win == NULL) {
         std::cout << "[ERROR] Failed to create GLFW window" << std::endl;
@@ -325,14 +327,14 @@ int glob_init(void) {
     }
 
     // Sound groups
-    result = ma_sound_group_init(&sound->engine, NULL, NULL,
+    result = ma_sound_group_init(&sound->engine, 0, NULL,
                                  &sound->music_group);
     if (result != MA_SUCCESS) {
         std::cout << "[ERROR] Could not initialize the sound music group!"
                   << std::endl;
         return 1;
     }
-    result = ma_sound_group_init(&sound->engine, NULL, NULL,
+    result = ma_sound_group_init(&sound->engine, 0, NULL,
                                  &sound->sfx_group);
     if (result != MA_SUCCESS) {
         std::cout << "[ERROR] Could not initialize the sound sfx group!"
