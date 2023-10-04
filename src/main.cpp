@@ -63,7 +63,7 @@ int main() {
             glfwCreateWindow(mode->width, mode->height, glob->window.title,
                              glfwGetPrimaryMonitor(), NULL);
     } else if (glob->window.display_mode == PR::BORDERLESS) {
-        glfwWindowHint(GLFW_DECORATED, NULL);
+        glfwWindowHint(GLFW_DECORATED, 0);
 
         GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);

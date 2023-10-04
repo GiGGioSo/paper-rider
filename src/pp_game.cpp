@@ -2046,7 +2046,7 @@ void play_menu_update(void) {
                                       "%s", map_name);
 
                         uint32_t random_id = (uint32_t)
-                            (((float)std::rand() / RAND_MAX) * 999999) +1;
+                            (((float)std::rand() / (float)RAND_MAX) * 999999) +1;
 
                         // Level map file path
                         int path_size =
@@ -5274,12 +5274,13 @@ inline void level_shuffle_colors(PR::Level *level) {
         int tmp_r;
         bool present;
         do {
-            tmp_r = (int) (((float) rand()/RAND_MAX) *
+            tmp_r = (int) (((float) rand() / (float)RAND_MAX) *
                     ARRAY_LENGTH(shuffled_colors));
             present = false;
             for(size_t j = 0; j < i; ++j) {
                 if ((shuffled_colors[j] == tmp_r) ||
-                    (i < ARRAY_LENGTH(shuffled_colors)-1 && (size_t)tmp_r == i)) {
+                    (i < ARRAY_LENGTH(shuffled_colors)-1 &&
+                        (size_t)tmp_r == i)) {
                     present = true;
                     break;
                 }
