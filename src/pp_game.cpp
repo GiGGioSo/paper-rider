@@ -956,6 +956,7 @@ void start_menu_update() {
 }
 
 int options_menu_prepare(PR::OptionsMenu *opt) {
+    PR::WinInfo *win = &glob->window;
     opt->to_start_menu = {
         .from_center = true,
         .body = {
@@ -1044,8 +1045,8 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .angle = 0.f,
             .triangle = false,
         },
-        // TODO: Change this to a proper color
-        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .col = (win->display_mode == PR::FULLSCREEN) ?
+                OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "FULLSCREEN\0",
     };
     opt->display_mode_borderless = {
@@ -1057,8 +1058,8 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .angle = 0.f,
             .triangle = false,
         },
-        // TODO: Change this to a proper color
-        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .col = (win->display_mode == PR::BORDERLESS) ?
+                OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "BORDERLESS\0",
     };
     opt->display_mode_windowed = {
@@ -1070,8 +1071,8 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .angle = 0.f,
             .triangle = false,
         },
-        // TODO: Change this to a proper color
-        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .col = (win->display_mode == PR::WINDOWED) ?
+                OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "WINDOWED\0",
     };
 
