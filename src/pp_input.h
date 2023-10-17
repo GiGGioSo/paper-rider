@@ -4,10 +4,36 @@
 #include "../include/glfw3.h"
 #include "../include/glm/vec2.hpp"
 
+#define GAMEPAD_DEADZONE (0.3f)
+
 struct Key {
     bool old;
     bool clicked;
     bool pressed;
+};
+
+enum GamepadBindingType {
+    BUTTON = 0,
+    AXIS_POSITIVE = 1,
+    AXIS_NEGATIVE = 2,
+};
+struct GamepadBinding {
+    GamepadBindingType type;
+    int bind_index;
+};
+
+struct KeyboardBinding {
+    int bind_index;
+};
+
+struct InputAction {
+    Key key;
+
+    // Analog value of the action, always between 0 and 1
+    float value;
+
+    KeyboardBinding kb_binds[2];
+    GamepadBinding gp_binds[2];
 };
 
 inline
@@ -28,15 +54,13 @@ void key_pressed(Key *key) {
 }
 
 struct InputController {
-    // Gameplay
-    // TODO: This is mapped to the vertical movement
-    //       of the left joystick of the controller,
-    //       maybe is better to do everything with the
-    //       horizontal movement?
-    //       Another solution could be:
-    //        - Vertical joystick movement for the plane
-    //        - Horizontal joystick movement for the rider
 
+    // ### NEW STUFF ###
+    InputAction actions[1];
+
+    // ### OLD STUFF ###
+
+    // Gameplay
     int8_t current_gamepad;
     char *gamepad_name;
 
