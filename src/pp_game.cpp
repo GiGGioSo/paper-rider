@@ -840,16 +840,16 @@ void start_menu_update() {
     PR::Sound *sound = &glob->sound;
 
     // ### CHANGING SELECTION ###
-    // # Changing selection with keybindings #
     PR::StartMenuSelection before_selection = start->selection;
-    if (input->menu_up.clicked) {
+    // # Changing selection with keybindings #
+    if (input->actions[PR_MENU_UP].key.clicked) {
         if (start->selection == PR::START_BUTTON_QUIT) {
             start->selection = PR::START_BUTTON_OPTIONS;
         } else if (start->selection == PR::START_BUTTON_OPTIONS) {
             start->selection = PR::START_BUTTON_PLAY;
         }
     }
-    if (input->menu_down.clicked) {
+    if (input->actions[PR_MENU_DOWN].key.clicked) {
         if (start->selection == PR::START_BUTTON_PLAY) {
             start->selection = PR::START_BUTTON_OPTIONS;
         } else if (start->selection == PR::START_BUTTON_OPTIONS) {
@@ -896,7 +896,7 @@ void start_menu_update() {
 
     // ### CLICKING THE SELECTION ###
     // # PLAY #
-    if ((input->menu_click.clicked &&
+    if ((input->actions[PR_MENU_CLICK].key.clicked &&
             start->selection == PR::START_BUTTON_PLAY) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->play.body,
@@ -908,7 +908,7 @@ void start_menu_update() {
         CHANGE_CASE_TO_PLAY_MENU(void());
     }
     // # OPTIONS #
-    if ((input->menu_click.clicked &&
+    if ((input->actions[PR_MENU_CLICK].key.clicked &&
             start->selection == PR::START_BUTTON_OPTIONS) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->options.body,
@@ -919,7 +919,7 @@ void start_menu_update() {
         CHANGE_CASE_TO_OPTIONS_MENU(void());
     }
     // # QUIT #
-    if ((input->menu_click.clicked &&
+    if ((input->actions[PR_MENU_CLICK].key.clicked &&
             start->selection == PR::START_BUTTON_QUIT) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->quit.body,

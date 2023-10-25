@@ -222,17 +222,7 @@ int glob_init(void) {
                                        (float)GAME_HEIGHT, 0.0f);
 
     InputController *in = &glob->input;
-
-    // Detect already connected controllers at startup
-    in->current_gamepad = -1;
-    in->gamepad_name = NULL;
-    for(size_t jid = 0; jid < GLFW_JOYSTICK_LAST; ++jid) {
-        if (glfwJoystickIsGamepad(jid)) {
-            in->current_gamepad = jid;
-            in->gamepad_name = (char *)glfwGetGamepadName(jid);
-            break;
-        }
-    }
+    input_controller_init(in);
 
     // NOTE: Initializing of the shaders
     /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
