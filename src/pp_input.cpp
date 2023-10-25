@@ -5,6 +5,133 @@
 
 #define IS_KEY_PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)
 
+#define GP_NO_BINDING { GLFW_KEY_UNKNOWN, PR_BUTTON }
+#define KB_NO_BINDING { GLFW_KEY_UNKNOWN }
+
+void input_controller_init(InputController *input) {
+    // Detect already connected controllers at startup
+    input->current_gamepad = -1;
+    input->gamepad_name = NULL;
+    for(size_t jid = 0; jid < GLFW_JOYSTICK_LAST; ++jid) {
+        if (glfwJoystickIsGamepad(jid)) {
+            input->current_gamepad = jid;
+            input->gamepad_name = (char *)glfwGetGamepadName(jid);
+            break;
+        }
+    }
+
+    InputAction *actions = input->actions;
+
+    // Global actions
+    actions[PR_EXIT_GAME] = {
+        .kb_binds = { { GLFW_KEY_F4 }, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+
+    // Menu actions
+    actions[PR_MENU_UP] = {
+        .kb_binds = { { GLFW_KEY_UP }, { GLFW_KEY_W } },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON },
+                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE } }
+    };
+    actions[PR_MENU_DOWN] = {
+        .kb_binds = { { GLFW_KEY_DOWN }, { GLFW_KEY_S } },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON },
+                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE } }
+    };
+    actions[PR_MENU_LEFT] = {
+        .kb_binds = { { GLFW_KEY_LEFT }, { GLFW_KEY_A } },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_LEFT, PR_BUTTON },
+                      { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_NEGATIVE } }
+    };
+    actions[PR_MENU_RIGHT] = {
+        .kb_binds = { { GLFW_KEY_RIGHT }, { GLFW_KEY_D } },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, PR_BUTTON },
+                      { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_POSITIVE } }
+    };
+    actions[PR_MENU_CLICK] = {
+        .kb_binds = { { GLFW_KEY_ENTER }, { GLFW_KEY_SPACE } },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_CROSS, PR_BUTTON },
+                      GP_NO_BINDING }
+    };
+    actions[PR_MENU_LEVEL_DELETE] = {
+        .kb_binds = { { GLFW_KEY_C }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON },
+                      GP_NO_BINDING }
+    };
+    actions[PR_MENU_LEVEL_EDIT] = {
+        .kb_binds = { { GLFW_KEY_E }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON},
+                      GP_NO_BINDING }
+    };
+    actions[PR_MENU_PANE_RIGHT] = {
+        .kb_binds = { { GLFW_KEY_X }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, PR_BUTTON},
+                      GP_NO_BINDING }
+    };
+    actions[PR_MENU_PANE_RIGHT] = {
+        .kb_binds = { { GLFW_KEY_Z }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, PR_BUTTON},
+                      GP_NO_BINDING }
+    };
+    actions[PR_MENU_EXIT] = {
+        .kb_binds = { { GLFW_KEY_ESCAPE }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON},
+                      GP_NO_BINDING }
+    };
+
+    // Gameplay actions
+    actions[PR_PLAY_PLANE_UP] = {
+        .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE},
+                      { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON } }
+    };
+    actions[PR_PLAY_PLANE_DOWN] = {
+        .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE },
+                      { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON } }
+    };
+    actions[PR_PLAY_RIDER_RIGHT] = {
+        .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_X, PR_AXIS_POSITIVE },
+                      { GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, PR_BUTTON } }
+    };
+    actions[PR_PLAY_RIDER_LEFT] = {
+        .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_X, PR_AXIS_NEGATIVE },
+                      { GLFW_GAMEPAD_BUTTON_DPAD_LEFT, PR_BUTTON } }
+    };
+    actions[PR_PLAY_RIDER_JUMP] = {
+        .kb_binds = { { GLFW_KEY_SPACE }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, PR_BUTTON },
+                      { GLFW_GAMEPAD_BUTTON_CROSS, PR_BUTTON } }
+    };
+
+    // TODO: Improve editing keybindings
+    // Editing actions
+    actions[PR_EDIT_TOGGLE] = {
+        .kb_binds = { { GLFW_KEY_E }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_THUMB, PR_BUTTON },
+                      GP_NO_BINDING }
+    };
+    actions[PR_EDIT_SAVE_MAP] = {
+        .kb_binds = { { GLFW_KEY_M }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_RIGHT_THUMB, PR_BUTTON },
+                      GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_DELETE] = {
+        .kb_binds = { { GLFW_KEY_K }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON },
+                      GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_CREATE] = {
+        .kb_binds = { { GLFW_KEY_N }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON },
+                      GP_NO_BINDING }
+    };
+    // TODO: Complete
+}
+
 void input_controller_update(GLFWwindow *window, InputController *input,
                              const int vertical_bar,
                              const int horizontal_bar,
@@ -14,6 +141,19 @@ void input_controller_update(GLFWwindow *window, InputController *input,
     //       This could happen because a menu action has the
     //          same keybinding as a gameplay one.
 
+    // ### NEW RESET ###
+    for(size_t action_index = 0;
+        action_index < ARRAY_LENGTH(input->actions);
+        ++action_index) {
+
+        InputAction *action = &input->actions[action_index];
+
+        key_reset(&action->key);
+        action->value = 0.f;
+    }
+
+
+    // ### OLD RESET ###
     // reset all to default
     // Global
     key_reset(&input->exit);
@@ -227,6 +367,8 @@ void input_controller_update(GLFWwindow *window, InputController *input,
 
             int bind_index = action->kb_binds[kb_bind_index].bind_index;
 
+            if (bind_index == GLFW_KEY_UNKNOWN) continue;
+
             if (bind_index >= 0 && IS_KEY_PRESSED(bind_index)) {
 
                 key_pressed(&action->key);
@@ -244,18 +386,20 @@ void input_controller_update(GLFWwindow *window, InputController *input,
             GamepadBindingType type = action->gp_binds[gp_bind_index].type;
             int bind_index = action->gp_binds[gp_bind_index].bind_index;
 
-            if (type == BUTTON) {
+            if (bind_index == GLFW_KEY_UNKNOWN) continue;
+
+            if (type == PR_BUTTON) {
                 if (gamepad.buttons[bind_index] == GLFW_PRESS) {
                     key_pressed(&action->key);
                     action->value = 1.f;
                 }
-            } else if (type == AXIS_POSITIVE) {
-                if (gamepad.axes[bind_index] > GAMEPAD_DEADZONE) {
+            } else if (type == PR_AXIS_POSITIVE) {
+                if (gamepad.axes[bind_index] > PR_GAMEPAD_DEADZONE) {
                     key_pressed(&action->key);
                     action->value = gamepad.axes[bind_index];
                 }
-            } else if (type == AXIS_NEGATIVE) {
-                if (gamepad.axes[bind_index] < -GAMEPAD_DEADZONE) {
+            } else if (type == PR_AXIS_NEGATIVE) {
+                if (gamepad.axes[bind_index] < -PR_GAMEPAD_DEADZONE) {
                     key_pressed(&action->key);
                     // I always want to have a value in [0,1] and
                     // that's why this value is negated
@@ -263,6 +407,5 @@ void input_controller_update(GLFWwindow *window, InputController *input,
                 }
             }
         }
-
     }
 }
