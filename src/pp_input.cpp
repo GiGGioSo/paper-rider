@@ -121,13 +121,17 @@ void input_controller_init(InputController *input) {
     };
     actions[PR_EDIT_OBJ_DELETE] = {
         .kb_binds = { { GLFW_KEY_K }, KB_NO_BINDING },
-        .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON },
                       GP_NO_BINDING }
     };
     actions[PR_EDIT_OBJ_CREATE] = {
         .kb_binds = { { GLFW_KEY_N }, KB_NO_BINDING },
-        .gp_binds = { { GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON },
                       GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_DUPLICATE] = {
+        .kb_binds = { { GLFW_KEY_L }, KB_NO_BINDING },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON } }
     };
     // TODO: Complete
 }
