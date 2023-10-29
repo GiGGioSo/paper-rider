@@ -32,12 +32,12 @@ void input_controller_init(InputController *input) {
     actions[PR_MENU_UP] = {
         .kb_binds = { { GLFW_KEY_UP }, { GLFW_KEY_W } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON },
-                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE } }
+                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE } }
     };
     actions[PR_MENU_DOWN] = {
         .kb_binds = { { GLFW_KEY_DOWN }, { GLFW_KEY_S } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON },
-                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE } }
+                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE } }
     };
     actions[PR_MENU_LEFT] = {
         .kb_binds = { { GLFW_KEY_LEFT }, { GLFW_KEY_A } },
@@ -69,13 +69,13 @@ void input_controller_init(InputController *input) {
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, PR_BUTTON},
                       GP_NO_BINDING }
     };
-    actions[PR_MENU_PANE_RIGHT] = {
+    actions[PR_MENU_PANE_LEFT] = {
         .kb_binds = { { GLFW_KEY_Z }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, PR_BUTTON},
                       GP_NO_BINDING }
     };
     actions[PR_MENU_EXIT] = {
-        .kb_binds = { { GLFW_KEY_ESCAPE }, KB_NO_BINDING },
+        .kb_binds = { { GLFW_KEY_ESCAPE }, { GLFW_KEY_Q } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON},
                       GP_NO_BINDING }
     };
@@ -83,40 +83,57 @@ void input_controller_init(InputController *input) {
     // Gameplay actions
     actions[PR_PLAY_PLANE_UP] = {
         .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
-        .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE},
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_Y, PR_AXIS_NEGATIVE},
                       { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON } }
     };
     actions[PR_PLAY_PLANE_DOWN] = {
         .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
-        .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_Y, PR_AXIS_POSITIVE },
                       { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON } }
     };
     actions[PR_PLAY_RIDER_RIGHT] = {
         .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
-        .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_X, PR_AXIS_POSITIVE },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_POSITIVE },
                       { GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, PR_BUTTON } }
     };
     actions[PR_PLAY_RIDER_LEFT] = {
         .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
-        .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_X, PR_AXIS_NEGATIVE },
+        .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_NEGATIVE },
                       { GLFW_GAMEPAD_BUTTON_DPAD_LEFT, PR_BUTTON } }
     };
     actions[PR_PLAY_RIDER_JUMP] = {
-        .kb_binds = { { GLFW_KEY_SPACE }, KB_NO_BINDING },
+        .kb_binds = { { GLFW_KEY_SPACE }, { GLFW_KEY_J } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, PR_BUTTON },
                       { GLFW_GAMEPAD_BUTTON_CROSS, PR_BUTTON } }
     };
 
+    actions[PR_PLAY_PAUSE] = {
+        .kb_binds = { { GLFW_KEY_ESCAPE }, KB_NO_BINDING },
+        .gp_binds = {{GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON}, GP_NO_BINDING}
+    };
+    actions[PR_PLAY_RESUME] = {
+        .kb_binds = { { GLFW_KEY_ESCAPE }, KB_NO_BINDING },
+        .gp_binds = {{GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON}, GP_NO_BINDING}
+    };
+    actions[PR_PLAY_RESTART] = {
+        .kb_binds = { { GLFW_KEY_Y }, KB_NO_BINDING },
+        .gp_binds = { {GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON}, GP_NO_BINDING }
+    };
+    actions[PR_PLAY_QUIT] = {
+        .kb_binds = { { GLFW_KEY_P }, KB_NO_BINDING },
+        .gp_binds = { {GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON}, GP_NO_BINDING }
+    };
+
     // TODO: Improve editing keybindings
     // Editing actions
-    actions[PR_EDIT_TOGGLE] = {
+    actions[PR_EDIT_TOGGLE_MODE] = {
         .kb_binds = { { GLFW_KEY_E }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_THUMB, PR_BUTTON },
                       GP_NO_BINDING }
     };
     actions[PR_EDIT_SAVE_MAP] = {
         .kb_binds = { { GLFW_KEY_M }, KB_NO_BINDING },
-        .gp_binds = { { GLFW_GAMEPAD_BUTTON_RIGHT_THUMB, PR_BUTTON },
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_BACK, PR_BUTTON },
                       GP_NO_BINDING }
     };
     actions[PR_EDIT_OBJ_DELETE] = {
@@ -132,6 +149,74 @@ void input_controller_init(InputController *input) {
     actions[PR_EDIT_OBJ_DUPLICATE] = {
         .kb_binds = { { GLFW_KEY_L }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON } }
+    };
+    actions[PR_EDIT_PLANE_RESET] = {
+        .kb_binds = { { GLFW_KEY_R }, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_MOVE_UP] = {
+        .kb_binds = { { GLFW_KEY_W }, { GLFW_KEY_UP } },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_MOVE_DOWN] = {
+        .kb_binds = { { GLFW_KEY_S }, { GLFW_KEY_DOWN } },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_MOVE_LEFT] = {
+        .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_MOVE_RIGHT] = {
+        .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTIES_SHOW_TOGGLE] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTY_LEFT] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTY_RIGHT] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTY_TOGGLE] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTY_NEXT_INCREMENT] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTY_INCREASE] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_PROPERTY_DECREASE] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_SELECTION_UP] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_SELECTION_DOWN] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_SELECTION_LEFT] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_SELECTION_RIGHT] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+    };
+    actions[PR_EDIT_OBJ_DESELECT] = {
+        .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
     };
     // TODO: Complete
 }
@@ -155,14 +240,7 @@ void input_controller_update(GLFWwindow *window, InputController *input,
         key_reset(&action->key);
         action->value = 0.f;
     }
-
-
-    // ### OLD RESET ###
-    // reset all to default
-    // Global
-    key_reset(&input->exit);
-
-    // Mouse
+    // Mouse resetting
     key_reset(&input->mouse_left);
     key_reset(&input->mouse_right);
     key_reset(&input->mouse_middle);
@@ -171,67 +249,6 @@ void input_controller_update(GLFWwindow *window, InputController *input,
     input->mouseX = 0.0;
     input->mouseY = 0.0;
     input->was_mouse_moved = false;
-
-    // Gameplay
-    key_reset(&input->boost);
-    input->up_down = 0.f;
-    input->left_right = 0.f;
-
-    key_reset(&input->jump);
-
-    key_reset(&input->pause);
-    key_reset(&input->resume);
-    key_reset(&input->restart);
-    key_reset(&input->quit);
-    // Editing
-    key_reset(&input->edit);
-    key_reset(&input->save_map);
-    key_reset(&input->obj_delete);
-    key_reset(&input->obj_add);
-    key_reset(&input->obj_duplicate);
-    key_reset(&input->reset_pos);
-
-    key_reset(&input->menu_up);
-    key_reset(&input->menu_down);
-    key_reset(&input->menu_left);
-    key_reset(&input->menu_right);
-    key_reset(&input->menu_click);
-    key_reset(&input->menu_custom_delete);
-    key_reset(&input->menu_custom_edit);
-    key_reset(&input->menu_pane_right);
-    key_reset(&input->menu_pane_left);
-    key_reset(&input->menu_to_start_menu);
-
-    // Debug
-    key_reset(&input->debug);
-
-    key_reset(&input->up);
-    key_reset(&input->down);
-    key_reset(&input->left);
-    key_reset(&input->right);
-
-    // ### OLD STUFF ###
-
-    if(IS_KEY_PRESSED(GLFW_KEY_UP)) {
-        key_pressed(&input->up);
-        key_pressed(&input->menu_up);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_DOWN)) {
-        key_pressed(&input->down);
-        key_pressed(&input->menu_down);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_LEFT)) {
-        key_pressed(&input->left);
-        key_pressed(&input->menu_left);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_RIGHT)) {
-        key_pressed(&input->right);
-        key_pressed(&input->menu_right);
-    }
-
-    if(IS_KEY_PRESSED(GLFW_KEY_F4)) {
-        key_pressed(&input->exit);
-    }
 
     // Mouse fetching
     if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_HIDDEN) {
@@ -263,99 +280,6 @@ void input_controller_update(GLFWwindow *window, InputController *input,
     if (input->current_gamepad >= 0 &&
             glfwGetGamepadState(input->current_gamepad, &gamepad)) {
         wasGamepadFound = true;
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_CROSS] == GLFW_PRESS) {
-            key_pressed(&input->menu_click);
-            key_pressed(&input->jump);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER] == GLFW_PRESS) {
-            key_pressed(&input->jump);
-            key_pressed(&input->menu_pane_left);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] == GLFW_PRESS) {
-            key_pressed(&input->menu_pane_right);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_SQUARE] == GLFW_PRESS) {
-            key_pressed(&input->menu_custom_edit);
-            key_pressed(&input->restart);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_CIRCLE] == GLFW_PRESS) {
-            key_pressed(&input->quit);
-            key_pressed(&input->menu_to_start_menu);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_TRIANGLE] == GLFW_PRESS) {
-            key_pressed(&input->menu_custom_delete);
-            key_pressed(&input->pause);
-            key_pressed(&input->resume);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS) {
-            key_pressed(&input->up);
-            key_pressed(&input->menu_up);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS) {
-            key_pressed(&input->down);
-            key_pressed(&input->menu_down);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS) {
-            key_pressed(&input->left);
-            key_pressed(&input->menu_left);
-        }
-        if (gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS) {
-            key_pressed(&input->right);
-            key_pressed(&input->menu_right);
-        }
-        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]) > 0.3f) {
-            input->up_down = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
-        }
-        if (glm::abs(gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > 0.3f) {
-            input->left_right = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-        }
-    }
-
-    if (IS_KEY_PRESSED(GLFW_KEY_ESCAPE)) {
-        key_pressed(&input->pause);
-        key_pressed(&input->resume);
-    }
-    if (IS_KEY_PRESSED(GLFW_KEY_Y)) {
-        key_pressed(&input->restart);
-    }
-    if (IS_KEY_PRESSED(GLFW_KEY_P)) {
-        key_pressed(&input->quit);
-    }
-
-    // Maybe different keybindings for up_down
-    if(IS_KEY_PRESSED(GLFW_KEY_A)) { 
-        input->left_right = -1.0f;
-        input->up_down = -1.0f;
-    } else if(IS_KEY_PRESSED(GLFW_KEY_D)) {
-        input->left_right = 1.0f;
-        input->up_down = 1.0f;
-    }
-
-    if (IS_KEY_PRESSED(GLFW_KEY_J) || IS_KEY_PRESSED(GLFW_KEY_SPACE)) {
-        key_pressed(&input->jump);
-    }
-
-    // Editing
-    if (IS_KEY_PRESSED(GLFW_KEY_E)) {
-        key_pressed(&input->edit);
-    }
-    if (IS_KEY_PRESSED(GLFW_KEY_M)) {
-        key_pressed(&input->save_map);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_C)) {
-        key_pressed(&input->obj_delete);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_V)) {
-        key_pressed(&input->obj_add);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_B)) {
-        key_pressed(&input->obj_duplicate);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_R)) {
-        key_pressed(&input->reset_pos);
-    }
-    if(IS_KEY_PRESSED(GLFW_KEY_Q)) {
-        key_pressed(&input->menu_to_start_menu);
     }
 
     // ### NEW STUFF ###

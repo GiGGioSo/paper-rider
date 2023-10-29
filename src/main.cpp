@@ -143,12 +143,13 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         // NOTE: Update input
-        input_controller_update(glob->window.glfw_win, &glob->input,
+        InputController *input = &glob->input;
+        input_controller_update(glob->window.glfw_win, input,
                                 glob->window.vertical_bar,
                                 glob->window.horizontal_bar,
                                 glob->window.width,
                                 glob->window.height);
-        if (glob->input.exit.clicked) {
+        if (ACTION_CLICKED(PR_EXIT_GAME)) {
             glfwSetWindowShouldClose(glob->window.glfw_win, true);
         }
 

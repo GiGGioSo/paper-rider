@@ -842,14 +842,14 @@ void start_menu_update() {
     // ### CHANGING SELECTION ###
     PR::StartMenuSelection before_selection = start->selection;
     // # Changing selection with keybindings #
-    if (input->actions[PR_MENU_UP].key.clicked) {
+    if (ACTION_CLICKED(PR_MENU_UP)) {
         if (start->selection == PR::START_BUTTON_QUIT) {
             start->selection = PR::START_BUTTON_OPTIONS;
         } else if (start->selection == PR::START_BUTTON_OPTIONS) {
             start->selection = PR::START_BUTTON_PLAY;
         }
     }
-    if (input->actions[PR_MENU_DOWN].key.clicked) {
+    if (ACTION_CLICKED(PR_MENU_DOWN)) {
         if (start->selection == PR::START_BUTTON_PLAY) {
             start->selection = PR::START_BUTTON_OPTIONS;
         } else if (start->selection == PR::START_BUTTON_OPTIONS) {
@@ -896,7 +896,7 @@ void start_menu_update() {
 
     // ### CLICKING THE SELECTION ###
     // # PLAY #
-    if ((input->actions[PR_MENU_CLICK].key.clicked &&
+    if ((ACTION_CLICKED(PR_MENU_CLICK) &&
             start->selection == PR::START_BUTTON_PLAY) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->play.body,
@@ -908,7 +908,7 @@ void start_menu_update() {
         CHANGE_CASE_TO_PLAY_MENU(void());
     }
     // # OPTIONS #
-    if ((input->actions[PR_MENU_CLICK].key.clicked &&
+    if ((ACTION_CLICKED(PR_MENU_CLICK) &&
             start->selection == PR::START_BUTTON_OPTIONS) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->options.body,
@@ -919,7 +919,7 @@ void start_menu_update() {
         CHANGE_CASE_TO_OPTIONS_MENU(void());
     }
     // # QUIT #
-    if ((input->actions[PR_MENU_CLICK].key.clicked &&
+    if ((ACTION_CLICKED(PR_MENU_CLICK) &&
             start->selection == PR::START_BUTTON_QUIT) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->quit.body,
@@ -1131,7 +1131,7 @@ void options_menu_update() {
     //float dt = glob->state.delta_time;
 
     // # Check if going back to the start menu #
-    if (input->menu_to_start_menu.clicked ||
+    if (ACTION_CLICKED(PR_MENU_EXIT) ||
         (input->mouse_left.clicked &&
             rect_contains_point(opt->to_start_menu.body,
                                 input->mouseX, input->mouseY,
@@ -1142,7 +1142,7 @@ void options_menu_update() {
     }
     // # Check if changing options pane #
     if (!opt->showing_general_pane &&
-        (input->menu_pane_left.clicked ||
+        (ACTION_CLICKED(PR_MENU_PANE_LEFT) ||
           (input->mouse_left.clicked &&
            rect_contains_point(
                 rect_in_menu_camera_space(opt->to_general_pane.body, cam),
@@ -1155,7 +1155,7 @@ void options_menu_update() {
         ma_sound_start(&sound->change_pane);
     }
     if (opt->showing_general_pane &&
-        (input->menu_pane_right.clicked ||
+        (ACTION_CLICKED(PR_MENU_PANE_RIGHT) ||
           (input->mouse_left.clicked &&
            rect_contains_point(
              rect_in_menu_camera_space(opt->to_controls_pane.body, cam),
@@ -1185,7 +1185,7 @@ void options_menu_update() {
 
     if (opt->showing_general_pane) {
         // NOTE: Change selection with keybindings
-        if (input->menu_down.clicked) {
+        if (ACTION_CLICKED(PR_MENU_DOWN)) {
             switch (opt->current_selection) {
                 case PR::OPTION_NONE:
                     opt->current_selection = PR::OPTION_MASTER_VOLUME; break;
@@ -1202,7 +1202,7 @@ void options_menu_update() {
                 default: break;
             }
         }
-        if (input->menu_up.clicked) {
+        if (ACTION_CLICKED(PR_MENU_UP)) {
             switch (opt->current_selection) {
                 case PR::OPTION_NONE: break;
                 case PR::OPTION_MASTER_VOLUME:
@@ -1225,11 +1225,11 @@ void options_menu_update() {
             opt->display_mode_selection = win->display_mode;
         }
         if (opt->current_selection == PR::OPTION_MASTER_VOLUME) {
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->master_volume,
                                            opt->master_volume.value - 0.05f);
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 option_slider_update_value(&opt->master_volume,
                                            opt->master_volume.value + 0.05f);
             }
@@ -1239,11 +1239,11 @@ void options_menu_update() {
             ma_engine_set_volume(&sound->engine, opt->master_volume.value);
             sound->master_volume = opt->master_volume.value;
         } else if (opt->current_selection == PR::OPTION_SFX_VOLUME) {
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->sfx_volume,
                                            opt->sfx_volume.value - 0.05f);
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 option_slider_update_value(&opt->sfx_volume,
                                            opt->sfx_volume.value + 0.05f);
             }
@@ -1254,11 +1254,11 @@ void options_menu_update() {
                                       opt->sfx_volume.value);
             sound->sfx_volume = opt->sfx_volume.value;
         } else if (opt->current_selection == PR::OPTION_MUSIC_VOLUME) {
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->music_volume,
                                            opt->music_volume.value - 0.05f);
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 option_slider_update_value(&opt->music_volume,
                                            opt->music_volume.value + 0.05f);
             }
@@ -1272,7 +1272,7 @@ void options_menu_update() {
             PR::DisplayMode old_display_mode = win->display_mode;
 
             // Changing display mode selection with keybindings
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 switch (opt->display_mode_selection) {
                     case PR::FULLSCREEN: break;
                     case PR::BORDERLESS:
@@ -1282,7 +1282,7 @@ void options_menu_update() {
                     default: break;
                 }
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 switch (opt->display_mode_selection) {
                     case PR::FULLSCREEN:
                         opt->display_mode_selection = PR::BORDERLESS; break;
@@ -1293,7 +1293,7 @@ void options_menu_update() {
                 }
             }
 
-            if (input->menu_click.clicked) {
+            if (ACTION_CLICKED(PR_MENU_CLICK)) {
                 win->display_mode = opt->display_mode_selection;
             }
 
@@ -1342,17 +1342,17 @@ void options_menu_update() {
             }
         } else if (opt->current_selection == PR::OPTION_RESOLUTION) {
             // Changing window resolution with the keybindings
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 opt->resolution_selection =
                     window_resolution_prev(opt->resolution_selection);
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 opt->resolution_selection =
                     window_resolution_next(opt->resolution_selection);
             }
 
             // Changing window resolution with the mouse
-            if (input->mouse_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 if (rect_contains_point(opt->resolution_up.body,
                         input->mouseX, input->mouseY, true)) {
                     opt->resolution_selection =
@@ -1365,7 +1365,7 @@ void options_menu_update() {
             }
 
             // Apply the changes when we click on the wanted resolution
-            if ((input->menu_click.clicked ||
+            if ((ACTION_CLICKED(PR_MENU_CLICK) ||
                  (input->mouse_left.clicked &&
                   rect_contains_point(unsaved_resolution_background,
                      input->mouseX,
@@ -1648,7 +1648,7 @@ void play_menu_update(void) {
     PR::Sound *sound = &glob->sound;
 
     if (!menu->showing_campaign_buttons &&
-         (input->menu_pane_left.clicked ||
+         (ACTION_CLICKED(PR_MENU_PANE_LEFT) ||
           (input->mouse_left.clicked &&
            rect_contains_point(
                 rect_in_menu_camera_space(menu->show_campaign_button.body, cam),
@@ -1662,7 +1662,7 @@ void play_menu_update(void) {
         ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
         ma_sound_start(&sound->change_pane);
     }
-    if (input->menu_pane_right.clicked ||
+    if (ACTION_CLICKED(PR_MENU_PANE_RIGHT) ||
         (input->mouse_left.clicked &&
          rect_contains_point(
              rect_in_menu_camera_space(menu->show_custom_button.body, cam),
@@ -1712,14 +1712,14 @@ void play_menu_update(void) {
 
         int previous_campaign_selection = menu->selected_campaign_button;
         // Keybinding
-        if (input->menu_up.clicked) {
+        if (ACTION_CLICKED(PR_MENU_UP)) {
             if (menu->selected_campaign_button-3 >= 0) {
                 menu->selected_campaign_button -= 3;
             } else {
                 menu->selected_campaign_button = 0;
             }
         }
-        if (input->menu_down.clicked) {
+        if (ACTION_CLICKED(PR_MENU_DOWN)) {
             if (menu->selected_campaign_button+3 <
                     ARRAY_LENGTH(menu->campaign_buttons)) {
                 menu->selected_campaign_button += 3;
@@ -1727,12 +1727,12 @@ void play_menu_update(void) {
                 menu->selected_campaign_button = ARRAY_LENGTH(menu->campaign_buttons)-1;
             }
         }
-        if (input->menu_left.clicked) {
+        if (ACTION_CLICKED(PR_MENU_LEFT)) {
             if (menu->selected_campaign_button-1 >= 0) {
                 menu->selected_campaign_button--;
             }
         }
-        if (input->menu_right.clicked) {
+        if (ACTION_CLICKED(PR_MENU_RIGHT)) {
             if (menu->selected_campaign_button+1 <
                     ARRAY_LENGTH(menu->campaign_buttons)) {
                 menu->selected_campaign_button++;
@@ -1765,7 +1765,7 @@ void play_menu_update(void) {
                 menu->selected_campaign_button == levelbutton_index) {
 
                 lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->menu_click.clicked ||
+                if (ACTION_CLICKED(PR_MENU_CLICK) ||
                     (input->mouse_left.clicked &&
                      rect_contains_point(rect_in_menu_camera_space(lb->button.body,
                                                               cam),
@@ -1805,10 +1805,10 @@ void play_menu_update(void) {
             }
 
             // keybinding selection
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 menu->delete_selection = PR::BUTTON_YES;
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 menu->delete_selection = PR::BUTTON_NO;
             }
 
@@ -1816,7 +1816,7 @@ void play_menu_update(void) {
             if (menu->delete_selection == PR::BUTTON_YES) {
                 menu->delete_yes.col = LEVEL_BUTTON_SELECTED_COLOR;
                 menu->delete_no.col = LEVEL_BUTTON_DEFAULT_COLOR;
-                if (input->menu_click.clicked ||
+                if (ACTION_CLICKED(PR_MENU_CLICK) ||
                     (input->mouse_left.clicked &&
                      rect_contains_point(menu->delete_yes.body,
                                          input->mouseX, input->mouseY,
@@ -1863,7 +1863,7 @@ void play_menu_update(void) {
             } else if (menu->delete_selection == PR::BUTTON_NO) {
                 menu->delete_no.col = LEVEL_BUTTON_SELECTED_COLOR;
                 menu->delete_yes.col = LEVEL_BUTTON_DEFAULT_COLOR;
-                if (input->menu_click.clicked ||
+                if (ACTION_CLICKED(PR_MENU_CLICK) ||
                     (input->mouse_left.clicked &&
                      rect_contains_point(menu->delete_no.body,
                                          input->mouseX, input->mouseY,
@@ -1874,14 +1874,14 @@ void play_menu_update(void) {
         } else {
             int previous_custom_selection = menu->selected_custom_button;
             // Keybinding
-            if (input->menu_up.clicked) {
+            if (ACTION_CLICKED(PR_MENU_UP)) {
                 if (menu->selected_custom_button-3 >= 0) {
                     menu->selected_custom_button -= 3;
                 } else {
                     menu->selected_custom_button = 0;
                 }
             }
-            if (input->menu_down.clicked) {
+            if (ACTION_CLICKED(PR_MENU_DOWN)) {
                 if (menu->selected_custom_button+3 <
                         (int) menu->custom_buttons.count+1) {
                     menu->selected_custom_button += 3;
@@ -1889,12 +1889,12 @@ void play_menu_update(void) {
                     menu->selected_custom_button = menu->custom_buttons.count;
                 }
             }
-            if (input->menu_left.clicked) {
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 if (menu->selected_custom_button-1 >= 0) {
                     menu->selected_custom_button--;
                 }
             }
-            if (input->menu_right.clicked) {
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 if (menu->selected_custom_button+1 <
                         (int)menu->custom_buttons.count+1) {
                     menu->selected_custom_button++;
@@ -1967,7 +1967,7 @@ void play_menu_update(void) {
                         (int)custombutton_index) {
                     
                     lb->button.col = LEVEL_BUTTON_SELECTED_COLOR;
-                    if (input->menu_click.clicked ||
+                    if (ACTION_CLICKED(PR_MENU_CLICK) ||
                         (input->mouse_left.clicked &&
                          rect_contains_point(
                             rect_in_menu_camera_space(lb->button.body, cam),
@@ -1977,11 +1977,11 @@ void play_menu_update(void) {
                         CHANGE_CASE_TO_LEVEL(
                                 lb->mapfile_path, lb->button.text,
                                 false, lb->is_new_level, void());
-                    } else if (input->menu_custom_delete.clicked){
+                    } else if (ACTION_CLICKED(PR_MENU_LEVEL_DELETE)){
                         menu->deleting_level = true;
                         menu->deleting_index = custombutton_index;
                         menu->delete_selection = PR::BUTTON_NO;
-                    } else if (input->menu_custom_edit.clicked) {
+                    } else if (ACTION_CLICKED(PR_MENU_LEVEL_EDIT)) {
                         CHANGE_CASE_TO_LEVEL(
                                 lb->mapfile_path, lb->button.text,
                                 true, lb->is_new_level, void());
@@ -2009,7 +2009,7 @@ void play_menu_update(void) {
             if (menu->selected_custom_button ==
                     (int) menu->custom_buttons.count) {
                 add_level->col = LEVEL_BUTTON_SELECTED_COLOR;
-                if (input->menu_click.clicked ||
+                if (ACTION_CLICKED(PR_MENU_CLICK) ||
                     (input->mouse_left.clicked &&
                      rect_contains_point(
                          rect_in_menu_camera_space(add_level->body, cam),
@@ -2143,10 +2143,10 @@ void play_menu_update(void) {
         }
         // NOTE: Check if you have to change camera movement mode
         if (was_selection_moved &&
-                (input->menu_up.clicked ||
-                 input->menu_down.clicked ||
-                 input->menu_left.clicked ||
-                 input->menu_right.clicked)) {
+                (ACTION_CLICKED(PR_MENU_UP) ||
+                 ACTION_CLICKED(PR_MENU_DOWN) ||
+                 ACTION_CLICKED(PR_MENU_LEFT) ||
+                 ACTION_CLICKED(PR_MENU_RIGHT))) {
             cam->follow_selection = true;
         }
     }
@@ -2154,7 +2154,7 @@ void play_menu_update(void) {
          glob->state.delta_time * cam->speed_multiplier);
 
     // # Check if going back to the start menu #
-    if (input->menu_to_start_menu.clicked ||
+    if (ACTION_CLICKED(PR_MENU_EXIT) ||
         (input->mouse_left.clicked &&
             rect_contains_point(menu->to_start_menu.body,
                                 input->mouseX, input->mouseY,
@@ -2689,7 +2689,7 @@ void level_update(void) {
 
     level->old_selected = level->selected;
     if (level->editing_available &&
-            input->edit.clicked) {
+            ACTION_CLICKED(PR_EDIT_TOGGLE_MODE)) {
         if (level->editing_now) {
             level_deactivate_edit_mode(level);
         } else {
@@ -2747,6 +2747,18 @@ void level_update(void) {
     plane_crash_ps->active = false;
     rider_crash_ps->active = false;
 
+    float rider_left_right =
+        ACTION_VALUE(PR_PLAY_RIDER_RIGHT) - ACTION_VALUE(PR_PLAY_RIDER_LEFT);
+    float plane_up_down =
+        ACTION_VALUE(PR_PLAY_PLANE_DOWN) - ACTION_VALUE(PR_PLAY_PLANE_UP);
+
+    printf("RIDER: left=%1.1f right=%1.1f\n",
+            ACTION_VALUE(PR_PLAY_RIDER_LEFT),
+            ACTION_VALUE(PR_PLAY_RIDER_RIGHT));
+    printf("PLANE:   up=%1.1f  down=%1.1f\n",
+            ACTION_VALUE(PR_PLAY_PLANE_UP),
+            ACTION_VALUE(PR_PLAY_PLANE_DOWN));
+
     if (!p->crashed && !level->pause_now && !level->game_over) {
         // #### START PLANE STUFF
 
@@ -2758,21 +2770,29 @@ void level_update(void) {
                                             level->selected_type);
                 if (b) {
                     if (level->selected_type != PR::GOAL_LINE_TYPE) {
-                        if (input->up.pressed) b->pos.y -= vely * dt;
-                        if (input->down.pressed) b->pos.y += vely * dt;
+                        if (ACTION_PRESSED(PR_EDIT_MOVE_UP))
+                            b->pos.y -= vely * dt;
+                        if (ACTION_PRESSED(PR_EDIT_MOVE_DOWN))
+                            b->pos.y += vely * dt;
                     }
-                    if (input->left.pressed) b->pos.x -= velx * dt;
-                    if (input->right.pressed) b->pos.x += velx * dt;
+                    if (ACTION_PRESSED(PR_EDIT_MOVE_LEFT))
+                        b->pos.x -= velx * dt;
+                    if (ACTION_PRESSED(PR_EDIT_MOVE_RIGHT))
+                        b->pos.x += velx * dt;
                 } else {
                     std::cout << "Could not get object body of type: "
                               << level->selected_type
                               << std::endl;
                 }
             } else {
-                if (input->up.pressed) p->body.pos.y -= vely * dt;
-                if (input->down.pressed) p->body.pos.y += vely * dt;
-                if (input->left.pressed) p->body.pos.x -= velx * dt;
-                if (input->right.pressed) p->body.pos.x += velx * dt;
+                if (ACTION_PRESSED(PR_EDIT_MOVE_UP))
+                    p->body.pos.y -= vely * dt;
+                if (ACTION_PRESSED(PR_EDIT_MOVE_DOWN))
+                    p->body.pos.y += vely * dt;
+                if (ACTION_PRESSED(PR_EDIT_MOVE_LEFT))
+                    p->body.pos.x -= velx * dt;
+                if (ACTION_PRESSED(PR_EDIT_MOVE_RIGHT))
+                    p->body.pos.x += velx * dt;
             }
         } else { // PLAYING
             update_plane_physics_n_boost_collisions(level);
@@ -2792,10 +2812,10 @@ void level_update(void) {
             if (rid->attached) {
                 move_rider_to_plane(rid, p);
                 // NOTE: Changing plane angle based on input
-                if (input->up_down) {
+                if (plane_up_down != 0.f) {
                     p->body.angle -= p->inverse ?
-                                     -150.f * input->up_down * dt :
-                                     150.f * input->up_down * dt;
+                                        -150.f * plane_up_down * dt :
+                                        150.f * plane_up_down * dt;
                 }
                 // NOTE: Limiting the angle of the plane
                 if (p->body.angle > 360.f) {
@@ -2806,7 +2826,8 @@ void level_update(void) {
                 }
                 rid->attach_time_elapsed += dt;
                 // NOTE: Make the rider jump based on input
-                if (!level->editing_now && input->jump.clicked &&
+                if (!level->editing_now &&
+                    ACTION_CLICKED(PR_PLAY_RIDER_JUMP) &&
                     rid->attach_time_elapsed > 0.5f) { // PLAYING
                     rider_jump_from_plane(rid, p);
                 }
@@ -2821,13 +2842,13 @@ void level_update(void) {
             } else { // !rid->attached
 
                 // NOTE: Modify accelleration based on input
-                if (input->left_right) {
+                if (rider_left_right) {
                     rid->input_velocity +=
                         rid->inverse ?
-                        -RIDER_INPUT_VELOCITY_ACCELERATION *
-                            input->left_right * dt :
-                        RIDER_INPUT_VELOCITY_ACCELERATION *
-                            input->left_right * dt;
+                            -RIDER_INPUT_VELOCITY_ACCELERATION *
+                                rider_left_right * dt :
+                            RIDER_INPUT_VELOCITY_ACCELERATION *
+                                rider_left_right * dt;
                 } else {
                     rid->input_velocity +=
                         RIDER_INPUT_VELOCITY_ACCELERATION *
@@ -2849,11 +2870,11 @@ void level_update(void) {
                 // If the player moves in the opposite direction of the
                 // base velocity, remove a net amount based on the intensity
                 // of the movement
-                if (glm::abs(input->left_right) > 0 &&
-                        glm::sign(input->left_right) !=
+                if (glm::abs(rider_left_right) > 0 &&
+                        glm::sign(rider_left_right) !=
                             glm::sign(rid->base_velocity)) {
                     rid->base_velocity -= glm::sign(rid->base_velocity) *
-                                          glm::abs(input->left_right) *
+                                          glm::abs(rider_left_right) *
                                           3000 * dt;
                 }
 
@@ -2862,7 +2883,7 @@ void level_update(void) {
                                              RIDER_GRAVITY * dt;
 
                 // NOTE: Rider double jump if available
-                if(rid->second_jump && input->jump.clicked) {
+                if(rid->second_jump && ACTION_CLICKED(PR_PLAY_RIDER_JUMP)) {
                     if ((!rid->inverse && rid->vel.y < 0) ||
                          (rid->inverse && rid->vel.y > 0)) {
                         rid->vel.y += rid->inverse ? RIDER_SECOND_JUMP :
@@ -2913,13 +2934,13 @@ void level_update(void) {
             } else { // !rid->attached
 
                 // NOTE: Modify accelleration based on input
-                if (input->left_right) {
+                if (rider_left_right) {
                     rid->input_velocity +=
                         rid->inverse ?
-                        -RIDER_INPUT_VELOCITY_ACCELERATION *
-                            input->left_right * dt :
-                        RIDER_INPUT_VELOCITY_ACCELERATION *
-                            input->left_right * dt;
+                            -RIDER_INPUT_VELOCITY_ACCELERATION *
+                                rider_left_right * dt :
+                            RIDER_INPUT_VELOCITY_ACCELERATION *
+                                rider_left_right * dt;
                 } else {
                     rid->input_velocity +=
                         RIDER_INPUT_VELOCITY_ACCELERATION *
@@ -2943,7 +2964,7 @@ void level_update(void) {
                                              RIDER_GRAVITY * dt;
 
                 // NOTE: Rider double jump if available
-                if(rid->second_jump && input->jump.clicked) {
+                if(rid->second_jump && ACTION_CLICKED(PR_PLAY_RIDER_JUMP)) {
                     if ((!rid->inverse && rid->vel.y < 0) ||
                          (rid->inverse && rid->vel.y > 0)) {
                         rid->vel.y += rid->inverse ? RIDER_SECOND_JUMP:
@@ -2993,8 +3014,7 @@ void level_update(void) {
                                     p->render_zone.dim.y*0.75f;
             p->vel.y = 0.f;
         } else {
-            p->vel.y += p->inverse ? -GRAVITY * 1.5f * dt :
-                                     GRAVITY * 1.5f * dt;
+            p->vel.y += (p->inverse ? -GRAVITY : GRAVITY) * 1.5f * dt;
             if (glm::abs(p->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
                 p->vel.y = glm::sign(p->vel.y) * RIDER_VELOCITY_Y_LIMIT;
             }
@@ -3160,12 +3180,12 @@ void level_update(void) {
         renderer_add_queue_uni(rect_in_camera_space(level->start_pos, cam),
                                glm::vec4(0.9f, 0.3f, 0.7f, 1.f), false);
 
-        if (input->obj_add.clicked) {
+        if (ACTION_CLICKED(PR_EDIT_OBJ_CREATE)) {
             level->adding_now = true;
             level->selected = NULL;
         }
 
-        if (input->obj_duplicate.clicked && level->selected) {
+        if (ACTION_CLICKED(PR_EDIT_OBJ_DUPLICATE) && level->selected) {
             switch(level->selected_type) {
                 case PR::PORTAL_TYPE:
                 {
@@ -3195,7 +3215,7 @@ void level_update(void) {
             }
         }
 
-        if (level->selected == NULL && input->reset_pos.clicked) {
+        if (level->selected == NULL && ACTION_CLICKED(PR_EDIT_PLANE_RESET)) {
             p->body.pos = level->start_pos.pos;
             p->body.angle = level->start_pos.angle;
         }
@@ -3673,7 +3693,7 @@ void level_update(void) {
                            glob->rend_res.shaders[2]);
     }
 
-    if (level->selected && input->obj_delete.clicked) {
+    if (level->selected && ACTION_CLICKED(PR_EDIT_OBJ_DELETE)) {
         switch(level->selected_type) {
             case PR::PORTAL_TYPE:
             {
@@ -4557,17 +4577,17 @@ void level_update(void) {
             level->gamemenu_selected = PR::BUTTON_QUIT;
         }
         // ### Keybinding change selection ###
-        if (input->menu_up.clicked) {
+        if (ACTION_CLICKED(PR_MENU_UP)) {
             level->gamemenu_selected = PR::BUTTON_RESTART;
         }
-        if (input->menu_down.clicked) {
+        if (ACTION_CLICKED(PR_MENU_DOWN)) {
             level->gamemenu_selected = PR::BUTTON_QUIT;
         }
 
         // ### All ways to click ###
         // ## RESTART
-        if (input->restart.clicked ||
-            (input->menu_click.clicked &&
+        if (ACTION_CLICKED(PR_PLAY_RESTART) ||
+            (ACTION_CLICKED(PR_MENU_CLICK) &&
                 level->gamemenu_selected == PR::BUTTON_RESTART) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_restart.body,
@@ -4578,8 +4598,8 @@ void level_update(void) {
                     level->editing_available, level->is_new, void());
         }
         // ## QUIT
-        if (input->quit.clicked ||
-            (input->menu_click.clicked &&
+        if (ACTION_CLICKED(PR_PLAY_QUIT) ||
+            (ACTION_CLICKED(PR_MENU_CLICK) &&
                 level->gamemenu_selected == PR::BUTTON_QUIT) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_quit.body,
@@ -4703,14 +4723,14 @@ void level_update(void) {
         }
 
         // ### Keybinding change selection ###
-        if (input->menu_up.clicked) {
+        if (ACTION_CLICKED(PR_MENU_UP)) {
             if (level->gamemenu_selected == PR::BUTTON_RESTART) {
                 level->gamemenu_selected = PR::BUTTON_RESUME;
             } else if (level->gamemenu_selected == PR::BUTTON_QUIT) {
                 level->gamemenu_selected = PR::BUTTON_RESTART;
             }
         }
-        if (input->menu_down.clicked) {
+        if (ACTION_CLICKED(PR_MENU_DOWN)) {
             if (level->gamemenu_selected == PR::BUTTON_RESUME) {
                 level->gamemenu_selected = PR::BUTTON_RESTART;
             } else if (level->gamemenu_selected == PR::BUTTON_RESTART) {
@@ -4720,8 +4740,8 @@ void level_update(void) {
 
         // ### All ways to click ###
         // ## RESUME
-        if (input->resume.clicked ||
-            (input->menu_click.clicked &&
+        if (ACTION_CLICKED(PR_PLAY_RESUME) ||
+            (ACTION_CLICKED(PR_MENU_CLICK) &&
                 level->gamemenu_selected == PR::BUTTON_RESUME) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_resume.body,
@@ -4739,8 +4759,8 @@ void level_update(void) {
             }
         }
         // ## RESTART
-        if (input->restart.clicked ||
-            (input->menu_click.clicked &&
+        if (ACTION_CLICKED(PR_PLAY_RESTART) ||
+            (ACTION_CLICKED(PR_MENU_CLICK) &&
                 level->gamemenu_selected == PR::BUTTON_RESTART) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_restart.body,
@@ -4751,8 +4771,8 @@ void level_update(void) {
                     level->editing_available, level->is_new, void());
         }
         // ## QUIT
-        if (input->quit.clicked ||
-            (input->menu_click.clicked &&
+        if (ACTION_CLICKED(PR_PLAY_QUIT) ||
+            (ACTION_CLICKED(PR_MENU_CLICK) &&
                 level->gamemenu_selected == PR::BUTTON_QUIT) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_quit.body,
@@ -4804,7 +4824,10 @@ void level_update(void) {
         renderer_draw_text(&glob->rend_res.fonts[DEFAULT_FONT],
                            glob->rend_res.shaders[2]);
     } else {
-        if (input->pause.clicked && !level->pause_now && !level->game_over) {
+        if (ACTION_CLICKED(PR_PLAY_PAUSE) &&
+            !level->pause_now &&
+            !level->game_over) {
+
             std::cout << "Pausing" << std::endl;
             level->pause_now = true;
             for(size_t ps_index = 0;
@@ -4818,7 +4841,7 @@ void level_update(void) {
         }
     }
 
-    if (input->save_map.clicked) {
+    if (ACTION_CLICKED(PR_EDIT_SAVE_MAP)) {
         if (save_map_to_file(level->file_path, level)) {
             std::cout << "[ERROR] Could not save the map in the file: "
                       << level->file_path << std::endl;
