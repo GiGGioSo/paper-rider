@@ -93,6 +93,26 @@ struct InputAction {
     float value;
 };
 
+struct InputController {
+    InputAction actions[PR_LAST_ACTION+1];
+    KeyboardBinding *kb_binding;
+    GamepadBinding *gp_binding;
+
+    // Gameplay
+    int8_t current_gamepad;
+    char *gamepad_name;
+
+    // NOTE: Mouse
+    Key mouse_left;
+    Key mouse_right;
+    Key mouse_middle;
+    double mouseX;
+    double mouseY;
+    double old_mouseX;
+    double old_mouseY;
+    bool was_mouse_moved;
+};
+
 inline
 void key_reset(Key *key) {
     key->old = key->pressed;
@@ -109,24 +129,6 @@ void key_pressed(Key *key) {
         key->clicked = false;
     }
 }
-
-struct InputController {
-    InputAction actions[PR_LAST_ACTION+1];
-
-    // Gameplay
-    int8_t current_gamepad;
-    char *gamepad_name;
-
-    // NOTE: Mouse
-    Key mouse_left;
-    Key mouse_right;
-    Key mouse_middle;
-    double mouseX;
-    double mouseY;
-    double old_mouseX;
-    double old_mouseY;
-    bool was_mouse_moved;
-};
 
 /* Updates the InputController global struct
  *

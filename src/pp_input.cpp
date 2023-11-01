@@ -282,7 +282,36 @@ void input_controller_update(GLFWwindow *window, InputController *input,
         wasGamepadFound = true;
     }
 
-    // ### NEW STUFF ###
+    // Check for a new key binding
+    if (input->gp_binding && wasGamepadFound) {
+        for(int button_index = 0;
+            button_index <= GLFW_GAMEPAD_BUTTON_LAST;
+            ++button_index) {
+            if (gamepad.buttons[button_index] == GLFW_PRESS) {
+                input->gp_binding.bind_index = button_index;
+                input->gp_binding.type = PR_BUTTON;
+                input->gp_binding = NULL;
+            }
+        }
+        for(int axis_index = 0;
+            axis_index <= GLFW_GAMEPAD_AXIS_LAST;
+            ++axis_index) {
+            if (gamepad.axes[axis_index] > PR_GAMEPAD_DEADZONE) {
+                input->gp_binding.bind_index = axis_index;
+                input->gp_binding.type = PR_AXIS_POSITIVE;
+                input->gp_binding = NULL;
+            } else if (gamepad.axes[axis_index] < -PR_GAMEPAD_DEADZONE) {
+                input->gp_binding.bind_index = axis_index;
+                input->gp_binding.type = PR_AXIS_NEGATIVE;
+                input->gp_binding = NULL;
+            }
+        }
+    }
+
+    // If there's a key being binded, disable the update of the actions
+    if (input->kb_binding || input->gp_binding) return;
+
+    // Check if actions are being pressed by either keyboard or gamepad
     for(size_t action_index = 0;
         action_index < ARRAY_LENGTH(input->actions);
         ++action_index) {
@@ -335,5 +364,26 @@ void input_controller_update(GLFWwindow *window, InputController *input,
                 }
             }
         }
+    }
+}
+
+void kb_change_binding_callback(GLFWwindow *window,
+                                int key, int scancode, int action, int mods) {
+    InputController *input = &glob->input;
+
+    if (!input->kb_binding) return;
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        input->kb_binding = NULL;
+        input->gp_binding = NULL;
+        glfwSetKeyCallback(window, NULL);
+        return;
+    }
+
+    if (action == GLFW_PRESS) {
+        input->kb_binding.bind_index = key;
+        input->kb_binding = NULL;
+        glfwSetKeyCallback(window, NULL);
+        return;
     }
 }
