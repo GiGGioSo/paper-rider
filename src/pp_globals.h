@@ -5,6 +5,7 @@
 #include "../include/glm/mat4x4.hpp"
 #include "../include/miniaudio.h"
 
+#include "pr_common.h"
 #include "pp_shaderer.h"
 #include "pp_renderer.h"
 #include "pp_input.h"
@@ -12,9 +13,6 @@
 
 #define GAME_WIDTH 1440
 #define GAME_HEIGHT 1080
-
-#define ARRAY_LENGTH(arr) ((int)(sizeof(arr) / sizeof(arr[0])))
-#define UNUSED(expr) do { (void)(expr); } while (0)
 
 struct PR {
     enum DisplayMode {
@@ -239,6 +237,7 @@ struct PR {
         Button to_general_pane;
         Button to_controls_pane;
         // General pane options
+
         OptionSlider master_volume;
         OptionSlider sfx_volume;
         OptionSlider music_volume;
@@ -249,7 +248,12 @@ struct PR {
         WindowResolution resolution_selection;
         Button resolution_up;
         Button resolution_down;
+
         // TODO: Keybinding options
+        Button change_kb_binds1[PR_LAST_ACTION+1];
+        Button change_kb_binds2[PR_LAST_ACTION+1];
+        Button change_gp_binds1[PR_LAST_ACTION+1];
+        Button change_gp_binds2[PR_LAST_ACTION+1];
     };
     OptionsMenu current_options_menu;
 

@@ -5,6 +5,10 @@
 #include <cassert>
 #include <cstring>
 
+#define ARRAY_LENGTH(arr) ((int)(sizeof(arr) / sizeof(arr[0])))
+
+#define UNUSED(expr) (void)(expr)
+
 #define POW2(x) ((x) * (x))
 
 #define DA_INITIAL_CAPACITY 32

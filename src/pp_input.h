@@ -95,6 +95,8 @@ struct InputAction {
 
 struct InputController {
     InputAction actions[PR_LAST_ACTION+1];
+
+    // Binding we are modifying
     KeyboardBinding *kb_binding;
     GamepadBinding *gp_binding;
 
@@ -130,11 +132,17 @@ void key_pressed(Key *key) {
     }
 }
 
-/* Updates the InputController global struct
- *
- */
-void input_controller_update(GLFWwindow *window, InputController *input, const int vertical_bar, const int horizontal_bar, const int screen_w, const int screen_h);
+void
+input_controller_init(InputController *input);
 
-void input_controller_init(InputController *input);
+/* Updates the InputController global struct */
+void
+input_controller_update(GLFWwindow *window, InputController *input, const int vertical_bar, const int horizontal_bar, const int screen_w, const int screen_h);
+
+void
+kb_change_binding_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
+const char *get_gamepad_button_name(int key, GamepadBindingType type);
+const char *get_key_name(int key, GamepadBindingType type);
 
 #endif

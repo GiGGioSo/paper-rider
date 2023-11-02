@@ -956,7 +956,10 @@ void start_menu_update() {
 }
 
 int options_menu_prepare(PR::OptionsMenu *opt) {
+    InputController *input = &glob->input;
+    PR::MenuCamera *cam = &opt->camera;
     PR::WinInfo *win = &glob->window;
+
     opt->to_start_menu = {
         .from_center = true,
         .body = {
@@ -1102,7 +1105,6 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
         .text = "<\0",
     };
 
-    PR::MenuCamera *cam = &opt->camera;
     cam->pos.x = GAME_WIDTH * 0.5f;
     cam->pos.y = GAME_HEIGHT * 0.5f;
     cam->speed_multiplier = 6.f;
@@ -1110,6 +1112,95 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
 
     opt->resolution_selection =
         window_resolution_from_dim(glob->window.width, glob->window.height);
+
+    // NOTE: Set up all of the changing keybinds buttons
+    for(size_t bind_index = 0;
+        bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+        ++bind_index) {
+
+        InputAction *action = &input->actions[bind_index];
+
+        PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
+        PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
+        PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
+        PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+
+        int y = (bind_index + 1) * ((float)GAME_HEIGHT / 6) +
+                    ((float)GAME_HEIGHT / 12);
+        int h = GAME_HEIGHT * 0.125f; //   / 8
+
+        *kb1 = {
+            .from_center = true,
+            .body = {
+                .pos =
+                    glm::vec2(GAME_WIDTH * 9.f / 16.f, y),
+                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = OPTION_BUTTON_DEFAULT_COLOR,
+        };
+        const char *kb1_name =
+            glfwGetKeyName(action->kb_binds[0].bind_index,
+                           glfwGetKeyScancode(action->kb_binds[0].bind_index));
+        std::strncpy(kb1->text,
+                     (kb1_name != NULL) ? kb1_name : "...",
+                     ARRAY_LENGTH(kb1->text)-1);
+
+        *kb2 = {
+            .from_center = true,
+            .body = {
+                .pos =
+                    glm::vec2(GAME_WIDTH * 11.f / 16.f, y),
+                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = OPTION_BUTTON_DEFAULT_COLOR,
+        };
+        const char *kb2_name =
+            glfwGetKeyName(action->kb_binds[1].bind_index,
+                           glfwGetKeyScancode(action->kb_binds[1].bind_index));
+        std::strncpy(kb2->text,
+                     (kb2_name != NULL) ? kb2_name : "...",
+                     ARRAY_LENGTH(kb2->text)-1);
+
+        *gp1 = {
+            .from_center = true,
+            .body = {
+                .pos =
+                    glm::vec2(GAME_WIDTH * 13.f / 16.f, y),
+                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = OPTION_BUTTON_DEFAULT_COLOR,
+        };
+        const char *gp1_name =
+            get_gamepad_button_name(action->gp_binds[0].bind_index,
+                                    action->gp_binds[0].type);
+        std::strncpy(gp1->text,
+                     (gp1_name != NULL) ? gp1_name : "...",
+                     ARRAY_LENGTH(gp1->text)-1);
+
+        *gp2 = {
+            .from_center = true,
+            .body = {
+                .pos =
+                    glm::vec2(GAME_WIDTH * 15.f / 16.f, y),
+                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                .angle = 0.f,
+                .triangle = false,
+            },
+            .col = OPTION_BUTTON_DEFAULT_COLOR,
+        };
+        const char *gp2_name =
+            get_gamepad_button_name(action->gp_binds[1].bind_index,
+                                    action->gp_binds[1].type);
+        std::strncpy(gp2->text,
+                     (gp2_name != NULL) ? gp2_name : "...",
+                     ARRAY_LENGTH(gp2->text)-1);
+    }
 
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1377,11 +1468,9 @@ void options_menu_update() {
         } else if (opt->current_selection == PR::OPTION_NONE) {
             // do nothing
         }
-    } else {
-        // TODO: Do something with the options
     }
 
-    // ### RENDERING ###
+    // Rendering the background
     Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
         .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
@@ -1402,6 +1491,9 @@ void options_menu_update() {
                   &glob->rend_res.fonts[0]);
     button_render(opt->to_controls_pane, glm::vec4(1.f),
                   &glob->rend_res.fonts[0]);
+
+    renderer_draw_uni(glob->rend_res.shaders[0]);
+    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
     if (opt->showing_general_pane) {
         glm::vec4 color = glm::vec4(1.f);
@@ -1483,13 +1575,84 @@ void options_menu_update() {
         renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_text(&glob->rend_res.fonts[1], glob->rend_res.shaders[2]);
     } else {
-        renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
-                                "CONTROLS PANE", glm::vec4(1.0f),
-                                &glob->rend_res.fonts[0], true);
+        // renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
+        //                         "CONTROLS PANE", glm::vec4(1.0f),
+        //                         &glob->rend_res.fonts[0], true);
+
+        for(size_t bind_index = 0;
+            bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+            ++bind_index) {
+
+            PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
+            PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
+            PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
+            PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+
+            InputAction *action = &input->actions[bind_index];
+
+            kb1->col = OPTION_BUTTON_DEFAULT_COLOR;
+            kb2->col = OPTION_BUTTON_DEFAULT_COLOR;
+            gp1->col = OPTION_BUTTON_DEFAULT_COLOR;
+            gp2->col = OPTION_BUTTON_DEFAULT_COLOR;
+
+            if (rect_contains_point(kb1->body,
+                        input->mouseX, input->mouseY,
+                        kb1->from_center)) {
+
+                kb1->col = OPTION_BUTTON_SELECTED_COLOR;
+                if (!input->kb_binding && !input->gp_binding &&
+                        input->mouse_left.clicked) {
+                    input->kb_binding = &action->kb_binds[0];
+                    glfwSetKeyCallback(win->glfw_win,
+                                       kb_change_binding_callback);
+                }
+            }
+            if (rect_contains_point(kb2->body,
+                        input->mouseX, input->mouseY,
+                        kb2->from_center)) {
+
+                kb2->col = OPTION_BUTTON_SELECTED_COLOR;
+                if (!input->kb_binding && !input->gp_binding &&
+                        input->mouse_left.clicked) {
+                    input->kb_binding = &action->kb_binds[1];
+                    glfwSetKeyCallback(win->glfw_win,
+                                       kb_change_binding_callback);
+                }
+            }
+            if (rect_contains_point(gp1->body,
+                        input->mouseX, input->mouseY,
+                        gp1->from_center)) {
+
+                gp1->col = OPTION_BUTTON_SELECTED_COLOR;
+                if (!input->kb_binding && !input->gp_binding &&
+                        input->mouse_left.clicked) {
+                    input->gp_binding = &action->gp_binds[0];
+                }
+            }
+            if (rect_contains_point(gp2->body,
+                        input->mouseX, input->mouseY,
+                        gp2->from_center)) {
+
+                gp2->col = OPTION_BUTTON_SELECTED_COLOR;
+                if (!input->kb_binding && !input->gp_binding &&
+                        input->mouse_left.clicked) {
+                    input->gp_binding = &action->gp_binds[1];
+                }
+            }
+
+            button_render(*kb1, glm::vec4(1.f, 1.f, 1.f, 1.f),
+                          &glob->rend_res.fonts[1]);
+            button_render(*kb2, glm::vec4(1.f, 1.f, 1.f, 1.f),
+                          &glob->rend_res.fonts[1]);
+            button_render(*gp1, glm::vec4(1.f, 1.f, 1.f, 1.f),
+                          &glob->rend_res.fonts[1]);
+            button_render(*gp2, glm::vec4(1.f, 1.f, 1.f, 1.f),
+                          &glob->rend_res.fonts[1]);
+        }
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_text(&glob->rend_res.fonts[1], glob->rend_res.shaders[2]);
     }
 
-    renderer_draw_uni(glob->rend_res.shaders[0]);
-    renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 }
 
 int play_menu_prepare(PR::PlayMenu *menu) {
