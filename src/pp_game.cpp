@@ -1140,9 +1140,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             },
             .col = OPTION_BUTTON_DEFAULT_COLOR,
         };
-        const char *kb1_name =
-            glfwGetKeyName(action->kb_binds[0].bind_index,
-                           glfwGetKeyScancode(action->kb_binds[0].bind_index));
+        const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
         std::strncpy(kb1->text,
                      (kb1_name != NULL) ? kb1_name : "...",
                      ARRAY_LENGTH(kb1->text)-1);
@@ -1158,9 +1156,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             },
             .col = OPTION_BUTTON_DEFAULT_COLOR,
         };
-        const char *kb2_name =
-            glfwGetKeyName(action->kb_binds[1].bind_index,
-                           glfwGetKeyScancode(action->kb_binds[1].bind_index));
+        const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
         std::strncpy(kb2->text,
                      (kb2_name != NULL) ? kb2_name : "...",
                      ARRAY_LENGTH(kb2->text)-1);
@@ -6372,8 +6368,8 @@ PR::WindowResolution window_resolution_from_dim(int width, int height) {
     }
 }
 int window_resolution_width(PR::WindowResolution res) {
-    return (int)res / 3;
+    return (int)(res / 3);
 }
 int window_resolution_height(PR::WindowResolution res) {
-    return (int)res * 0.25f;
+    return (int)(res / 4);
 }

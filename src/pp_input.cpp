@@ -20,6 +20,9 @@ void input_controller_init(InputController *input) {
         }
     }
 
+    input->kb_disabled_until_released = KB_NO_BINDING;
+    input->gp_disabled_until_released = GP_NO_BINDING;
+
     InputAction *actions = input->actions;
 
     // Global actions
@@ -298,12 +301,21 @@ void input_controller_update(GLFWwindow *window, InputController *input,
 
                 int bind_index = action->kb_binds[kb_bind_index].bind_index;
 
+                bool disable_press = false;
+                if (input->kb_disabled_until_released.bind_index ==
+                        bind_index) {
+                    disable_press = true;
+                }
+
                 if (bind_index == GLFW_KEY_UNKNOWN) continue;
 
                 if (bind_index >= 0 && IS_KEY_PRESSED(bind_index)) {
-
-                    key_pressed(&action->key);
-                    action->value = 1.f;
+                    if (!disable_press) {
+                        key_pressed(&action->key);
+                        action->value = 1.f;
+                    }
+                } else if (disable_press) {
+                    input->kb_disabled_until_released = KB_NO_BINDING;
                 }
             }
         }
@@ -318,27 +330,48 @@ void input_controller_update(GLFWwindow *window, InputController *input,
                     gp_bind_index < ARRAY_LENGTH(action->gp_binds);
                     ++gp_bind_index) {
 
+                if (action->gp_binds[gp_bind_index].bind_index ==
+                        GLFW_KEY_UNKNOWN) continue;
+
                 GamepadBindingType type = action->gp_binds[gp_bind_index].type;
                 int bind_index = action->gp_binds[gp_bind_index].bind_index;
 
-                if (bind_index == GLFW_KEY_UNKNOWN) continue;
+                bool disable_press = false;
+                if (input->gp_disabled_until_released.bind_index ==
+                        bind_index &&
+                    input->gp_disabled_until_released.type ==
+                        type) {
+                    disable_press = true;
+                }
 
                 if (type == PR_BUTTON) {
                     if (gamepad.buttons[bind_index] == GLFW_PRESS) {
-                        key_pressed(&action->key);
-                        action->value = 1.f;
+                        if (!disable_press) {
+                            key_pressed(&action->key);
+                            action->value = 1.f;
+                        }
+                    } else if (disable_press) {
+                        input->gp_disabled_until_released = GP_NO_BINDING;
                     }
                 } else if (type == PR_AXIS_POSITIVE) {
                     if (gamepad.axes[bind_index] > PR_GAMEPAD_DEADZONE) {
-                        key_pressed(&action->key);
-                        action->value = gamepad.axes[bind_index];
+                        if (!disable_press) {
+                            key_pressed(&action->key);
+                            action->value = gamepad.axes[bind_index];
+                        }
+                    } else if (disable_press) {
+                        input->gp_disabled_until_released = GP_NO_BINDING;
                     }
                 } else if (type == PR_AXIS_NEGATIVE) {
                     if (gamepad.axes[bind_index] < -PR_GAMEPAD_DEADZONE) {
-                        key_pressed(&action->key);
-                        // I always want to have a value in [0,1] and
-                        // that's why this value is negated
-                        action->value = -gamepad.axes[bind_index];
+                        if (!disable_press) {
+                            key_pressed(&action->key);
+                            // I always want to have a value in [0,1] and
+                            // that's why this value is negated
+                            action->value = -gamepad.axes[bind_index];
+                        }
+                    } else if (disable_press) {
+                        input->gp_disabled_until_released = GP_NO_BINDING;
                     }
                 }
             }
@@ -349,7 +382,9 @@ void input_controller_update(GLFWwindow *window, InputController *input,
     if (input->gp_binding &&
             glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         input->gp_binding = NULL;
+        input->kb_disabled_until_released = { GLFW_KEY_ESCAPE };
     }
+
     // Check for a new gamepad binding
     if (input->gp_binding && wasGamepadFound) {
         for(int button_index = 0;
@@ -358,24 +393,31 @@ void input_controller_update(GLFWwindow *window, InputController *input,
             if (gamepad.buttons[button_index] == GLFW_PRESS) {
                 input->gp_binding->bind_index = button_index;
                 input->gp_binding->type = PR_BUTTON;
+                input->gp_disabled_until_released = *input->gp_binding;
                 input->gp_binding = NULL;
             }
         }
         for(int axis_index = 0;
             axis_index <= GLFW_GAMEPAD_AXIS_LAST && input->gp_binding;
             ++axis_index) {
+
             float axis_value = gamepad.axes[axis_index];
+
+            // Remap the value if it's a trigger
             if (axis_index == GLFW_GAMEPAD_AXIS_LEFT_TRIGGER ||
                     axis_index == GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) {
                 axis_value = (axis_value + 1.f) * 0.5f;
             }
+
             if (axis_value > PR_GAMEPAD_DEADZONE) {
                 input->gp_binding->bind_index = axis_index;
                 input->gp_binding->type = PR_AXIS_POSITIVE;
+                input->gp_disabled_until_released = *input->gp_binding;
                 input->gp_binding = NULL;
             } else if (axis_value < -PR_GAMEPAD_DEADZONE) {
                 input->gp_binding->bind_index = axis_index;
                 input->gp_binding->type = PR_AXIS_NEGATIVE;
+                input->gp_disabled_until_released = *input->gp_binding;
                 input->gp_binding = NULL;
             }
         }
@@ -395,12 +437,14 @@ void kb_change_binding_callback(GLFWwindow *window,
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         input->kb_binding = NULL;
         input->gp_binding = NULL;
+        input->kb_disabled_until_released = { GLFW_KEY_ESCAPE };
         glfwSetKeyCallback(window, NULL);
         return;
     }
 
     if (action == GLFW_PRESS) {
         input->kb_binding->bind_index = key;
+        input->kb_disabled_until_released = *input->kb_binding;
         input->kb_binding = NULL;
         glfwSetKeyCallback(window, NULL);
         return;
@@ -449,5 +493,15 @@ const char *get_gamepad_button_name(int key, GamepadBindingType type) {
         }
     } else {
         return NULL;
+    }
+}
+
+const char *get_key_name(int key) {
+    switch (key) {
+        case GLFW_KEY_UP: return "K_UP";
+        case GLFW_KEY_DOWN: return "K_DOWN";
+        case GLFW_KEY_LEFT: return "K_LEFT";
+        case GLFW_KEY_RIGHT: return "K_RIGHT";
+        default: return glfwGetKeyName(key, glfwGetKeyScancode(key));
     }
 }

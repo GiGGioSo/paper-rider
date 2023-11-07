@@ -100,6 +100,11 @@ struct InputController {
     KeyboardBinding *kb_binding;
     GamepadBinding *gp_binding;
 
+    // Binding we just modified,
+    // so they are disabled until they are not pressed anymore
+    KeyboardBinding kb_disabled_until_released;
+    GamepadBinding gp_disabled_until_released;
+
     // Gameplay
     int8_t current_gamepad;
     char *gamepad_name;
@@ -143,6 +148,6 @@ void
 kb_change_binding_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 const char *get_gamepad_button_name(int key, GamepadBindingType type);
-const char *get_key_name(int key, GamepadBindingType type);
+const char *get_key_name(int key);
 
 #endif
