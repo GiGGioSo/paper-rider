@@ -276,13 +276,59 @@ void input_controller_update(GLFWwindow *window, InputController *input,
         }
     }
 
-
     bool wasGamepadFound = false;
     GLFWgamepadstate gamepad;
 
     if (input->current_gamepad >= 0 &&
             glfwGetGamepadState(input->current_gamepad, &gamepad)) {
         wasGamepadFound = true;
+    }
+
+    // If ESC is pressed, stop waiting for a new gamepad binding
+    if (input->gp_binding &&
+            glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        input->gp_binding = NULL;
+        input->kb_disabled_until_released = { GLFW_KEY_ESCAPE };
+    }
+    // Check for a new gamepad binding
+    if (input->gp_binding && wasGamepadFound) {
+        for(int button_index = 0;
+            button_index <= GLFW_GAMEPAD_BUTTON_LAST && input->gp_binding;
+            ++button_index) {
+            if (gamepad.buttons[button_index] == GLFW_PRESS) {
+                input->gp_binding->bind_index = button_index;
+                input->gp_binding->type = PR_BUTTON;
+                input->modified = true;
+                input->gp_disabled_until_released = *input->gp_binding;
+                input->gp_binding = NULL;
+            }
+        }
+        for(int axis_index = 0;
+            axis_index <= GLFW_GAMEPAD_AXIS_LAST && input->gp_binding;
+            ++axis_index) {
+
+            float axis_value = gamepad.axes[axis_index];
+
+            // Remap the value if it's a trigger
+            if (axis_index == GLFW_GAMEPAD_AXIS_LEFT_TRIGGER ||
+                    axis_index == GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) {
+                axis_value = (axis_value + 1.f) * 0.5f;
+            }
+
+            if (axis_value > PR_GAMEPAD_DEADZONE) {
+                input->gp_binding->bind_index = axis_index;
+                input->gp_binding->type = PR_AXIS_POSITIVE;
+                input->modified = true;
+                input->gp_disabled_until_released = *input->gp_binding;
+                input->gp_binding = NULL;
+            } else if (axis_value < -PR_GAMEPAD_DEADZONE) {
+                input->gp_binding->bind_index = axis_index;
+                input->gp_binding->type = PR_AXIS_NEGATIVE;
+                input->modified = true;
+                input->gp_disabled_until_released = *input->gp_binding;
+                input->gp_binding = NULL;
+            }
+        }
     }
 
     // Check if actions are being pressed by either keyboard or gamepad
@@ -378,51 +424,6 @@ void input_controller_update(GLFWwindow *window, InputController *input,
         }
     }
 
-    // If ESC is pressed, stop waiting for a new gamepad binding
-    if (input->gp_binding &&
-            glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        input->gp_binding = NULL;
-        input->kb_disabled_until_released = { GLFW_KEY_ESCAPE };
-    }
-
-    // Check for a new gamepad binding
-    if (input->gp_binding && wasGamepadFound) {
-        for(int button_index = 0;
-            button_index <= GLFW_GAMEPAD_BUTTON_LAST && input->gp_binding;
-            ++button_index) {
-            if (gamepad.buttons[button_index] == GLFW_PRESS) {
-                input->gp_binding->bind_index = button_index;
-                input->gp_binding->type = PR_BUTTON;
-                input->gp_disabled_until_released = *input->gp_binding;
-                input->gp_binding = NULL;
-            }
-        }
-        for(int axis_index = 0;
-            axis_index <= GLFW_GAMEPAD_AXIS_LAST && input->gp_binding;
-            ++axis_index) {
-
-            float axis_value = gamepad.axes[axis_index];
-
-            // Remap the value if it's a trigger
-            if (axis_index == GLFW_GAMEPAD_AXIS_LEFT_TRIGGER ||
-                    axis_index == GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) {
-                axis_value = (axis_value + 1.f) * 0.5f;
-            }
-
-            if (axis_value > PR_GAMEPAD_DEADZONE) {
-                input->gp_binding->bind_index = axis_index;
-                input->gp_binding->type = PR_AXIS_POSITIVE;
-                input->gp_disabled_until_released = *input->gp_binding;
-                input->gp_binding = NULL;
-            } else if (axis_value < -PR_GAMEPAD_DEADZONE) {
-                input->gp_binding->bind_index = axis_index;
-                input->gp_binding->type = PR_AXIS_NEGATIVE;
-                input->gp_disabled_until_released = *input->gp_binding;
-                input->gp_binding = NULL;
-            }
-        }
-    }
-
 }
 
 void kb_change_binding_callback(GLFWwindow *window,
@@ -444,6 +445,7 @@ void kb_change_binding_callback(GLFWwindow *window,
 
     if (action == GLFW_PRESS) {
         input->kb_binding->bind_index = key;
+        input->modified = true;
         input->kb_disabled_until_released = *input->kb_binding;
         input->kb_binding = NULL;
         glfwSetKeyCallback(window, NULL);

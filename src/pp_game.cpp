@@ -103,6 +103,8 @@ obstacle_render(PR::Obstacle *obs);
 inline void
 button_render(PR::Button but, glm::vec4 col, Font *font);
 inline void
+button_render_in_menu_camera(PR::Button but, glm::vec4 col, Font *font, PR::MenuCamera *cam);
+inline void
 portal_render_info(PR::Portal *portal, float tx, float ty);
 inline void
 boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
@@ -203,6 +205,8 @@ void
 option_slider_handle_mouse(PR::OptionSlider *slider, float mouseX, float mouseY, Key mouse_button);
 void
 options_menu_selection_handle_mouse(PR::OptionsMenu *opt, float mouseX, float mouseY, bool showing_general_pane);
+void
+options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions);
 
 void
 display_mode_update(PR::WinInfo *win, PR::DisplayMode dm);
@@ -1255,6 +1259,7 @@ void options_menu_update() {
         ma_sound_start(&sound->change_pane);
     }
 
+
     if (input->was_mouse_moved) {
         options_menu_selection_handle_mouse(
                 opt, input->mouseX, input->mouseY,
@@ -1464,6 +1469,224 @@ void options_menu_update() {
         } else if (opt->current_selection == PR::OPTION_NONE) {
             // do nothing
         }
+    } else { // Update camera position
+             // NOTE: Move menu camera based on input method used
+        if (input->modified) {
+            options_menu_update_bindings(opt, input->actions);
+            input->modified = false;
+        }
+
+        bool was_selection_moved = false;
+
+        int previous_selected_row = opt->selected_row;
+        int previous_selected_column = opt->selected_column;
+
+        if (!input->kb_binding && !input->gp_binding) {
+            if (ACTION_CLICKED(PR_MENU_UP)) {
+                if (opt->selected_row > 0) {
+                    opt->selected_row--;
+                }
+            }
+            if (ACTION_CLICKED(PR_MENU_DOWN)) {
+                if (opt->selected_row < ARRAY_LENGTH(input->actions)-1) {
+                    opt->selected_row++;
+                }
+            }
+            if (ACTION_CLICKED(PR_MENU_LEFT)) {
+                if (opt->selected_column > 0) {
+                    opt->selected_column--;
+                }
+            }
+            if (ACTION_CLICKED(PR_MENU_RIGHT)) {
+                if (opt->selected_column < 4 - 1) {
+                    opt->selected_column++;
+                }
+            }
+        }
+
+        for(int bind_index = 0;
+            bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+            ++bind_index) {
+
+            PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
+            PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
+            PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
+            PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+
+            InputAction *action = &input->actions[bind_index];
+
+            if (!input->kb_binding && !input->gp_binding) {
+                if (rect_contains_point(
+                            rect_in_menu_camera_space(kb1->body, cam),
+                            input->mouseX, input->mouseY,
+                            kb1->from_center)) {
+
+                    if (input->was_mouse_moved) {
+                        opt->selected_row = bind_index;
+                        opt->selected_column = 0;
+                    }
+                    if (input->mouse_left.clicked) {
+                        input->kb_binding = &action->kb_binds[0];
+                        glfwSetKeyCallback(win->glfw_win,
+                                kb_change_binding_callback);
+                    }
+                }
+                if (rect_contains_point(
+                            rect_in_menu_camera_space(kb2->body, cam),
+                            input->mouseX, input->mouseY,
+                            kb2->from_center)) {
+
+                    if (input->was_mouse_moved) {
+                        opt->selected_row = bind_index;
+                        opt->selected_column = 1;
+                    }
+                    if (input->mouse_left.clicked) {
+                        input->kb_binding = &action->kb_binds[1];
+                        glfwSetKeyCallback(win->glfw_win,
+                                kb_change_binding_callback);
+                    }
+                }
+                if (rect_contains_point(
+                            rect_in_menu_camera_space(gp1->body, cam),
+                            input->mouseX, input->mouseY,
+                            gp1->from_center)) {
+
+                    if (input->was_mouse_moved) {
+                        opt->selected_row = bind_index;
+                        opt->selected_column = 2;
+                    }
+                    if (input->mouse_left.clicked) {
+                        input->gp_binding = &action->gp_binds[0];
+                    }
+                }
+                if (rect_contains_point(
+                            rect_in_menu_camera_space(gp2->body, cam),
+                            input->mouseX, input->mouseY,
+                            gp2->from_center)) {
+
+                    if (input->was_mouse_moved) {
+                        opt->selected_row = bind_index;
+                        opt->selected_column = 3;
+                    }
+                    if (input->mouse_left.clicked) {
+                        input->gp_binding = &action->gp_binds[1];
+                    }
+                }
+            }
+
+            kb1->col = OPTION_BUTTON_DEFAULT_COLOR;
+            kb2->col = OPTION_BUTTON_DEFAULT_COLOR;
+            gp1->col = OPTION_BUTTON_DEFAULT_COLOR;
+            gp2->col = OPTION_BUTTON_DEFAULT_COLOR;
+
+            if (opt->selected_row == bind_index) {
+                switch (opt->selected_column) {
+                    case 0:
+                        kb1->col = OPTION_BUTTON_SELECTED_COLOR;
+                        break;
+                    case 1:
+                        kb2->col = OPTION_BUTTON_SELECTED_COLOR;
+                        break;
+                    case 2:
+                        gp1->col = OPTION_BUTTON_SELECTED_COLOR;
+                        break;
+                    case 3:
+                        gp2->col = OPTION_BUTTON_SELECTED_COLOR;
+                        break;
+                }
+            }
+
+            if (opt->selected_row == bind_index &&
+                    ACTION_CLICKED(PR_MENU_CLICK)) {
+                switch (opt->selected_column) {
+                    case 0:
+                        input->kb_binding = &action->kb_binds[0];
+                        glfwSetKeyCallback(win->glfw_win,
+                                kb_change_binding_callback);
+                        break;
+                    case 1:
+                        input->kb_binding = &action->kb_binds[1];
+                        glfwSetKeyCallback(win->glfw_win,
+                                kb_change_binding_callback);
+                        break;
+                    case 2:
+                        input->gp_binding = &action->gp_binds[0];
+                        break;
+                    case 3:
+                        input->gp_binding = &action->gp_binds[1];
+                        break;
+                    default: break;
+                }
+            }
+        }
+
+        if (opt->selected_row != previous_selected_row ||
+                opt->selected_column != previous_selected_column) {
+            was_selection_moved = true;
+        }
+
+        // ### Camera movement ###
+        if (cam->follow_selection) {
+            if (opt->selected_row != -1) {
+                float selected_goal_position =
+                    (opt->selected_row + 1) * ((float)GAME_HEIGHT / 6) +
+                        ((float)GAME_HEIGHT / 12);
+                cam->goal_position =
+                    (selected_goal_position > GAME_HEIGHT * 0.5f) ?
+                        selected_goal_position : GAME_HEIGHT * 0.5f;
+
+            } else {
+                cam->goal_position = GAME_HEIGHT * 0.5f;
+            }
+            if (input->was_mouse_moved) {
+                cam->follow_selection = false;
+            }
+        } else {
+            // NOTE: Consider the cursor only if it's inside the window
+            if (0 < input->mouseX && input->mouseX < GAME_WIDTH &&
+                    0 < input->mouseY && input->mouseY < GAME_HEIGHT) {
+
+                // NOTE: 0.2f is an arbitrary amount
+                if (cam->goal_position > GAME_HEIGHT*0.5f &&
+                        input->mouseY < GAME_HEIGHT * 0.2f) {
+                    float cam_velocity =
+                        (1.f - (input->mouseY / (GAME_HEIGHT*0.20))) *
+                        CAMERA_MAX_VELOCITY;
+                    cam->goal_position -=
+                        cam_velocity * glob->state.delta_time;
+                }
+
+                // NOTE: 15 because there can be 15 buttons in the screen together
+                //       +2 because i do:
+                //          +3 to count for the empty row left at the top
+                //          -1 so that when a row is exactly filled at the end
+                //              it doesn't count that as another row
+                size_t last_row_y =
+                    (ARRAY_LENGTH(input->actions) + 1) *
+                        ((float)GAME_HEIGHT / 6) +
+                    ((float)GAME_HEIGHT / 12);
+
+                if (cam->goal_position < last_row_y &&
+                        input->mouseY > GAME_HEIGHT * 0.8f) {
+                    float cam_velocity =
+                        ((input->mouseY - GAME_HEIGHT*0.8f) /
+                            (GAME_HEIGHT*0.20)) *
+                        CAMERA_MAX_VELOCITY;
+                    cam->goal_position +=
+                        cam_velocity * glob->state.delta_time;
+                }
+            }
+            // NOTE: Check if you have to change camera movement mode
+            if (was_selection_moved &&
+                    (ACTION_CLICKED(PR_MENU_UP) ||
+                     ACTION_CLICKED(PR_MENU_DOWN) ||
+                     ACTION_CLICKED(PR_MENU_LEFT) ||
+                     ACTION_CLICKED(PR_MENU_RIGHT))) {
+                cam->follow_selection = true;
+            }
+        }
+        cam->pos.y = lerp(cam->pos.y, cam->goal_position,
+                glob->state.delta_time * cam->speed_multiplier);
     }
 
     // Rendering the background
@@ -1479,14 +1702,14 @@ void options_menu_update() {
             false);
 
     // render the `go_to_start_menu` button
-    button_render(opt->to_start_menu, glm::vec4(1.f),
-                  &glob->rend_res.fonts[0]);
+    button_render_in_menu_camera(opt->to_start_menu, glm::vec4(1.f),
+                                 &glob->rend_res.fonts[0], cam);
 
     // render GENERAL and CONTROLS buttons
-    button_render(opt->to_general_pane, glm::vec4(1.f),
-                  &glob->rend_res.fonts[0]);
-    button_render(opt->to_controls_pane, glm::vec4(1.f),
-                  &glob->rend_res.fonts[0]);
+    button_render_in_menu_camera(opt->to_general_pane, glm::vec4(1.f),
+                                 &glob->rend_res.fonts[0], cam);
+    button_render_in_menu_camera(opt->to_controls_pane, glm::vec4(1.f),
+                                 &glob->rend_res.fonts[0], cam);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
@@ -1584,69 +1807,18 @@ void options_menu_update() {
             PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
             PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
 
-            InputAction *action = &input->actions[bind_index];
-
-            kb1->col = OPTION_BUTTON_DEFAULT_COLOR;
-            kb2->col = OPTION_BUTTON_DEFAULT_COLOR;
-            gp1->col = OPTION_BUTTON_DEFAULT_COLOR;
-            gp2->col = OPTION_BUTTON_DEFAULT_COLOR;
-
-            if (rect_contains_point(kb1->body,
-                        input->mouseX, input->mouseY,
-                        kb1->from_center)) {
-
-                kb1->col = OPTION_BUTTON_SELECTED_COLOR;
-                if (!input->kb_binding && !input->gp_binding &&
-                        input->mouse_left.clicked) {
-                    input->kb_binding = &action->kb_binds[0];
-                    glfwSetKeyCallback(win->glfw_win,
-                                       kb_change_binding_callback);
-                }
-            }
-            if (rect_contains_point(kb2->body,
-                        input->mouseX, input->mouseY,
-                        kb2->from_center)) {
-
-                kb2->col = OPTION_BUTTON_SELECTED_COLOR;
-                if (!input->kb_binding && !input->gp_binding &&
-                        input->mouse_left.clicked) {
-                    input->kb_binding = &action->kb_binds[1];
-                    glfwSetKeyCallback(win->glfw_win,
-                                       kb_change_binding_callback);
-                }
-            }
-            if (rect_contains_point(gp1->body,
-                        input->mouseX, input->mouseY,
-                        gp1->from_center)) {
-
-                gp1->col = OPTION_BUTTON_SELECTED_COLOR;
-                if (!input->kb_binding && !input->gp_binding &&
-                        input->mouse_left.clicked) {
-                    input->gp_binding = &action->gp_binds[0];
-                }
-            }
-            if (rect_contains_point(gp2->body,
-                        input->mouseX, input->mouseY,
-                        gp2->from_center)) {
-
-                gp2->col = OPTION_BUTTON_SELECTED_COLOR;
-                if (!input->kb_binding && !input->gp_binding &&
-                        input->mouse_left.clicked) {
-                    input->gp_binding = &action->gp_binds[1];
-                }
-            }
-
-            button_render(*kb1, glm::vec4(1.f, 1.f, 1.f, 1.f),
-                          &glob->rend_res.fonts[1]);
-            button_render(*kb2, glm::vec4(1.f, 1.f, 1.f, 1.f),
-                          &glob->rend_res.fonts[1]);
-            button_render(*gp1, glm::vec4(1.f, 1.f, 1.f, 1.f),
-                          &glob->rend_res.fonts[1]);
-            button_render(*gp2, glm::vec4(1.f, 1.f, 1.f, 1.f),
-                          &glob->rend_res.fonts[1]);
+            button_render_in_menu_camera(*kb1, glm::vec4(1.f),
+                                         &glob->rend_res.fonts[1], cam);
+            button_render_in_menu_camera(*kb2, glm::vec4(1.f),
+                                         &glob->rend_res.fonts[1], cam);
+            button_render_in_menu_camera(*gp1, glm::vec4(1.f),
+                                         &glob->rend_res.fonts[1], cam);
+            button_render_in_menu_camera(*gp2, glm::vec4(1.f),
+                                         &glob->rend_res.fonts[1], cam);
         }
         renderer_draw_uni(glob->rend_res.shaders[0]);
-        renderer_draw_text(&glob->rend_res.fonts[1], glob->rend_res.shaders[2]);
+        renderer_draw_text(&glob->rend_res.fonts[1],
+                            glob->rend_res.shaders[2]);
     }
 
 }
@@ -2335,25 +2507,15 @@ void play_menu_update(void) {
             glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
             false);
 
-    Rect campaign_rend_rect =
-        rect_in_menu_camera_space(menu->show_campaign_button.body, cam);
-    renderer_add_queue_uni(campaign_rend_rect,
-                           menu->show_campaign_button.col,
-                           menu->show_campaign_button.from_center);
-    renderer_add_queue_text(campaign_rend_rect.pos.x,
-                            campaign_rend_rect.pos.y,
-                            menu->show_campaign_button.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
+    button_render_in_menu_camera(menu->show_campaign_button,
+                                 glm::vec4(1.0f),
+                                 &glob->rend_res.fonts[0],
+                                 cam);
 
-    Rect custom_rend_rect =
-        rect_in_menu_camera_space(menu->show_custom_button.body, cam);
-    renderer_add_queue_uni(custom_rend_rect,
-                           menu->show_custom_button.col,
-                           menu->show_custom_button.from_center);
-    renderer_add_queue_text(custom_rend_rect.pos.x,
-                            custom_rend_rect.pos.y,
-                            menu->show_custom_button.text, glm::vec4(1.0f),
-                            &glob->rend_res.fonts[0], true);
+    button_render_in_menu_camera(menu->show_custom_button,
+                                 glm::vec4(1.0f),
+                                 &glob->rend_res.fonts[0],
+                                 cam);
 
     if (menu->showing_campaign_buttons) {
         for(size_t levelbutton_index = 0;
@@ -2363,15 +2525,10 @@ void play_menu_update(void) {
             PR::LevelButton *lb =
                 &menu->campaign_buttons[levelbutton_index];
 
-            Rect button_rend_rect = rect_in_menu_camera_space(lb->button.body, cam);
-
-            renderer_add_queue_uni(button_rend_rect,
-                                   lb->button.col,
-                                   lb->button.from_center);
-            renderer_add_queue_text(button_rend_rect.pos.x,
-                                    button_rend_rect.pos.y,
-                                    lb->button.text, glm::vec4(1.0f),
-                                    &glob->rend_res.fonts[0], true);
+            button_render_in_menu_camera(lb->button,
+                                         glm::vec4(1.0f),
+                                         &glob->rend_res.fonts[0],
+                                         cam);
         }
     } else {
         for(size_t custombutton_index = 0;
@@ -5195,6 +5352,14 @@ inline void button_render(PR::Button but, glm::vec4 col, Font *font) {
                             but.text, col, font, true);
 }
 
+inline void button_render_in_menu_camera(PR::Button but, glm::vec4 col, Font *font, PR::MenuCamera *cam) {
+
+    Rect in_cam_rect = rect_in_menu_camera_space(but.body, cam);
+    renderer_add_queue_uni(in_cam_rect, but.col, but.from_center);
+    renderer_add_queue_text(in_cam_rect.pos.x, in_cam_rect.pos.y,
+                            but.text, col, font, true);
+}
+
 inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
@@ -6266,6 +6431,45 @@ void options_menu_selection_handle_mouse(PR::OptionsMenu *opt,
     }
 }
 
+void options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions) {
+
+    for(size_t bind_index = 0;
+        bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+        ++bind_index) {
+
+        InputAction *action = &actions[bind_index];
+
+        PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
+        PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
+        PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
+        PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+
+        const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
+        std::strncpy(kb1->text,
+                     (kb1_name != NULL) ? kb1_name : "...",
+                     ARRAY_LENGTH(kb1->text)-1);
+
+        const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
+        std::strncpy(kb2->text,
+                     (kb2_name != NULL) ? kb2_name : "...",
+                     ARRAY_LENGTH(kb2->text)-1);
+
+        const char *gp1_name =
+            get_gamepad_button_name(action->gp_binds[0].bind_index,
+                                    action->gp_binds[0].type);
+        std::strncpy(gp1->text,
+                     (gp1_name != NULL) ? gp1_name : "...",
+                     ARRAY_LENGTH(gp1->text)-1);
+
+        const char *gp2_name =
+            get_gamepad_button_name(action->gp_binds[1].bind_index,
+                                    action->gp_binds[1].type);
+        std::strncpy(gp2->text,
+                     (gp2_name != NULL) ? gp2_name : "...",
+                     ARRAY_LENGTH(gp2->text)-1);
+    }
+}
+
 void display_mode_update(PR::WinInfo *win, PR::DisplayMode dm) {
     std::cout << "New display mode: " << dm << std::endl;
 
@@ -6373,3 +6577,4 @@ int window_resolution_width(PR::WindowResolution res) {
 int window_resolution_height(PR::WindowResolution res) {
     return (int)(res / 4);
 }
+

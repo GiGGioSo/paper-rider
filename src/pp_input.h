@@ -94,6 +94,10 @@ struct InputAction {
 };
 
 struct InputController {
+    // Check if the bindings were modified, and put to false when the change
+    // has been noticed
+    bool modified;
+
     InputAction actions[PR_LAST_ACTION+1];
 
     // Binding we are modifying

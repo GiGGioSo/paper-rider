@@ -249,11 +249,13 @@ struct PR {
         Button resolution_up;
         Button resolution_down;
 
-        // TODO: Keybinding options
         Button change_kb_binds1[PR_LAST_ACTION+1];
         Button change_kb_binds2[PR_LAST_ACTION+1];
         Button change_gp_binds1[PR_LAST_ACTION+1];
         Button change_gp_binds2[PR_LAST_ACTION+1];
+
+        int selected_row;
+        int selected_column;
     };
     OptionsMenu current_options_menu;
 
