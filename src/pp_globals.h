@@ -374,12 +374,6 @@ struct PR {
     };
     Level current_level;
 
-#define DEFAULT_FONT 0
-#define OBJECT_INFO_FONT 1
-
-#define DEFAULT_FONT_SIZE (64.f)
-#define OBJECT_INFO_FONT_SIZE (24.f)
-
     struct Sound {
         float master_volume;
         float sfx_volume;
@@ -411,10 +405,18 @@ struct PR {
     };
     Sound sound;
 
+#define DEFAULT_FONT 0
+#define OBJECT_INFO_FONT 1
+#define ACTION_NAME_FONT 2
+
+#define DEFAULT_FONT_SIZE (64.f)
+#define OBJECT_INFO_FONT_SIZE (24.f)
+#define ACTION_NAME_FONT_SIZE (40.f)
+
     struct RenderResources {
         glm::mat4 ortho_proj;
         Shader shaders[4];
-        Font fonts[2];
+        Font fonts[3];
         Texture global_sprite;
     };
     RenderResources rend_res;

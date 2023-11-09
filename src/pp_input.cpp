@@ -507,3 +507,53 @@ const char *get_key_name(int key) {
         default: return glfwGetKeyName(key, glfwGetKeyScancode(key));
     }
 }
+
+const char *get_action_name(int action) {
+    if (action < 0 || action > PR_LAST_ACTION) return "INVALID_ACTION";
+
+    switch (action) {
+        case PR_EXIT_GAME: return "EXIT GAME";
+        case PR_MENU_UP: return "MENU_UP";
+        case PR_MENU_DOWN: return "MENU_DOWN";
+        case PR_MENU_LEFT: return "MENU_LEFT";
+        case PR_MENU_RIGHT: return "MENU_RIGHT";
+        case PR_MENU_CLICK: return "MENU_CLICK";
+        case PR_MENU_LEVEL_DELETE: return "PR_MENU_LEVEL_DELETE";
+        case PR_MENU_LEVEL_EDIT: return "PR_MENU_LEVEL_EDIT";
+        case PR_MENU_PANE_RIGHT: return "MENU_PANE_RIGHT";
+        case PR_MENU_PANE_LEFT: return "MENU_PANE_LEFT";
+        case PR_MENU_EXIT: return "MENU_EXIT";
+        case PR_PLAY_PLANE_UP: return "PLAY_PLANE_UP";
+        case PR_PLAY_PLANE_DOWN: return "PLAY_PLANE_DOWN";
+        case PR_PLAY_RIDER_RIGHT: return "PLAY_RIDER_RIGHT";
+        case PR_PLAY_RIDER_LEFT: return "PLAY_RIDER_LEFT";
+        case PR_PLAY_RIDER_JUMP: return "PLAY_RIDER_JUMP";
+        case PR_PLAY_PAUSE: return "PLAY_PAUSE";
+        case PR_PLAY_RESUME: return "PLAY_RESUME";
+        case PR_PLAY_RESTART: return "PLAY_RESTART";
+        case PR_PLAY_QUIT: return "PLAY_QUIT";
+        case PR_EDIT_TOGGLE_MODE: return "EDIT_TOGGLE_MODE";
+        case PR_EDIT_SAVE_MAP: return "EDIT_SAVE_MAP";
+        case PR_EDIT_OBJ_DELETE: return "EDIT_OBJ_DELETE";
+        case PR_EDIT_OBJ_CREATE: return "EDIT_OBJ_CREATE";
+        case PR_EDIT_OBJ_DUPLICATE: return "EDIT_OBJ_DUPLICATE";
+        case PR_EDIT_PLANE_RESET: return "EDIT_PLANE_RESET";
+        case PR_EDIT_MOVE_UP: return "EDIT_MOVE_UP";
+        case PR_EDIT_MOVE_DOWN: return "EDIT_MOVE_DOWN";
+        case PR_EDIT_MOVE_LEFT: return "EDIT_MOVE_LEFT";
+        case PR_EDIT_MOVE_RIGHT: return "EDIT_MOVE_RIGHT";
+        case PR_EDIT_OBJ_PROPERTIES_SHOW_TOGGLE: return "EDIT_OBJ_PROPERTIES_SHOW_TOGGLE";
+        case PR_EDIT_OBJ_PROPERTY_LEFT: return "EDIT_OBJ_PROPERTY_LEFT";
+        case PR_EDIT_OBJ_PROPERTY_RIGHT: return "EDIT_OBJ_PROPERTY_RIGHT";
+        case PR_EDIT_OBJ_PROPERTY_TOGGLE: return "EDIT_OBJ_PROPERTY_TOGGLE";
+        case PR_EDIT_OBJ_PROPERTY_NEXT_INCREMENT: return "EDIT_OBJ_PROPERTY_NEXT_INCREMENT";
+        case PR_EDIT_OBJ_PROPERTY_INCREASE: return "EDIT_OBJ_PROPERTY_INCREASE";
+        case PR_EDIT_OBJ_PROPERTY_DECREASE: return "EDIT_OBJ_PROPERTY_DECREASE";
+        case PR_EDIT_OBJ_SELECTION_UP: return "EDIT_OBJ_SELECTION_UP";
+        case PR_EDIT_OBJ_SELECTION_DOWN: return "EDIT_OBJ_SELECTION_DOWN";
+        case PR_EDIT_OBJ_SELECTION_LEFT: return "EDIT_OBJ_SELECTION_LEFT";
+        case PR_EDIT_OBJ_SELECTION_RIGHT: return "EDIT_OBJ_SELECTION_RIGHT";
+        case PR_EDIT_OBJ_DESELECT: return "EDIT_OBJ_DESELECT";
+        default: return "UNKNOWN";
+    }
+}

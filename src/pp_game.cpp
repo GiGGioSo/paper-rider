@@ -1798,6 +1798,25 @@ void options_menu_update() {
         //                         "CONTROLS PANE", glm::vec4(1.0f),
         //                         &glob->rend_res.fonts[0], true);
 
+        // NOTE: Render action labels
+        for(size_t bind_index = 0;
+            bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+            ++bind_index) {
+
+            PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
+            Rect in_cam_rect = rect_in_menu_camera_space(kb1->body, cam);
+
+            renderer_add_queue_text(GAME_WIDTH * 0.25f,
+                                    in_cam_rect.pos.y,
+                                    get_action_name(bind_index),
+                                    glm::vec4(1.0f),
+                                    &glob->rend_res.fonts[ACTION_NAME_FONT],
+                                    true);
+        }
+        renderer_draw_text(&glob->rend_res.fonts[ACTION_NAME_FONT],
+                           glob->rend_res.shaders[2]);
+
+        // NOTE: Render action buttons and text inside of them
         for(size_t bind_index = 0;
             bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
             ++bind_index) {

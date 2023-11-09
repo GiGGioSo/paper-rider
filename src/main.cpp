@@ -296,6 +296,22 @@ int glob_init(void) {
         return 1;
     }
 
+    Font *f3 = &glob->rend_res.fonts[ACTION_NAME_FONT];
+    f3->filename = "./arial.ttf";
+    f3->first_char = 32;
+    f3->num_chars = 96;
+    f3->font_height = ACTION_NAME_FONT_SIZE;
+    f3->bitmap_width = 512;
+    f3->bitmap_height = 512;
+    f3->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
+                                                   f3->num_chars);
+    error = renderer_create_font_atlas(f3);
+    if (error) {
+        std::cout << "[ERROR] Could not create font atlas: "
+                  << error << std::endl;
+        return 1;
+    }
+
     renderer_init(&glob->renderer);
 
     glob->colors[0] = glm::vec4(0.8f, 0.3f, 0.3f, 1.0f);

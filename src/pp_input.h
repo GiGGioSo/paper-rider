@@ -153,5 +153,6 @@ kb_change_binding_callback(GLFWwindow *window, int key, int scancode, int action
 
 const char *get_gamepad_button_name(int key, GamepadBindingType type);
 const char *get_key_name(int key);
+const char *get_action_name(int action);
 
 #endif
