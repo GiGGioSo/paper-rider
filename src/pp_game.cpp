@@ -300,7 +300,7 @@ int load_map_from_file(const char *file_path,
         map_file = std::fopen(file_path, "rb");
         if (map_file == NULL) return_defer(1);
 
-        char tmp[99];
+        char tmp[256];
         std::fscanf(map_file, " %s ", tmp);
         if (std::ferror(map_file)) return_defer(1);
 
@@ -632,8 +632,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
             return_defer(1);
         }
 
-        // size_t ordered_indexes[1024];
-
         dirent *dp = NULL;
         while ((dp = readdir(dir))) {
 
@@ -653,7 +651,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << std::strlen(map_path)
                           << std::endl;
 
-                char map_name[99] = "";
+                char map_name[256] = {};
 
                 map_file = std::fopen(map_path, "rb");
                 if (std::ferror(map_file)) return_defer(1);
@@ -664,34 +662,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 std::cout << "Found map_file: "
                           << map_name << " length: " << std::strlen(map_name)
                           << std::endl;
-
-                // Insertion sort on the indexes
-                // 1 2 5 7 9
-                //
-                //  cmp(3, 1) > 0
-                //  cmp(3, 2) > 0
-                //  cmp(3, 5) <= 0 <-
-                //
-                // 1 2 3 5 7 9
-                // if (buttons->count == 0) {
-                //     ordered_indexes[0] = 0;
-                // } else {
-                //     // search for where to insert the new button
-                //     size_t lowest_sorted_index = buttons->count;
-                //     for (size_t i = 0; i < buttons->count; ++i) {
-                //         if (ordered_indexes[i] < lowest_sorted_index &&
-                //             std::strcmp(map_name, buttons->items[i].button.text) < 0) {
-                //             lowest_sorted_index = ordered_indexes[i];
-                //         }
-                //     }
-                //     // increase the position of any button that's after the new
-                //     for (size_t i = 0; i < buttons->count; ++i) {
-                //         if (ordered_indexes[i] >= lowest_sorted_index) {
-                //             ordered_indexes[i]++;
-                //         }
-                //     }
-                //     ordered_indexes[buttons->count] = lowest_sorted_index;
-                // }
 
                 PR::CustomLevelButton lb;
                 lb.is_new_level = false;
@@ -729,18 +699,11 @@ int load_custom_buttons_from_dir(const char *dir_path,
                                       &buttons->items[current_index].del);
 
                 if (map_file) std::fclose(map_file);
+                // NOTE: Always set to NULL the resource you free
+                map_file = NULL;
                 
             }
         }
-
-
-        // for(size_t i = 0; i < buttons->count; ++i) {
-        //     std::cout << i << " -> " << ordered_indexes[i] << std::endl;
-        //     button_set_position(&buttons->items[i].button, ordered_indexes[i]);
-        //     button_edit_del_to_lb(&buttons->items[i].button,
-        //                           &buttons->items[i].edit,
-        //                           &buttons->items[i].del);
-        // }
     }
 
     defer:
@@ -753,6 +716,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
             result = 1;
         }
     }
+
     return result;
 }
 
@@ -1988,7 +1952,6 @@ int play_menu_prepare(PR::PlayMenu *menu) {
         ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
         ma_sound_start(&sound->menu_music);
     }
-
     return 0;
 }
 void play_menu_update(void) {
@@ -3087,13 +3050,6 @@ void level_update(void) {
     float plane_up_down =
         ACTION_VALUE(PR_PLAY_PLANE_DOWN) - ACTION_VALUE(PR_PLAY_PLANE_UP);
 
-    printf("RIDER: left=%1.1f right=%1.1f\n",
-            ACTION_VALUE(PR_PLAY_RIDER_LEFT),
-            ACTION_VALUE(PR_PLAY_RIDER_RIGHT));
-    printf("PLANE:   up=%1.1f  down=%1.1f\n",
-            ACTION_VALUE(PR_PLAY_PLANE_UP),
-            ACTION_VALUE(PR_PLAY_PLANE_DOWN));
-
     if (!p->crashed && !level->pause_now && !level->game_over) {
         // #### START PLANE STUFF
 
@@ -3790,7 +3746,7 @@ void level_update(void) {
                                &rid->crash_position.y)) {
 
             if (level->editing_available) {
-                level_deactivate_edit_mode(level);
+                level_activate_edit_mode(level);
             } else {
                 rid->crash_position +=
                     cam->pos -
