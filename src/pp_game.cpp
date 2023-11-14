@@ -226,6 +226,12 @@ window_resolution_width(PR::WindowResolution res);
 int
 window_resolution_height(PR::WindowResolution res);
 
+// Save and load keybindings from memory
+int
+keybindings_save_to_file(const char *file_path, InputAction *actions, int actions_len);
+int
+keybindings_load_from_file(const char *file_path, InputAction *actions, int actions_len);
+
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
     // Menu freeing
@@ -279,7 +285,6 @@ void options_menu_set_to_null(PR::OptionsMenu *opt) {
     UNUSED(opt);
 }
 
-#define return_defer(ret) do { result = ret; goto defer; } while(0)
 int load_map_from_file(const char *file_path,
                        PR::Obstacles *obstacles,
                        PR::BoostPads *boosts,
@@ -1437,6 +1442,16 @@ void options_menu_update() {
              // NOTE: Move menu camera based on input method used
         if (input->modified) {
             options_menu_update_bindings(opt, input->actions);
+            if (keybindings_save_to_file(
+                        "./my_binds.prkeys",
+                        input->actions,
+                        (int) ARRAY_LENGTH(input->actions))) {
+                std::cout << "Could not load file ./my_binds.prkeys"
+                          << std::endl;
+            } else {
+                std::cout << "Loaded keybindings from file ./my_binds.prkeys"
+                          << std::endl;
+            }
             input->modified = false;
         }
 
@@ -6407,7 +6422,6 @@ void options_menu_selection_handle_mouse(PR::OptionsMenu *opt,
 }
 
 void options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions) {
-
     for(size_t bind_index = 0;
         bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
         ++bind_index) {
@@ -6553,3 +6567,86 @@ int window_resolution_height(PR::WindowResolution res) {
     return (int)(res / 4);
 }
 
+// Save and load keybindings from memory
+int keybindings_save_to_file(const char *file_path,
+        InputAction *actions,
+        int actions_len) {
+    int result = 0;
+    FILE *key_file = NULL;
+
+    {
+        key_file = std::fopen(file_path, "wb");
+        if (key_file == NULL) return_defer(1);
+
+        std::fprintf(key_file, "%i\n", actions_len);
+        if (std::ferror(key_file)) return_defer(2);
+
+        for(int bind_index = 0; bind_index < actions_len; ++bind_index) {
+            InputAction action = actions[bind_index];
+
+            std::fprintf(key_file,
+                         "%i:%i,%i:%i-%i,%i-%i\n",
+                         bind_index,
+                         action.kb_binds[0].bind_index,
+                         action.kb_binds[1].bind_index,
+                         (int)action.gp_binds[0].type,
+                         action.gp_binds[0].bind_index,
+                         (int)action.gp_binds[1].type,
+                         action.gp_binds[1].bind_index);
+            if (std::ferror(key_file)) return_defer(3);
+        }
+    }
+
+    defer:
+    if (key_file) std::fclose(key_file);
+    return result;
+}
+
+int keybindings_load_from_file(const char *file_path,
+        InputAction *actions,
+        int actions_len) {
+    int result = 0;
+    int ret = 0;
+    FILE *key_file = NULL;
+
+    {
+        key_file = std::fopen(file_path, "wb");
+        if (key_file == NULL) return_defer(1);
+
+        int key_file_bindings_num = 0;
+        ret = std::fscanf(key_file, " %i", &key_file_bindings_num);
+        if (ret != 1) return_defer(2);
+        if (std::ferror(key_file)) return_defer(3);
+
+        int upper_limit =
+            (key_file_bindings_num < actions_len) ?
+                key_file_bindings_num : actions_len;
+
+        for(int i = 0; i < upper_limit; ++i) {
+
+            int bind_index = -1;
+            ret = std::fscanf(key_file, " %i:", &bind_index);
+            if (ret != 1) return_defer(4);
+            if (std::ferror(key_file)) return_defer(5);
+
+            if (bind_index < 0 || bind_index >= actions_len) return_defer(6);
+
+            InputAction *action = &actions[bind_index];
+
+            ret = std::fscanf(key_file,
+                              "%i,%i:%i-%i,%i-%i",
+                              &action->kb_binds[0].bind_index,
+                              &action->kb_binds[1].bind_index,
+                              (int *)&action->gp_binds[0].type,
+                              &action->gp_binds[0].bind_index,
+                              (int *)&action->gp_binds[1].type,
+                              &action->gp_binds[1].bind_index);
+            if (ret != 6) return_defer(7);
+            if (std::ferror(key_file)) return_defer(8);
+        }
+    }
+
+    defer:
+    if (key_file) std::fclose(key_file);
+    return result;
+}

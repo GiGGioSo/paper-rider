@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstring>
 
+#define return_defer(ret) do { result = ret; goto defer; } while(0)
+
 #define ARRAY_LENGTH(arr) ((int)(sizeof(arr) / sizeof(arr[0])))
 
 #define UNUSED(expr) (void)(expr)
