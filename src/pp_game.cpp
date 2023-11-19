@@ -20,16 +20,11 @@
 #endif // _WIN32
 
 // TODO:
-//      - Proper gamepad support
 //      - Update the README
-//      - Alphabetic order of the levels
 //      - Better way to signal boost direction in boost pads
 //      - Find/make textures
 //      - Fine tune angle change velocity
 //      - Profiling
-
-// TODO(fix):
-//      - Fix collision when rider/plane are inverted
 
 // TODO(maybe):
 //  - Make changing angle more or less difficult
@@ -49,28 +44,6 @@
 #define PLANE_VELOCITY_LIMIT (1300.f)
 
 #define CAMERA_MAX_VELOCITY (1950.f)
-
-// #define CHANGE_CASE_TO(new_case, prepare_func, map_path, level_name, edit, is_new)  do {\
-//     PR::Level t_level = glob->current_level;\
-//     level_set_to_null(&t_level);\
-//     t_level.editing_available = (edit);\
-//     std::snprintf(t_level.name, std::strlen(level_name)+1, "%s", (level_name));\
-//     PR::PlayMenu t_menu = glob->current_play_menu;\
-//     menu_set_to_null(&t_menu);\
-//     int preparation_result = (prepare_func)(&t_menu, &t_level,\
-//                                             (map_path), (is_new));\
-//     if (preparation_result == 0) {\
-//         free_menu_level(&glob->current_play_menu, &glob->current_level);\
-//         glob->current_level = t_level;\
-//         glob->current_play_menu = t_menu;\
-//         glob->state.current_case = new_case;\
-//         return;\
-//     } else {\
-//         std::cout << "[ERROR] Could not prepare case: "\
-//                   << get_case_name(new_case)\
-//                   << std::endl;\
-//     }\
-// } while(0)
 
 #define START_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
 #define START_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
@@ -225,12 +198,6 @@ int
 window_resolution_width(PR::WindowResolution res);
 int
 window_resolution_height(PR::WindowResolution res);
-
-// Save and load keybindings from memory
-int
-keybindings_save_to_file(const char *file_path, InputAction *actions, int actions_len);
-int
-keybindings_load_from_file(const char *file_path, InputAction *actions, int actions_len);
 
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
@@ -1442,14 +1409,16 @@ void options_menu_update() {
              // NOTE: Move menu camera based on input method used
         if (input->modified) {
             options_menu_update_bindings(opt, input->actions);
-            if (keybindings_save_to_file(
+            int save_binds_ret = keybindings_save_to_file(
                         "./my_binds.prkeys",
                         input->actions,
-                        (int) ARRAY_LENGTH(input->actions))) {
-                std::cout << "Could not load file ./my_binds.prkeys"
+                        (int) ARRAY_LENGTH(input->actions));
+            if (save_binds_ret) {
+                std::cout << "Could not save keybindings to file ./my_binds.prkeys: "
+                          << save_binds_ret
                           << std::endl;
             } else {
-                std::cout << "Loaded keybindings from file ./my_binds.prkeys"
+                std::cout << "Saved keybindings to file ./my_binds.prkeys"
                           << std::endl;
             }
             input->modified = false;
@@ -6567,86 +6536,3 @@ int window_resolution_height(PR::WindowResolution res) {
     return (int)(res / 4);
 }
 
-// Save and load keybindings from memory
-int keybindings_save_to_file(const char *file_path,
-        InputAction *actions,
-        int actions_len) {
-    int result = 0;
-    FILE *key_file = NULL;
-
-    {
-        key_file = std::fopen(file_path, "wb");
-        if (key_file == NULL) return_defer(1);
-
-        std::fprintf(key_file, "%i\n", actions_len);
-        if (std::ferror(key_file)) return_defer(2);
-
-        for(int bind_index = 0; bind_index < actions_len; ++bind_index) {
-            InputAction action = actions[bind_index];
-
-            std::fprintf(key_file,
-                         "%i:%i,%i:%i-%i,%i-%i\n",
-                         bind_index,
-                         action.kb_binds[0].bind_index,
-                         action.kb_binds[1].bind_index,
-                         (int)action.gp_binds[0].type,
-                         action.gp_binds[0].bind_index,
-                         (int)action.gp_binds[1].type,
-                         action.gp_binds[1].bind_index);
-            if (std::ferror(key_file)) return_defer(3);
-        }
-    }
-
-    defer:
-    if (key_file) std::fclose(key_file);
-    return result;
-}
-
-int keybindings_load_from_file(const char *file_path,
-        InputAction *actions,
-        int actions_len) {
-    int result = 0;
-    int ret = 0;
-    FILE *key_file = NULL;
-
-    {
-        key_file = std::fopen(file_path, "wb");
-        if (key_file == NULL) return_defer(1);
-
-        int key_file_bindings_num = 0;
-        ret = std::fscanf(key_file, " %i", &key_file_bindings_num);
-        if (ret != 1) return_defer(2);
-        if (std::ferror(key_file)) return_defer(3);
-
-        int upper_limit =
-            (key_file_bindings_num < actions_len) ?
-                key_file_bindings_num : actions_len;
-
-        for(int i = 0; i < upper_limit; ++i) {
-
-            int bind_index = -1;
-            ret = std::fscanf(key_file, " %i:", &bind_index);
-            if (ret != 1) return_defer(4);
-            if (std::ferror(key_file)) return_defer(5);
-
-            if (bind_index < 0 || bind_index >= actions_len) return_defer(6);
-
-            InputAction *action = &actions[bind_index];
-
-            ret = std::fscanf(key_file,
-                              "%i,%i:%i-%i,%i-%i",
-                              &action->kb_binds[0].bind_index,
-                              &action->kb_binds[1].bind_index,
-                              (int *)&action->gp_binds[0].type,
-                              &action->gp_binds[0].bind_index,
-                              (int *)&action->gp_binds[1].type,
-                              &action->gp_binds[1].bind_index);
-            if (ret != 6) return_defer(7);
-            if (std::ferror(key_file)) return_defer(8);
-        }
-    }
-
-    defer:
-    if (key_file) std::fclose(key_file);
-    return result;
-}

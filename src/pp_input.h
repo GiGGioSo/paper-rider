@@ -155,4 +155,10 @@ const char *get_gamepad_button_name(int key, GamepadBindingType type);
 const char *get_key_name(int key);
 const char *get_action_name(int action);
 
+// Save and load keybindings from memory
+int
+keybindings_save_to_file(const char *file_path, InputAction *actions, int actions_len);
+int
+keybindings_load_from_file(const char *file_path, InputAction *actions, int actions_len);
+
 #endif

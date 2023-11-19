@@ -222,6 +222,18 @@ void input_controller_init(InputController *input) {
         .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
     };
     // TODO: Complete
+
+    // Load keybindings from file, and overwrite the default ones
+    int keybinds_load_ret = keybindings_load_from_file("./my_binds.prkeys",
+                               input->actions, ARRAY_LENGTH(input->actions));
+    if (keybinds_load_ret) {
+        std::cout << "Could not load keybindings from file ./my_binds.prkeys: "
+                  << keybinds_load_ret
+                  << std::endl;
+    } else {
+        std::cout << "Loaded keybindings from file ./my_binds.prkeys"
+                  << std::endl;
+    }
 }
 
 void input_controller_update(GLFWwindow *window, InputController *input,
@@ -556,4 +568,88 @@ const char *get_action_name(int action) {
         case PR_EDIT_OBJ_DESELECT: return "EDIT_OBJ_DESELECT";
         default: return "UNKNOWN";
     }
+}
+
+// Save and load keybindings from memory
+int keybindings_save_to_file(const char *file_path,
+        InputAction *actions,
+        int actions_len) {
+    int result = 0;
+    FILE *key_file = NULL;
+
+    {
+        key_file = std::fopen(file_path, "wb");
+        if (key_file == NULL) return_defer(1);
+
+        std::fprintf(key_file, "%i\n", actions_len);
+        if (std::ferror(key_file)) return_defer(2);
+
+        for(int bind_index = 0; bind_index < actions_len; ++bind_index) {
+            InputAction action = actions[bind_index];
+
+            std::fprintf(key_file,
+                         "%i:%i,%i:%i_%i,%i_%i\n",
+                         bind_index,
+                         action.kb_binds[0].bind_index,
+                         action.kb_binds[1].bind_index,
+                         (int)action.gp_binds[0].type,
+                         action.gp_binds[0].bind_index,
+                         (int)action.gp_binds[1].type,
+                         action.gp_binds[1].bind_index);
+            if (std::ferror(key_file)) return_defer(3);
+        }
+    }
+
+    defer:
+    if (key_file) std::fclose(key_file);
+    return result;
+}
+
+int keybindings_load_from_file(const char *file_path,
+        InputAction *actions,
+        int actions_len) {
+    int result = 0;
+    int ret = 0;
+    FILE *key_file = NULL;
+
+    {
+        key_file = std::fopen(file_path, "rb");
+        if (key_file == NULL) return_defer(1);
+
+        int key_file_bindings_num = 0;
+        ret = std::fscanf(key_file, "%i", &key_file_bindings_num);
+        if (ret != 1) return_defer(2);
+        if (std::ferror(key_file)) return_defer(3);
+
+        int upper_limit =
+            (key_file_bindings_num < actions_len) ?
+                key_file_bindings_num : actions_len;
+
+        for(int i = 0; i < upper_limit; ++i) {
+
+            int bind_index = -1;
+            ret = std::fscanf(key_file, " %d:", &bind_index);
+            if (ret != 1) return_defer(4);
+            if (std::ferror(key_file)) return_defer(5);
+
+            if (bind_index < 0 || bind_index >= actions_len) return_defer(6);
+
+            InputAction *action = &actions[bind_index];
+
+            ret = std::fscanf(key_file,
+                              "%d,%d:%d_%d,%d_%d",
+                              &action->kb_binds[0].bind_index,
+                              &action->kb_binds[1].bind_index,
+                              (int *)&action->gp_binds[0].type,
+                              &action->gp_binds[0].bind_index,
+                              (int *)&action->gp_binds[1].type,
+                              &action->gp_binds[1].bind_index);
+            if (ret != 6) return_defer(7);
+            if (std::ferror(key_file)) return_defer(8);
+        }
+    }
+
+    defer:
+    if (key_file) std::fclose(key_file);
+    return result;
 }
