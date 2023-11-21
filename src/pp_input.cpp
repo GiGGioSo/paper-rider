@@ -516,6 +516,8 @@ const char *get_key_name(int key) {
         case GLFW_KEY_DOWN: return "K_DOWN";
         case GLFW_KEY_LEFT: return "K_LEFT";
         case GLFW_KEY_RIGHT: return "K_RIGHT";
+        case GLFW_KEY_ENTER: return "ENTER";
+        case GLFW_KEY_SPACE: return "SPACE";
         default: return glfwGetKeyName(key, glfwGetKeyScancode(key));
     }
 }

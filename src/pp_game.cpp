@@ -250,6 +250,8 @@ void start_menu_set_to_null(PR::StartMenu *start) {
 void options_menu_set_to_null(PR::OptionsMenu *opt) {
     // Nothing to set to null
     UNUSED(opt);
+    glob->input.kb_binding = NULL;
+    glob->input.gp_binding = NULL;
 }
 
 int load_map_from_file(const char *file_path,
