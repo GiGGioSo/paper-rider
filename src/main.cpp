@@ -12,12 +12,6 @@
 #include "pp_renderer.h"
 #include "pp_game.h"
 
-#define PR_WINDOW_FULLSCREEN 0
-#define PR_WINDOW_BORDERLESS 1
-#define PR_WINDOW_WINDOWED 2
-
-#define PR_WINDOW_MODE PR_WINDOW_WINDOWED
-
 // Callbacks
 void callback_framebuffer_size(GLFWwindow* window, int width, int height);
 void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user);
