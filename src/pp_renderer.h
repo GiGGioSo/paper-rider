@@ -32,6 +32,20 @@ struct TexCoords {
     float th;
 };
 
+struct DataImage {
+    uint8_t *data;
+    int width;
+    int height;
+    int nr_channels;
+    const char *path;
+}
+
+struct DataImages {
+    DataImage *items;
+    size_t count;
+    size_t capacity;
+}
+
 struct Renderer {
     unsigned int uni_vao;
     unsigned int uni_vbo;

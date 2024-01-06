@@ -211,6 +211,118 @@ void renderer_draw_uni(Shader s) {
     renderer->uni_vertex_count = 0;
 }
 
+const char *images[] = {
+    "test.png",
+};
+
+void rederer_create_texture_atlas(Texture *t,
+                                  const char *images,
+                                  size_t images_len) {
+    stbi_set_flip_vertically_on_load(true);
+
+    DataImages images = {0};
+
+    int max_width = -1;
+    int max_height = -1;
+
+    for(int image_index = 0;
+        image_index < images_len;
+        ++image_index) {
+
+        da_append(&images, {0});
+        DataImage *new_image = &da_last(&images);
+        new_image->path = images[image_index];
+        // NOTE: Need to free this data later
+        uint8_t *image_data = stbi_load(new_image->path,
+                                        &new_image->width, &new_image->height,
+                                        &new_image->nr_channels, 0);
+
+        if (new_image->width > max_width) max_width = new_image->width;
+        if (new_image->height > max_height) max_height = new_image->height;
+
+        // Generate texture
+        if (image_data) {
+            new_image->path = image_data;
+            // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+            //              t->width, t->height,
+            //              0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        } else {
+            std::cout << "[ERROR] Failed to load image: "
+                      << filepath
+                      << std::endl;
+            return;
+        }
+    }
+
+    // Get GPU limits
+    int max_texture_size;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    int max_array_texture_layers;
+    glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
+
+    if (max_width > max_texture_size || max_height > max_texture_size) {
+        std::cout << "[ERROR] Failed to create array texture: max texture size ("
+                  << (max_width > max_height) ? max_width : max_height
+                  << ") is bigger than GL_MAX_TEXTURE_SIZE ("
+                  << max_texture_size
+                  << ")"
+                  << std::endl;
+        return;
+    }
+
+    if (images.count > max_array_texture_layers) {
+        std::cout << "[ERROR] Failed to create array texture: number of textures ("
+                  << images.count
+                  << ") is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS ("
+                  << max_array_texture_layers
+                  << ")"
+                  << std::endl;
+        return;
+    }
+
+    glGenTextures(1, &t->id);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, t->id);
+
+    glTexStorage3D(
+        GL_TEXTURE_2D_ARRAY, // GLenum target
+        1, // GLsizei levels
+        GL_RGBA, // GLenum internalformat
+        max_width, // GLsizei width
+        max_height, // GLsizei height
+        images.count, // GLsizei depth
+    );
+
+    int xoffset = 0
+    int yoffset = 0;
+
+    for(int image_index = 0;
+        image_index < images.count;
+        ++image_index) {
+
+        DataImage *image = images->items[image_index];
+
+        glTexSubImage3D(
+            GL_TEXTURE_2D_ARRAY, // GLenum target
+            0, // GLint level
+            0, // GLint xoffset
+            0, // GLint yoffset
+            image_index, // GLint zoffset
+            image->width, // GLsizei width
+            image->height, // GLsizei height
+            1, // GLsizei depth
+            GL_RGBA, // GLenum format
+            GL_UNSIGNED_BYTE, // GLenum type
+            image->data // const GLvoid * pixels
+        );
+    }
+
+    // texture options
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+}
+
 // Textured quads
 void renderer_create_texture(Texture* t, const char* filepath) {
     stbi_set_flip_vertically_on_load(true);
