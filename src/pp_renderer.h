@@ -8,6 +8,24 @@
 
 #include <iostream>
 
+#define PR_TEX1_FRECCIA 0
+#define PR_TEX1_PLANE 1
+#define PR_LAST_TEX1 PR_TEX1_PLANE
+
+ArrayTexture test_at;
+
+struct ArrayTexture {
+    TextureElement *elements;
+    int elements_len;
+    unsigned int id;
+};
+
+struct TextureElement {
+    char filename[256];
+    int width;
+    int height;
+};
+
 struct Font {
     const char* filename;
     unsigned int texture;

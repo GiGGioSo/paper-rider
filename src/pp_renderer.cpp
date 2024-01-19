@@ -126,6 +126,14 @@ void renderer_init(Renderer* renderer) {
 
     renderer->text_vertex_count = 0;
     renderer->text_bytes_offset = 0;
+
+    // Initialise array textures
+    test_at->elements = (TextureElement *)
+        std::malloc(sizeof(TextureElement) * (PR_LAST_TEX1 + 1));
+    TextureElement *elements = test_at->elements;
+    // Elements initialization
+    elements[PR_TEX1_FRECCIA] = { .path = "res/test_images/freccia.png" };
+    elements[PR_TEX1_PLANE] = { .path = "res/test_images/plane.png" };
 }
 
 // NON-textured quads
@@ -211,13 +219,8 @@ void renderer_draw_uni(Shader s) {
     renderer->uni_vertex_count = 0;
 }
 
-const char *images[] = {
-    "test.png",
-};
 
-void rederer_create_texture_atlas(Texture *t,
-                                  const char *images,
-                                  size_t images_len) {
+void renderer_create_array_texture(ArrayTexture *at) {
     stbi_set_flip_vertically_on_load(true);
 
     DataImages images = {0};
@@ -226,12 +229,12 @@ void rederer_create_texture_atlas(Texture *t,
     int max_height = -1;
 
     for(int image_index = 0;
-        image_index < images_len;
+        image_index < at->elements_len;
         ++image_index) {
 
         da_append(&images, {0});
         DataImage *new_image = &da_last(&images);
-        new_image->path = images[image_index];
+        new_image->path = at->elements[image_index].path;
         // NOTE: Need to free this data later
         uint8_t *image_data = stbi_load(new_image->path,
                                         &new_image->width, &new_image->height,
@@ -242,13 +245,10 @@ void rederer_create_texture_atlas(Texture *t,
 
         // Generate texture
         if (image_data) {
-            new_image->path = image_data;
-            // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-            //              t->width, t->height,
-            //              0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            new_image->data = image_data;
         } else {
             std::cout << "[ERROR] Failed to load image: "
-                      << filepath
+                      << new_image->path
                       << std::endl;
             return;
         }
@@ -280,8 +280,11 @@ void rederer_create_texture_atlas(Texture *t,
         return;
     }
 
-    glGenTextures(1, &t->id);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, t->id);
+    at->elements = (TextureElement *)
+        std::malloc(sizeof(TextureElement) * images.count);
+
+    glGenTextures(1, &at->id);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
 
     glTexStorage3D(
         GL_TEXTURE_2D_ARRAY, // GLenum target
@@ -299,7 +302,10 @@ void rederer_create_texture_atlas(Texture *t,
         image_index < images.count;
         ++image_index) {
 
-        DataImage *image = images->items[image_index];
+        DataImage *image = &images->items[image_index];
+        TextureElement *t_element = &at->elements[image_index];
+        t_element->width = image->width;
+        t_element->height = image->height;
 
         glTexSubImage3D(
             GL_TEXTURE_2D_ARRAY, // GLenum target
@@ -314,6 +320,10 @@ void rederer_create_texture_atlas(Texture *t,
             GL_UNSIGNED_BYTE, // GLenum type
             image->data // const GLvoid * pixels
         );
+
+        // Don't need it anymore, because the data is inside the texture now
+        stbi_image_free(image->data);
+        image->data = NULL;
     }
 
     // texture options
