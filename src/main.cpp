@@ -245,6 +245,12 @@ int glob_init(void) {
     shaderer_set_mat4(*s4, "projection",
                       glob->rend_res.ortho_proj);
 
+    Shader *s5 = &glob->rend_res.shaders[4];
+    shaderer_create_program(s5, "./res/shaders/tex_array.vs",
+                            "./res/shaders/tex_array.fs");
+    shaderer_set_mat4(*s5, "projection",
+                      glob->rend_res.ortho_proj);
+
     // NOTE: Initializing the global_sprite
     renderer_create_texture(&glob->rend_res.global_sprite,
                             "res/paper-rider_sprite3.png");

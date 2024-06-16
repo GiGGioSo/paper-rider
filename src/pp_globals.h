@@ -415,7 +415,7 @@ struct PR {
 
     struct RenderResources {
         glm::mat4 ortho_proj;
-        Shader shaders[4];
+        Shader shaders[5];
         Font fonts[3];
         Texture global_sprite;
     };

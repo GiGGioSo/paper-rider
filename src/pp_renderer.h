@@ -12,18 +12,16 @@
 #define PR_TEX1_PLANE 1
 #define PR_LAST_TEX1 PR_TEX1_PLANE
 
-ArrayTexture test_at;
+struct TextureElement {
+    char filename[256];
+    int width;
+    int height;
+};
 
 struct ArrayTexture {
     TextureElement *elements;
     int elements_len;
     unsigned int id;
-};
-
-struct TextureElement {
-    char filename[256];
-    int width;
-    int height;
 };
 
 struct Font {
@@ -56,13 +54,13 @@ struct DataImage {
     int height;
     int nr_channels;
     const char *path;
-}
+};
 
 struct DataImages {
     DataImage *items;
     size_t count;
     size_t capacity;
-}
+};
 
 struct Renderer {
     unsigned int uni_vao;
@@ -74,6 +72,11 @@ struct Renderer {
     unsigned int tex_vbo;
     unsigned int tex_bytes_offset;
     unsigned int tex_vertex_count;
+
+    unsigned int array_tex_vao;
+    unsigned int array_tex_vbo;
+    unsigned int array_tex_bytes_offset;
+    unsigned int array_tex_vertex_count;
 
     unsigned int text_vao;
     unsigned int text_vbo;
@@ -121,6 +124,12 @@ renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
 
 void
 renderer_draw_tex(Shader s, Texture* t);
+
+// NOTE: Texture rendering with array textures
+void
+renderer_add_queue_array_tex(ArrayTexture *at, int layer);
+void
+renderer_draw_array_tex(Shader s, ArrayTexture *at);
 
 // NOTE: Text rendering
 int

@@ -10,6 +10,8 @@
 #include <iostream>
 #include <math.h>
 
+ArrayTexture test_at;
+
 #define PR_MAX_UNICOLOR_VERTICES (2000 * 6)
 
 #define PR_MAX_TEXTURED_VERTICES (1000 * 6)
@@ -128,12 +130,12 @@ void renderer_init(Renderer* renderer) {
     renderer->text_bytes_offset = 0;
 
     // Initialise array textures
-    test_at->elements = (TextureElement *)
+    test_at.elements = (TextureElement *)
         std::malloc(sizeof(TextureElement) * (PR_LAST_TEX1 + 1));
-    TextureElement *elements = test_at->elements;
+    TextureElement *elements = test_at.elements;
     // Elements initialization
-    elements[PR_TEX1_FRECCIA] = { .path = "res/test_images/freccia.png" };
-    elements[PR_TEX1_PLANE] = { .path = "res/test_images/plane.png" };
+    elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png" };
+    elements[PR_TEX1_PLANE] = { .filename = "res/test_images/plane.png" };
 }
 
 // NON-textured quads
@@ -223,7 +225,8 @@ void renderer_draw_uni(Shader s) {
 void renderer_create_array_texture(ArrayTexture *at) {
     stbi_set_flip_vertically_on_load(true);
 
-    DataImages images = {0};
+    DataImage empty_data_image = {};
+    DataImages images = {};
 
     int max_width = -1;
     int max_height = -1;
@@ -232,9 +235,9 @@ void renderer_create_array_texture(ArrayTexture *at) {
         image_index < at->elements_len;
         ++image_index) {
 
-        da_append(&images, {0});
+        da_append(&images, empty_data_image, DataImage);
         DataImage *new_image = &da_last(&images);
-        new_image->path = at->elements[image_index].path;
+        new_image->path = at->elements[image_index].filename;
         // NOTE: Need to free this data later
         uint8_t *image_data = stbi_load(new_image->path,
                                         &new_image->width, &new_image->height,
@@ -262,7 +265,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
 
     if (max_width > max_texture_size || max_height > max_texture_size) {
         std::cout << "[ERROR] Failed to create array texture: max texture size ("
-                  << (max_width > max_height) ? max_width : max_height
+                  << ((max_width > max_height) ? max_width : max_height)
                   << ") is bigger than GL_MAX_TEXTURE_SIZE ("
                   << max_texture_size
                   << ")"
@@ -270,7 +273,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
         return;
     }
 
-    if (images.count > max_array_texture_layers) {
+    if ((int)images.count > max_array_texture_layers) {
         std::cout << "[ERROR] Failed to create array texture: number of textures ("
                   << images.count
                   << ") is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS ("
@@ -292,18 +295,15 @@ void renderer_create_array_texture(ArrayTexture *at) {
         GL_RGBA, // GLenum internalformat
         max_width, // GLsizei width
         max_height, // GLsizei height
-        images.count, // GLsizei depth
+        images.count // GLsizei depth
     );
 
-    int xoffset = 0
-    int yoffset = 0;
-
-    for(int image_index = 0;
+    for(size_t image_index = 0;
         image_index < images.count;
         ++image_index) {
 
-        DataImage *image = &images->items[image_index];
-        TextureElement *t_element = &at->elements[image_index];
+        DataImage *image = &(images.items[image_index]);
+        TextureElement *t_element = &(at->elements[image_index]);
         t_element->width = image->width;
         t_element->height = image->height;
 
@@ -430,7 +430,7 @@ void renderer_add_queue_tex(float x, float y,
 }
 
 void renderer_draw_tex(Shader s, Texture* t) {
-    Renderer* renderer = &glob->renderer;
+    Renderer *renderer = &glob->renderer;
 
     glUseProgram(s);
 
@@ -448,6 +448,31 @@ void renderer_draw_tex(Shader s, Texture* t) {
 
     renderer->tex_bytes_offset = 0;
     renderer->tex_vertex_count = 0;
+}
+
+// Textured quads with array textures
+void renderer_add_queue_array_tex(ArrayTexture *at, int layer) {
+    if (at == NULL) { at = &test_at; }
+    UNUSED(layer);
+    // std::cout << "Rendering layer "
+    //           << layer
+    //           << " of the array texture with id "
+    //           << test_at.id
+    //           << std::endl;
+    glBindVertexArray(renderer->array_tex_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->array_tex_vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+void renderer_draw_array_tex(Shader s, ArrayTexture *at) {
+    if (at == NULL) { at = &test_at; }
+    glUseProgram(s);
+
+    shaderer_set_int(s, "tex", 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, at->id);
 }
 
 // Text quads

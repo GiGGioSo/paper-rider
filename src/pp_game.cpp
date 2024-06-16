@@ -895,6 +895,12 @@ void start_menu_update() {
     // # Issue draw calls #
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
+
+    // ### Test drawing array textures ###
+    if (ACTION_PRESSED(PR_MENU_LEVEL_DELETE)) {
+        renderer_add_queue_array_tex(NULL, PR_TEX1_FRECCIA);
+        renderer_draw_array_tex(glob->rend_res.shaders[4], NULL);
+    }
 }
 
 int options_menu_prepare(PR::OptionsMenu *opt) {
@@ -1180,6 +1186,11 @@ void options_menu_update() {
         opt->showing_general_pane = true;
         opt->to_general_pane.col = LEVEL_BUTTON_SELECTED_COLOR;
         opt->to_controls_pane.col = LEVEL_BUTTON_DEFAULT_COLOR;
+        // Reset camera position
+        cam->pos.x = GAME_WIDTH * 0.5f;
+        cam->pos.y = GAME_HEIGHT * 0.5f;
+        cam->speed_multiplier = 6.f;
+        cam->goal_position = cam->pos.y;
         ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
         ma_sound_start(&sound->change_pane);
     }
@@ -1789,7 +1800,6 @@ void options_menu_update() {
         renderer_draw_text(&glob->rend_res.fonts[1],
                             glob->rend_res.shaders[2]);
     }
-
 }
 
 int play_menu_prepare(PR::PlayMenu *menu) {
