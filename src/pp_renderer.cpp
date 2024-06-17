@@ -454,6 +454,8 @@ void renderer_draw_tex(Shader s, Texture* t) {
 void renderer_add_queue_array_tex(ArrayTexture *at, int layer) {
     if (at == NULL) { at = &test_at; }
     UNUSED(layer);
+
+    Renderer* renderer = &glob->renderer;
     // std::cout << "Rendering layer "
     //           << layer
     //           << " of the array texture with id "
