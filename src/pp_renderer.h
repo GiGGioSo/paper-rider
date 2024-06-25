@@ -12,6 +12,13 @@
 #define PR_TEX1_PLANE 1
 #define PR_LAST_TEX1 PR_TEX1_PLANE
 
+
+#define PR_MAX_UNICOLOR_VERTICES (2000 * 6)
+
+#define PR_MAX_TEXTURED_VERTICES (1000 * 6)
+
+#define PR_MAX_TEXT_VERTICES (1000 * 6)
+
 struct TextureElement {
     char filename[256];
     int width;
@@ -126,8 +133,13 @@ void
 renderer_draw_tex(Shader s, Texture* t);
 
 // NOTE: Texture rendering with array textures
+
+// The ArrayTexture already needs to have elements allocated and elements_len set
+//   each element needs to have its filename set aswell
 void
-renderer_add_queue_array_tex(ArrayTexture *at, int layer);
+renderer_create_array_texture(ArrayTexture *at);
+void
+renderer_add_queue_array_tex(ArrayTexture *at, float x, float y, float w, float h, float r, bool centered, int layer);
 void
 renderer_draw_array_tex(Shader s, ArrayTexture *at);
 

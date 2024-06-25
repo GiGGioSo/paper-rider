@@ -12,12 +12,6 @@
 
 ArrayTexture test_at;
 
-#define PR_MAX_UNICOLOR_VERTICES (2000 * 6)
-
-#define PR_MAX_TEXTURED_VERTICES (1000 * 6)
-
-#define PR_MAX_TEXT_VERTICES (1000 * 6)
-
 // TODO: Render using a `Rect`, so is more convenient
 //          to draw the plane and the obstacles
 
@@ -100,6 +94,31 @@ void renderer_init(Renderer* renderer) {
     renderer->tex_vertex_count = 0;
     renderer->tex_bytes_offset = 0;
 
+    // NOTE: textured rendering (using array textures) initialization
+    glGenVertexArrays(1, &renderer->array_tex_vao);
+    glGenBuffers(1, &renderer->array_tex_vbo);
+
+    glBindVertexArray(renderer->array_tex_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->array_tex_vbo);
+
+    // NOTE: `PR_MAX_TEXTURED_VERTICES` is the max number of textured vertices
+    //                                  displayable together on the screen
+    //       4 is the number of floats per vertex:
+    //          2: position
+    //          3: tex coords (2 actual tex coords + 1 layer index)
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(float) * 5 * PR_MAX_TEXTURED_VERTICES,
+                 NULL, GL_DYNAMIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+                          5 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+                          5 * sizeof(float), (void*) (2 * sizeof(float)));
+    renderer->array_tex_vertex_count = 0;
+    renderer->array_tex_bytes_offset = 0;
+
     // NOTE: text rendering initialization
     glGenVertexArrays(1, &renderer->text_vao);
     glGenBuffers(1, &renderer->text_vbo);
@@ -132,10 +151,14 @@ void renderer_init(Renderer* renderer) {
     // Initialise array textures
     test_at.elements = (TextureElement *)
         std::malloc(sizeof(TextureElement) * (PR_LAST_TEX1 + 1));
+    test_at.elements_len = PR_LAST_TEX1 + 1;
     TextureElement *elements = test_at.elements;
     // Elements initialization
     elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png" };
     elements[PR_TEX1_PLANE] = { .filename = "res/test_images/plane.png" };
+    renderer_create_array_texture(&test_at);
+    std::cout << "Initialized array texture: " << test_at.id
+              << std::endl;
 }
 
 // NON-textured quads
@@ -242,6 +265,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
         uint8_t *image_data = stbi_load(new_image->path,
                                         &new_image->width, &new_image->height,
                                         &new_image->nr_channels, 0);
+        std::cout << "Loading image (" << at->elements[image_index].filename << ") data into texture" << std::endl;
 
         if (new_image->width > max_width) max_width = new_image->width;
         if (new_image->height > max_height) max_height = new_image->height;
@@ -307,6 +331,8 @@ void renderer_create_array_texture(ArrayTexture *at) {
         t_element->width = image->width;
         t_element->height = image->height;
 
+        std::cout << "Loading image (" << image->path << ") data into the texture" << std::endl;
+
         glTexSubImage3D(
             GL_TEXTURE_2D_ARRAY, // GLenum target
             0, // GLint level
@@ -331,6 +357,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 // Textured quads
@@ -360,6 +387,7 @@ void renderer_create_texture(Texture* t, const char* filepath) {
                   << std::endl;
     }
     // remove image data, not needed anymore because it's already in the texture
+    glBindTexture(GL_TEXTURE_2D, 0);
     stbi_image_free(data);
 }
 
@@ -451,30 +479,97 @@ void renderer_draw_tex(Shader s, Texture* t) {
 }
 
 // Textured quads with array textures
-void renderer_add_queue_array_tex(ArrayTexture *at, int layer) {
+void renderer_add_queue_array_tex(ArrayTexture *at,
+                                    float x, float y,
+                                    float w, float h,
+                                    float r, bool centered,
+                                    int layer) {
     if (at == NULL) { at = &test_at; }
-    UNUSED(layer);
+
+    if (layer >= at->elements_len) {
+        std::cout << "[ERROR] Layer " << layer << " out of index."
+                  << " ArrayTexture with id " << at->id << " has " << at->elements_len << "layers."
+                  << std::endl;
+        return;
+    }
 
     Renderer* renderer = &glob->renderer;
-    // std::cout << "Rendering layer "
-    //           << layer
-    //           << " of the array texture with id "
-    //           << test_at.id
-    //           << std::endl;
+
+    if (centered) {
+        x -= w/2;
+        y -= h/2;
+    }
+    if (renderer->array_tex_vertex_count + 6 >=
+            PR_MAX_TEXTURED_VERTICES) {
+        std::cout << "[ERROR] Cannot display more than "
+                  << PR_MAX_TEXTURED_VERTICES << " textured (with array textures) vertices."
+                  << std::endl;
+        return;
+    }
+
+    // Array tex coords are always 0 and 1 because we display the whole texture layer, always (for now at least
+    // REMINDER: tex coords are in the interval [0,1]
+    float vertices[] = {
+        x  , y+h, 0, 1, (float) layer,
+        x  , y  , 0, 0, (float) layer,
+        x+w, y  , 1, 0, (float) layer,
+        x  , y+h, 0, 1, (float) layer,
+        x+w, y  , 1, 0, (float) layer,
+        x+w, y+h, 1, 1, (float) layer
+    };
+
+    r = glm::radians(-r);
+    float center_x = x + w/2;
+    float center_y = y + h/2;
+
+    for(int i = 0; i < 6; i++) {
+        float vx = vertices[i*4 + 0];
+        float vy = vertices[i*4 + 1];
+
+        float newX = center_x +
+                     (vx - center_x) * cos(r) +
+                     (vy - center_y) * sin(r);
+        float newY = center_y +
+                     (vx - center_x) * sin(r) -
+                     (vy - center_y) * cos(r);
+
+        vertices[i*4 + 0] = newX;
+        vertices[i*4 + 1] = newY;
+    }
+
     glBindVertexArray(renderer->array_tex_vao);
     glBindBuffer(GL_ARRAY_BUFFER, renderer->array_tex_vbo);
+
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    renderer->array_tex_bytes_offset,
+                    sizeof(vertices), vertices);
+
+    renderer->array_tex_bytes_offset += sizeof(vertices);
+    renderer->array_tex_vertex_count += 6;
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
+
 void renderer_draw_array_tex(Shader s, ArrayTexture *at) {
     if (at == NULL) { at = &test_at; }
+    Renderer *renderer = &glob->renderer;
     glUseProgram(s);
 
     shaderer_set_int(s, "tex", 0);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, at->id);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
+
+    glBindVertexArray(renderer->array_tex_vao);
+
+    glDrawArrays(GL_TRIANGLES, 0, renderer->array_tex_vertex_count);
+
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    glBindVertexArray(0);
+
+    renderer->array_tex_bytes_offset = 0;
+    renderer->array_tex_vertex_count = 0;
 }
 
 // Text quads
