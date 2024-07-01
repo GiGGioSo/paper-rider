@@ -149,6 +149,7 @@ void renderer_init(Renderer* renderer) {
     renderer->text_bytes_offset = 0;
 
     // Initialise array textures
+    /*
     test_at.elements = (TextureElement *)
         std::malloc(sizeof(TextureElement) * (PR_LAST_TEX1 + 1));
     test_at.elements_len = PR_LAST_TEX1 + 1;
@@ -159,6 +160,7 @@ void renderer_init(Renderer* renderer) {
     renderer_create_array_texture(&test_at);
     std::cout << "Initialized array texture: " << test_at.id
               << std::endl;
+    */
 }
 
 // NON-textured quads

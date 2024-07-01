@@ -898,8 +898,8 @@ void start_menu_update() {
 
     // ### Test drawing array textures ###
     if (ACTION_PRESSED(PR_MENU_LEVEL_DELETE)) {
-        renderer_add_queue_array_tex(NULL, 100, 100, 400, 50, 0, false, PR_TEX1_FRECCIA);
-        renderer_draw_array_tex(glob->rend_res.shaders[4], NULL);
+        // renderer_add_queue_array_tex(NULL, 100, 100, 400, 50, 0, false, PR_TEX1_FRECCIA);
+        // renderer_draw_array_tex(glob->rend_res.shaders[4], NULL);
     }
 }
 
@@ -2959,6 +2959,7 @@ void level_update(void) {
             full_screen,
             glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
             false);
+    renderer_draw_uni(glob->rend_res.shaders[0]);
 
     // Level stuff
     PR::Plane *p = &glob->current_level.plane;
@@ -6054,7 +6055,7 @@ void parallax_update_n_queue_render(PR::Parallax *px, float current_x) {
 
         // NOTE: px->reference_point - piece->body.dim.x * 1.5f
         //          would be the starting pos.x of the first piece.
-        //       px->reference_point - piece->body.dim.x * 1.2f
+        //       px->reference_point - piece->body.dim.x * 1.5f
         //          means half the width to the left of the first piece
         //       In that case we change that piece so that piece
         //          becomes the last one
