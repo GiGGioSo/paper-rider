@@ -149,7 +149,6 @@ void renderer_init(Renderer* renderer) {
     renderer->text_bytes_offset = 0;
 
     // Initialise array textures
-    /*
     test_at.elements = (TextureElement *)
         std::malloc(sizeof(TextureElement) * (PR_LAST_TEX1 + 1));
     test_at.elements_len = PR_LAST_TEX1 + 1;
@@ -160,7 +159,6 @@ void renderer_init(Renderer* renderer) {
     renderer_create_array_texture(&test_at);
     std::cout << "Initialized array texture: " << test_at.id
               << std::endl;
-    */
 }
 
 // NON-textured quads
@@ -267,7 +265,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
         uint8_t *image_data = stbi_load(new_image->path,
                                         &new_image->width, &new_image->height,
                                         &new_image->nr_channels, 0);
-        std::cout << "Loading image (" << at->elements[image_index].filename << ") data into texture" << std::endl;
+        std::cout << "Loading image (" << at->elements[image_index].filename << ") data from file" << std::endl;
 
         if (new_image->width > max_width) max_width = new_image->width;
         if (new_image->height > max_height) max_height = new_image->height;
@@ -318,7 +316,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
     glTexStorage3D(
         GL_TEXTURE_2D_ARRAY, // GLenum target
         1, // GLsizei levels
-        GL_RGBA, // GLenum internalformat
+        GL_RGBA8, // GLenum internalformat
         max_width, // GLsizei width
         max_height, // GLsizei height
         images.count // GLsizei depth
@@ -525,8 +523,8 @@ void renderer_add_queue_array_tex(ArrayTexture *at,
     float center_y = y + h/2;
 
     for(int i = 0; i < 6; i++) {
-        float vx = vertices[i*4 + 0];
-        float vy = vertices[i*4 + 1];
+        float vx = vertices[i*5 + 0];
+        float vy = vertices[i*5 + 1];
 
         float newX = center_x +
                      (vx - center_x) * cos(r) +
@@ -535,8 +533,8 @@ void renderer_add_queue_array_tex(ArrayTexture *at,
                      (vx - center_x) * sin(r) -
                      (vy - center_y) * cos(r);
 
-        vertices[i*4 + 0] = newX;
-        vertices[i*4 + 1] = newY;
+        vertices[i*5 + 0] = newX;
+        vertices[i*5 + 1] = newY;
     }
 
     glBindVertexArray(renderer->array_tex_vao);

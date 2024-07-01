@@ -898,8 +898,8 @@ void start_menu_update() {
 
     // ### Test drawing array textures ###
     if (ACTION_PRESSED(PR_MENU_LEVEL_DELETE)) {
-        // renderer_add_queue_array_tex(NULL, 100, 100, 400, 50, 0, false, PR_TEX1_FRECCIA);
-        // renderer_draw_array_tex(glob->rend_res.shaders[4], NULL);
+        renderer_add_queue_array_tex(NULL, 100, 100, 1200, 800, 0, false, PR_TEX1_PLANE);
+        renderer_draw_array_tex(glob->rend_res.shaders[4], NULL);
     }
 }
 
