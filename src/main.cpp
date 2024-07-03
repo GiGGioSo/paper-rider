@@ -13,7 +13,7 @@
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow *window, int width, int height);
-void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void* user);
+void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user);
 void callback_gamepad(int gamepad_id, int event);
 
 // Initializing global structure
@@ -49,8 +49,8 @@ int main() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     if (glob->window.display_mode == PR::FULLSCREEN) {
-        GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
+        GLFWmonitor *main_monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(main_monitor);
 
         glob->window.glfw_win =
             glfwCreateWindow(mode->width, mode->height, glob->window.title,
@@ -58,8 +58,8 @@ int main() {
     } else if (glob->window.display_mode == PR::BORDERLESS) {
         glfwWindowHint(GLFW_DECORATED, 0);
 
-        GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
+        GLFWmonitor *main_monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(main_monitor);
         glob->window.width = mode->width;
         glob->window.height = mode->height;
 
@@ -550,7 +550,7 @@ void callback_gamepad(int gamepad_id, int event) {
     }
 }
 
-void callback_framebuffer_size(GLFWwindow* window,
+void callback_framebuffer_size(GLFWwindow *window,
                                int width, int height) {
     UNUSED(window);
 
@@ -582,8 +582,8 @@ void callback_framebuffer_size(GLFWwindow* window,
 void callback_debug(GLenum source,
                     GLenum type,
                     GLuint id, GLenum severity,
-                    GLsizei length, const GLchar* message,
-                    const void* user) {
+                    GLsizei length, const GLchar *message,
+                    const void *user) {
     UNUSED(id);
     UNUSED(severity);
     UNUSED(length);
