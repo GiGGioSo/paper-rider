@@ -8,7 +8,6 @@
 #include "../include/glm/ext.hpp"
 
 #include "pp_globals.h"
-#include "pp_shaderer.h"
 #include "pp_renderer.h"
 #include "pp_game.h"
 
@@ -212,7 +211,7 @@ int glob_init(void) {
     // because if it is, then the cursor will be set to default
     glfwSetCursor(glob->window.glfw_win, cursor);
 
-    // Rendering
+    // ### Rendering initialization ###
     glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)GAME_WIDTH,
                                        (float)GAME_HEIGHT, 0.0f);
 
@@ -220,7 +219,6 @@ int glob_init(void) {
     input_controller_init(in);
 
     // NOTE: Initializing of the shaders
-    /* glob->rend.shaders = (Shader *) malloc(sizeof(Shader) * 2); */
     Shader *s1 = &glob->rend_res.shaders[0];
     shaderer_create_program(s1, "./res/shaders/quad_default.vs",
                             "./res/shaders/quad_default.fs");
@@ -262,6 +260,7 @@ int glob_init(void) {
               << std::endl;
 
 
+    // # Font initialization
     int error = 0;
     Font *f1 = &glob->rend_res.fonts[DEFAULT_FONT];
     f1->filename = "./arial.ttf";
@@ -278,7 +277,6 @@ int glob_init(void) {
                   << error << std::endl;
         return 1;
     }
-
 
     Font *f2 = &glob->rend_res.fonts[OBJECT_INFO_FONT];
     f2->filename = "./arial.ttf";
@@ -311,9 +309,26 @@ int glob_init(void) {
                   << error << std::endl;
         return 1;
     }
+    
+    // # Array textures initialization
+    ArrayTexture *at1 = &glob->rend_res.array_textures[0];
+    at1->elements_len = PR_LAST_TEX1 + 1;
+    at1->elements = (TextureElement *) std::malloc(sizeof(TextureElement) * at1->elements_len);
+    // Elements initialization
+    at1->elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png" };
+    renderer_create_array_texture(at1);
 
+    ArrayTexture *at2 = &glob->rend_res.array_textures[1];
+    at2->elements_len = PR_LAST_TEX2 + 1;
+    at2->elements = (TextureElement *) std::malloc(sizeof(TextureElement) * at2->elements_len);
+    // Elements initialization
+    at2->elements[PR_TEX2_PLANE] = { .filename = "res/test_images/plane.png" };
+    renderer_create_array_texture(at2);
+
+    // # GPU resources allocation
     renderer_init(&glob->renderer);
 
+    // ### Obstacle colors initialization
     glob->colors[0] = glm::vec4(0.8f, 0.3f, 0.3f, 1.0f);
     glob->colors[1] = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
     glob->colors[2] = glm::vec4(0.3f, 0.3f, 0.8f, 1.0f);
@@ -497,7 +512,16 @@ void glob_free(void) {
     ma_sound_group_uninit(&s->music_group);
     ma_sound_group_uninit(&s->sfx_group);
     ma_engine_uninit(&s->engine);
-    std::free(glob->rend_res.fonts[0].char_data);
+    for(size_t font_index = 0;
+        font_index < ARRAY_LENGTH(glob->rend_res.fonts);
+        ++font_index) {
+        std::free(glob->rend_res.fonts[font_index].char_data);
+    }
+    for(size_t array_texture_index = 0;
+        array_texture_index < ARRAY_LENGTH(glob->rend_res.array_textures);
+        ++array_texture_index) {
+        std::free(glob->rend_res.array_textures[array_texture_index].elements);
+    }
     std::free(glob);
 }
 

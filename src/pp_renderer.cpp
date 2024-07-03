@@ -10,8 +10,6 @@
 #include <iostream>
 #include <math.h>
 
-ArrayTexture test_at;
-
 // TODO: Render using a `Rect`, so is more convenient
 //          to draw the plane and the obstacles
 
@@ -147,18 +145,6 @@ void renderer_init(Renderer* renderer) {
 
     renderer->text_vertex_count = 0;
     renderer->text_bytes_offset = 0;
-
-    // Initialise array textures
-    test_at.elements = (TextureElement *)
-        std::malloc(sizeof(TextureElement) * (PR_LAST_TEX1 + 1));
-    test_at.elements_len = PR_LAST_TEX1 + 1;
-    TextureElement *elements = test_at.elements;
-    // Elements initialization
-    elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png" };
-    elements[PR_TEX1_PLANE] = { .filename = "res/test_images/plane.png" };
-    renderer_create_array_texture(&test_at);
-    std::cout << "Initialized array texture: " << test_at.id
-              << std::endl;
 }
 
 // NON-textured quads
@@ -330,6 +316,12 @@ void renderer_create_array_texture(ArrayTexture *at) {
         TextureElement *t_element = &(at->elements[image_index]);
         t_element->width = image->width;
         t_element->height = image->height;
+        t_element->tex_coords = {
+            .tx = 0,
+            .ty = 0,
+            .tw = (float) t_element->width / max_width,
+            .th = (float) t_element->height / max_height,
+        };
 
         std::cout << "Loading image (" << image->path << ") data into the texture" << std::endl;
 
@@ -479,16 +471,14 @@ void renderer_draw_tex(Shader s, Texture* t) {
 }
 
 // Textured quads with array textures
-void renderer_add_queue_array_tex(ArrayTexture *at,
+void renderer_add_queue_array_tex(ArrayTexture at,
                                     float x, float y,
                                     float w, float h,
                                     float r, bool centered,
                                     int layer) {
-    if (at == NULL) { at = &test_at; }
-
-    if (layer >= at->elements_len) {
+    if (layer >= at.elements_len) {
         std::cout << "[ERROR] Layer " << layer << " out of index."
-                  << " ArrayTexture with id " << at->id << " has " << at->elements_len << "layers."
+                  << " ArrayTexture with id " << at.id << " has " << at.elements_len << "layers."
                   << std::endl;
         return;
     }
@@ -509,13 +499,14 @@ void renderer_add_queue_array_tex(ArrayTexture *at,
 
     // Array tex coords are always 0 and 1 because we display the whole texture layer, always (for now at least
     // REMINDER: tex coords are in the interval [0,1]
+    TexCoords tc = at.elements[layer].tex_coords;
     float vertices[] = {
-        x  , y+h, 0, 1, (float) layer,
-        x  , y  , 0, 0, (float) layer,
-        x+w, y  , 1, 0, (float) layer,
-        x  , y+h, 0, 1, (float) layer,
-        x+w, y  , 1, 0, (float) layer,
-        x+w, y+h, 1, 1, (float) layer
+        x  , y+h, tc.tx        , tc.ty + tc.th, (float) layer,
+        x  , y  , tc.tx        , tc.ty        , (float) layer,
+        x+w, y  , tc.tx + tc.tw, tc.ty        , (float) layer,
+        x  , y+h, tc.tx        , tc.ty + tc.th, (float) layer,
+        x+w, y  , tc.tx + tc.tw, tc.ty        , (float) layer,
+        x+w, y+h, tc.tx + tc.tw, tc.ty + tc.th, (float) layer
     };
 
     r = glm::radians(-r);
@@ -551,15 +542,14 @@ void renderer_add_queue_array_tex(ArrayTexture *at,
     glBindVertexArray(0);
 }
 
-void renderer_draw_array_tex(Shader s, ArrayTexture *at) {
-    if (at == NULL) { at = &test_at; }
+void renderer_draw_array_tex(Shader s, ArrayTexture at) {
     Renderer *renderer = &glob->renderer;
     glUseProgram(s);
 
     shaderer_set_int(s, "tex", 0);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, at.id);
 
     glBindVertexArray(renderer->array_tex_vao);
 

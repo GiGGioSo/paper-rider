@@ -418,6 +418,7 @@ struct PR {
         Shader shaders[5];
         Font fonts[3];
         Texture global_sprite;
+        ArrayTexture array_textures[2];
     };
     RenderResources rend_res;
     Renderer renderer;

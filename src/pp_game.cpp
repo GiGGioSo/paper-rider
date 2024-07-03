@@ -898,8 +898,10 @@ void start_menu_update() {
 
     // ### Test drawing array textures ###
     if (ACTION_PRESSED(PR_MENU_LEVEL_DELETE)) {
-        renderer_add_queue_array_tex(NULL, 100, 100, 1200, 800, 0, false, PR_TEX1_PLANE);
-        renderer_draw_array_tex(glob->rend_res.shaders[4], NULL);
+        renderer_add_queue_uni(100, 100, 1200, 800, 0, glm::vec4(1,0,0,1), false, false);
+        renderer_add_queue_array_tex(glob->rend_res.array_textures[0], 100, 100, 1200, 800, 0, false, PR_TEX1_FRECCIA);
+        renderer_draw_uni(glob->rend_res.shaders[0]);
+        renderer_draw_array_tex(glob->rend_res.shaders[4], glob->rend_res.array_textures[0]);
     }
 }
 
@@ -2165,7 +2167,6 @@ void play_menu_update(void) {
                             menu->custom_buttons.count-1;
                     }
 
-                    // TODO: Sound when a level is deleted
                     ma_sound_seek_to_pcm_frame(&sound->delete_level, 0);
                     ma_sound_start(&sound->delete_level);
                 }

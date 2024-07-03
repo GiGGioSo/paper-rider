@@ -9,8 +9,9 @@
 #include <iostream>
 
 #define PR_TEX1_FRECCIA 0
-#define PR_TEX1_PLANE 1
-#define PR_LAST_TEX1 PR_TEX1_PLANE
+#define PR_LAST_TEX1 PR_TEX1_FRECCIA
+#define PR_TEX2_PLANE 0
+#define PR_LAST_TEX2 PR_TEX2_PLANE
 
 
 #define PR_MAX_UNICOLOR_VERTICES (2000 * 6)
@@ -19,10 +20,19 @@
 
 #define PR_MAX_TEXT_VERTICES (1000 * 6)
 
+struct TexCoords {
+    // Lower left corner is (0, 0)
+    float tx;
+    float ty;
+    float tw;
+    float th;
+};
+
 struct TextureElement {
     char filename[256];
     int width;
     int height;
+    TexCoords tex_coords;
 };
 
 struct ArrayTexture {
@@ -47,12 +57,6 @@ struct Texture {
     int width;
     int height;
     int nr_channels;
-};
-struct TexCoords {
-    float tx;
-    float ty;
-    float tw;
-    float th;
 };
 
 struct DataImage {
@@ -138,10 +142,11 @@ renderer_draw_tex(Shader s, Texture* t);
 //   each element needs to have its filename set aswell
 void
 renderer_create_array_texture(ArrayTexture *at);
+
 void
-renderer_add_queue_array_tex(ArrayTexture *at, float x, float y, float w, float h, float r, bool centered, int layer);
+renderer_add_queue_array_tex(ArrayTexture at, float x, float y, float w, float h, float r, bool centered, int layer);
 void
-renderer_draw_array_tex(Shader s, ArrayTexture *at);
+renderer_draw_array_tex(Shader s, ArrayTexture at);
 
 // NOTE: Text rendering
 int
