@@ -12,12 +12,12 @@
 #include "pp_game.h"
 
 // Callbacks
-void callback_framebuffer_size(GLFWwindow* window, int width, int height);
-void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user);
+void callback_framebuffer_size(GLFWwindow *window, int width, int height);
+void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void* user);
 void callback_gamepad(int gamepad_id, int event);
 
 // Initializing global structure
-PR* glob = NULL;
+PR *glob = NULL;
 int glob_init();
 void glob_free();
 
