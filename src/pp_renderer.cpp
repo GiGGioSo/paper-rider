@@ -624,7 +624,8 @@ void renderer_add_queue_text(float x, float y,
         return;
     }
 
-    float (*vertices)[8] = (float (*)[8]) malloc((length * 6) * sizeof(float[8]));
+    float (*vertices)[8] = (float (*)[8]) malloc((length * 6) * (sizeof(float) * 8));
+    size_t sizeof_vertices = (length * 6) * (sizeof(float) * 8);
 
     float minX = 0.f;
     float minY = 0.f;
@@ -762,8 +763,6 @@ void renderer_add_queue_text(float x, float y,
             vertices[vertex_index][0] -= half_text_w;
             vertices[vertex_index][1] += half_text_h;
         }
-
-
     }
 
     glBindVertexArray(renderer->text_vao);
@@ -771,9 +770,9 @@ void renderer_add_queue_text(float x, float y,
 
     glBufferSubData(GL_ARRAY_BUFFER,
                     renderer->text_bytes_offset,
-                    sizeof(vertices), vertices);
+                    sizeof_vertices, vertices);
 
-    renderer->text_bytes_offset += sizeof(vertices);
+    renderer->text_bytes_offset += sizeof_vertices;
     renderer->text_vertex_count += length * 6;
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
