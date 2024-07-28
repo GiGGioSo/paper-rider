@@ -624,7 +624,7 @@ void renderer_add_queue_text(float x, float y,
         return;
     }
 
-    float vertices[length * 6][8];
+    float (*vertices)[8] = (float (*)[8]) malloc((length * 6) * sizeof(float[8]));
 
     float minX = 0.f;
     float minY = 0.f;

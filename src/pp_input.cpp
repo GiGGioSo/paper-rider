@@ -28,103 +28,143 @@ void input_controller_init(InputController *input) {
     // Global actions
     actions[PR_EXIT_GAME] = {
         .kb_binds = { { GLFW_KEY_F4 }, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
 
     // Menu actions
     actions[PR_MENU_UP] = {
         .kb_binds = { { GLFW_KEY_UP }, { GLFW_KEY_W } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON },
-                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE } }
+                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_NEGATIVE } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_DOWN] = {
         .kb_binds = { { GLFW_KEY_DOWN }, { GLFW_KEY_S } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON },
-                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE } }
+                      { GLFW_GAMEPAD_AXIS_LEFT_Y, PR_AXIS_POSITIVE } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_LEFT] = {
         .kb_binds = { { GLFW_KEY_LEFT }, { GLFW_KEY_A } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_LEFT, PR_BUTTON },
-                      { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_NEGATIVE } }
+                      { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_NEGATIVE } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_RIGHT] = {
         .kb_binds = { { GLFW_KEY_RIGHT }, { GLFW_KEY_D } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, PR_BUTTON },
-                      { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_POSITIVE } }
+                      { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_POSITIVE } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_CLICK] = {
         .kb_binds = { { GLFW_KEY_ENTER }, { GLFW_KEY_SPACE } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_CROSS, PR_BUTTON },
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_LEVEL_DELETE] = {
         .kb_binds = { { GLFW_KEY_C }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON },
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_LEVEL_EDIT] = {
         .kb_binds = { { GLFW_KEY_E }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON},
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_PANE_RIGHT] = {
         .kb_binds = { { GLFW_KEY_X }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, PR_BUTTON},
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_PANE_LEFT] = {
         .kb_binds = { { GLFW_KEY_Z }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, PR_BUTTON},
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_MENU_EXIT] = {
         .kb_binds = { { GLFW_KEY_ESCAPE }, { GLFW_KEY_Q } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON},
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
 
     // Gameplay actions
     actions[PR_PLAY_PLANE_UP] = {
         .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
         .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_Y, PR_AXIS_NEGATIVE},
-                      { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON } }
+                      { GLFW_GAMEPAD_BUTTON_DPAD_UP, PR_BUTTON } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_PLANE_DOWN] = {
         .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
         .gp_binds = { { GLFW_GAMEPAD_AXIS_RIGHT_Y, PR_AXIS_POSITIVE },
-                      { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON } }
+                      { GLFW_GAMEPAD_BUTTON_DPAD_DOWN, PR_BUTTON } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_RIDER_RIGHT] = {
         .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
         .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_POSITIVE },
-                      { GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, PR_BUTTON } }
+                      { GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, PR_BUTTON } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_RIDER_LEFT] = {
         .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
         .gp_binds = { { GLFW_GAMEPAD_AXIS_LEFT_X, PR_AXIS_NEGATIVE },
-                      { GLFW_GAMEPAD_BUTTON_DPAD_LEFT, PR_BUTTON } }
+                      { GLFW_GAMEPAD_BUTTON_DPAD_LEFT, PR_BUTTON } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_RIDER_JUMP] = {
         .kb_binds = { { GLFW_KEY_SPACE }, { GLFW_KEY_J } },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_BUMPER, PR_BUTTON },
-                      { GLFW_GAMEPAD_BUTTON_CROSS, PR_BUTTON } }
+                      { GLFW_GAMEPAD_BUTTON_CROSS, PR_BUTTON } },
+        .key = {},
+        .value = 0.f
     };
 
     actions[PR_PLAY_PAUSE] = {
         .kb_binds = { { GLFW_KEY_ESCAPE }, KB_NO_BINDING },
-        .gp_binds = {{GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON}, GP_NO_BINDING}
+        .gp_binds = {{GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON}, GP_NO_BINDING},
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_RESUME] = {
         .kb_binds = { { GLFW_KEY_ESCAPE }, KB_NO_BINDING },
-        .gp_binds = {{GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON}, GP_NO_BINDING}
+        .gp_binds = {{GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON}, GP_NO_BINDING},
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_RESTART] = {
         .kb_binds = { { GLFW_KEY_Y }, KB_NO_BINDING },
-        .gp_binds = { {GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON}, GP_NO_BINDING }
+        .gp_binds = { {GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON}, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_PLAY_QUIT] = {
         .kb_binds = { { GLFW_KEY_P }, KB_NO_BINDING },
-        .gp_binds = { {GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON}, GP_NO_BINDING }
+        .gp_binds = { {GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON}, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
 
     // TODO: Improve editing keybindings
@@ -132,94 +172,138 @@ void input_controller_init(InputController *input) {
     actions[PR_EDIT_TOGGLE_MODE] = {
         .kb_binds = { { GLFW_KEY_E }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_LEFT_THUMB, PR_BUTTON },
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_SAVE_MAP] = {
         .kb_binds = { { GLFW_KEY_M }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_BACK, PR_BUTTON },
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_DELETE] = {
         .kb_binds = { { GLFW_KEY_K }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_SQUARE, PR_BUTTON },
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_CREATE] = {
         .kb_binds = { { GLFW_KEY_N }, KB_NO_BINDING },
         .gp_binds = { { GLFW_GAMEPAD_BUTTON_CIRCLE, PR_BUTTON },
-                      GP_NO_BINDING }
+                      GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_DUPLICATE] = {
         .kb_binds = { { GLFW_KEY_L }, KB_NO_BINDING },
-        .gp_binds = { { GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON } }
+        .gp_binds = { { GLFW_GAMEPAD_BUTTON_TRIANGLE, PR_BUTTON } },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_PLANE_RESET] = {
         .kb_binds = { { GLFW_KEY_R }, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_MOVE_UP] = {
         .kb_binds = { { GLFW_KEY_W }, { GLFW_KEY_UP } },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_MOVE_DOWN] = {
         .kb_binds = { { GLFW_KEY_S }, { GLFW_KEY_DOWN } },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_MOVE_LEFT] = {
         .kb_binds = { { GLFW_KEY_A }, { GLFW_KEY_LEFT } },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_MOVE_RIGHT] = {
         .kb_binds = { { GLFW_KEY_D }, { GLFW_KEY_RIGHT } },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTIES_SHOW_TOGGLE] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTY_LEFT] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTY_RIGHT] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTY_TOGGLE] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTY_NEXT_INCREMENT] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTY_INCREASE] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_PROPERTY_DECREASE] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_SELECTION_UP] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_SELECTION_DOWN] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_SELECTION_LEFT] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_SELECTION_RIGHT] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     actions[PR_EDIT_OBJ_DESELECT] = {
         .kb_binds = { KB_NO_BINDING, KB_NO_BINDING },
-        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING }
+        .gp_binds = { GP_NO_BINDING, GP_NO_BINDING },
+        .key = {},
+        .value = 0.f
     };
     // TODO: Complete
 

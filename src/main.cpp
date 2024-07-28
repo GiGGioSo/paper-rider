@@ -315,14 +315,14 @@ int glob_init(void) {
     at1->elements_len = PR_LAST_TEX1 + 1;
     at1->elements = (TextureElement *) std::malloc(sizeof(TextureElement) * at1->elements_len);
     // Elements initialization
-    at1->elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png" };
+    at1->elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at1);
 
     ArrayTexture *at2 = &glob->rend_res.array_textures[1];
     at2->elements_len = PR_LAST_TEX2 + 1;
     at2->elements = (TextureElement *) std::malloc(sizeof(TextureElement) * at2->elements_len);
     // Elements initialization
-    at2->elements[PR_TEX2_PLANE] = { .filename = "res/test_images/plane.png" };
+    at2->elements[PR_TEX2_PLANE] = { .filename = "res/test_images/plane.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at2);
 
     // # GPU resources allocation

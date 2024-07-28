@@ -956,6 +956,10 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .triangle = false,
         },
         .label = "MASTER VOLUME\0",
+        .value = 0,
+        .mouse_hooked = false,
+        .value_text = {},
+        .selection = {},
     };
     opt->master_volume.value = glob->sound.master_volume;
     option_slider_init_selection(&opt->master_volume, 0.1f);
@@ -970,6 +974,10 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .triangle = false,
         },
         .label = "SFX VOLUME\0",
+        .value = 0,
+        .mouse_hooked = false,
+        .value_text = {},
+        .selection = {},
     };
     opt->sfx_volume.value = glob->sound.sfx_volume;
     option_slider_init_selection(&opt->sfx_volume, 0.1f);
@@ -984,6 +992,10 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .triangle = false,
         },
         .label = "MUSIC VOLUME\0",
+        .value = 0,
+        .mouse_hooked = false,
+        .value_text = {},
+        .selection = {},
     };
     opt->music_volume.value = glob->sound.music_volume;
     option_slider_init_selection(&opt->music_volume, 0.1f);
@@ -1089,6 +1101,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
                 .triangle = false,
             },
             .col = OPTION_BUTTON_DEFAULT_COLOR,
+            .text = {},
         };
         const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
         std::strncpy(kb1->text,
@@ -1105,6 +1118,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
                 .triangle = false,
             },
             .col = OPTION_BUTTON_DEFAULT_COLOR,
+            .text = {},
         };
         const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
         std::strncpy(kb2->text,
@@ -1121,6 +1135,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
                 .triangle = false,
             },
             .col = OPTION_BUTTON_DEFAULT_COLOR,
+            .text = {},
         };
         const char *gp1_name =
             get_gamepad_button_name(action->gp_binds[0].bind_index,
@@ -1139,6 +1154,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
                 .triangle = false,
             },
             .col = OPTION_BUTTON_DEFAULT_COLOR,
+            .text = {},
         };
         const char *gp2_name =
             get_gamepad_button_name(action->gp_binds[1].bind_index,
@@ -1926,6 +1942,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
             .triangle = false,
         },
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
+        .text = {},
     };
     std::snprintf(yes->text, std::strlen("YES")+1, "%s", "YES");
 
@@ -1939,6 +1956,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
             .triangle = false,
         },
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
+        .text = {},
     };
     std::snprintf(no->text, std::strlen("NO")+1, "%s", "NO");
 
