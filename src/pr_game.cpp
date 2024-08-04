@@ -14,6 +14,7 @@
 #include "pr_window.h"
 #include "pr_animation.h"
 #include "pr_parallax.h"
+#include "pr_ui.h"
 
 #ifdef _WIN32
 #    define MINIRENT_IMPLEMENTATION
@@ -1155,10 +1156,7 @@ void options_menu_update() {
 
     // # Check if going back to the start menu #
     if (ACTION_CLICKED(PR_MENU_EXIT) ||
-        (input->mouse_left.clicked &&
-            rect_contains_point(opt->to_start_menu.body,
-                                input->mouseX, input->mouseY,
-                                opt->to_start_menu.from_center))) {
+        button_clicked(input, opt->to_start_menu)) {
         ma_sound_seek_to_pcm_frame(&sound->to_start_menu, 0);
         ma_sound_start(&sound->to_start_menu);
         CHANGE_CASE_TO_START_MENU(void());
@@ -1166,11 +1164,7 @@ void options_menu_update() {
     // # Check if changing options pane #
     if (!opt->showing_general_pane &&
         (ACTION_CLICKED(PR_MENU_PANE_LEFT) ||
-          (input->mouse_left.clicked &&
-           rect_contains_point(
-                rect_in_menu_camera_space(opt->to_general_pane.body, cam),
-                input->mouseX, input->mouseY,
-                opt->to_general_pane.from_center)))) {
+         button_clicked(input, opt->to_general_pane))) {
         opt->showing_general_pane = true;
         opt->to_general_pane.col = LEVEL_BUTTON_SELECTED_COLOR;
         opt->to_controls_pane.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -1184,11 +1178,7 @@ void options_menu_update() {
     }
     if (opt->showing_general_pane &&
         (ACTION_CLICKED(PR_MENU_PANE_RIGHT) ||
-          (input->mouse_left.clicked &&
-           rect_contains_point(
-             rect_in_menu_camera_space(opt->to_controls_pane.body, cam),
-             input->mouseX, input->mouseY,
-             opt->to_controls_pane.from_center)))) {
+         button_clicked(input, opt->to_controls_pane))) {
         opt->showing_general_pane = false;
         opt->to_controls_pane.col = LEVEL_BUTTON_SELECTED_COLOR;
         opt->to_general_pane.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -1204,12 +1194,17 @@ void options_menu_update() {
     }
 
     // Will need it later when chaging the resolution
-    Rect unsaved_resolution_background = {
-        .pos = glm::vec2(GAME_WIDTH * 0.75f,
-                opt->resolution_up.body.pos.y),
-        .dim = glm::vec2(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.15f),
-        .angle = 0.f,
-        .triangle = false,
+    PR::Button unsaved_resolution_background = {
+        .from_center = true,
+        .body = {
+            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+                    opt->resolution_up.body.pos.y),
+            .dim = glm::vec2(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.15f),
+            .angle = 0.f,
+            .triangle = false,
+        },
+        .col = OPTION_BUTTON_DEFAULT_COLOR,
+        .text = {}
     };
 
     if (opt->showing_general_pane) {
@@ -1253,6 +1248,8 @@ void options_menu_update() {
         if (opt->current_selection != PR::OPTION_DISPLAY_MODE) {
             opt->display_mode_selection = win->display_mode;
         }
+
+        // Change the selection and respective volume of the selected slider
         if (opt->current_selection == PR::OPTION_MASTER_VOLUME) {
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->master_volume,
@@ -1381,24 +1378,17 @@ void options_menu_update() {
             }
 
             // Changing window resolution with the mouse
-            if (ACTION_CLICKED(PR_MENU_LEFT)) {
-                if (rect_contains_point(opt->resolution_up.body,
-                        input->mouseX, input->mouseY, true)) {
-                    opt->resolution_selection =
-                        window_resolution_next(opt->resolution_selection);
-                } else if(rect_contains_point(opt->resolution_down.body,
-                            input->mouseX, input->mouseY, true)) {
-                    opt->resolution_selection =
-                        window_resolution_prev(opt->resolution_selection);
-                }
+            if (button_clicked(input, opt->resolution_up)) {
+                opt->resolution_selection =
+                    window_resolution_next(opt->resolution_selection);
+            } else if(button_clicked(input, opt->resolution_down)) {
+                opt->resolution_selection =
+                    window_resolution_prev(opt->resolution_selection);
             }
 
             // Apply the changes when we click on the wanted resolution
             if ((ACTION_CLICKED(PR_MENU_CLICK) ||
-                 (input->mouse_left.clicked &&
-                  rect_contains_point(unsaved_resolution_background,
-                     input->mouseX,
-                     input->mouseY, true))) &&
+                 button_clicked(input, unsaved_resolution_background)) &&
                 (opt->resolution_selection !=
                  window_resolution_from_dim(win->width, win->height))) {
                 window_resolution_set(win, opt->resolution_selection);
@@ -1430,6 +1420,7 @@ void options_menu_update() {
         int previous_selected_row = opt->selected_row;
         int previous_selected_column = opt->selected_column;
 
+        // If not modifying anything
         if (!input->kb_binding && !input->gp_binding) {
             if (ACTION_CLICKED(PR_MENU_UP)) {
                 if (opt->selected_row > 0) {
@@ -1447,6 +1438,7 @@ void options_menu_update() {
                 }
             }
             if (ACTION_CLICKED(PR_MENU_RIGHT)) {
+                // 4 is the number of columns (2 for keyboard, 2 for gamepad)
                 if (opt->selected_column < 4 - 1) {
                     opt->selected_column++;
                 }
@@ -1457,6 +1449,9 @@ void options_menu_update() {
             bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
             ++bind_index) {
 
+            // NOTE: No need to check them all if we are already selected
+            if (input->kb_binding || input->gp_binding) break;
+
             PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
             PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
             PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
@@ -1464,62 +1459,61 @@ void options_menu_update() {
 
             InputAction *action = &input->actions[bind_index];
 
-            if (!input->kb_binding && !input->gp_binding) {
-                if (rect_contains_point(
-                            rect_in_menu_camera_space(kb1->body, cam),
-                            input->mouseX, input->mouseY,
-                            kb1->from_center)) {
+            // Select/Click the various keybinding slots
+            if (rect_contains_point(
+                        rect_in_menu_camera_space(kb1->body, cam),
+                        input->mouseX, input->mouseY,
+                        kb1->from_center)) {
 
-                    if (input->was_mouse_moved) {
-                        opt->selected_row = bind_index;
-                        opt->selected_column = 0;
-                    }
-                    if (input->mouse_left.clicked) {
-                        input->kb_binding = &action->kb_binds[0];
-                        glfwSetKeyCallback(win->glfw_win,
-                                kb_change_binding_callback);
-                    }
+                if (input->was_mouse_moved) {
+                    opt->selected_row = bind_index;
+                    opt->selected_column = 0;
                 }
-                if (rect_contains_point(
-                            rect_in_menu_camera_space(kb2->body, cam),
-                            input->mouseX, input->mouseY,
-                            kb2->from_center)) {
-
-                    if (input->was_mouse_moved) {
-                        opt->selected_row = bind_index;
-                        opt->selected_column = 1;
-                    }
-                    if (input->mouse_left.clicked) {
-                        input->kb_binding = &action->kb_binds[1];
-                        glfwSetKeyCallback(win->glfw_win,
-                                kb_change_binding_callback);
-                    }
+                if (input->mouse_left.clicked) {
+                    input->kb_binding = &action->kb_binds[0];
+                    glfwSetKeyCallback(win->glfw_win,
+                            kb_change_binding_callback);
                 }
-                if (rect_contains_point(
-                            rect_in_menu_camera_space(gp1->body, cam),
-                            input->mouseX, input->mouseY,
-                            gp1->from_center)) {
+            }
+            if (rect_contains_point(
+                        rect_in_menu_camera_space(kb2->body, cam),
+                        input->mouseX, input->mouseY,
+                        kb2->from_center)) {
 
-                    if (input->was_mouse_moved) {
-                        opt->selected_row = bind_index;
-                        opt->selected_column = 2;
-                    }
-                    if (input->mouse_left.clicked) {
-                        input->gp_binding = &action->gp_binds[0];
-                    }
+                if (input->was_mouse_moved) {
+                    opt->selected_row = bind_index;
+                    opt->selected_column = 1;
                 }
-                if (rect_contains_point(
-                            rect_in_menu_camera_space(gp2->body, cam),
-                            input->mouseX, input->mouseY,
-                            gp2->from_center)) {
+                if (input->mouse_left.clicked) {
+                    input->kb_binding = &action->kb_binds[1];
+                    glfwSetKeyCallback(win->glfw_win,
+                            kb_change_binding_callback);
+                }
+            }
+            if (rect_contains_point(
+                        rect_in_menu_camera_space(gp1->body, cam),
+                        input->mouseX, input->mouseY,
+                        gp1->from_center)) {
 
-                    if (input->was_mouse_moved) {
-                        opt->selected_row = bind_index;
-                        opt->selected_column = 3;
-                    }
-                    if (input->mouse_left.clicked) {
-                        input->gp_binding = &action->gp_binds[1];
-                    }
+                if (input->was_mouse_moved) {
+                    opt->selected_row = bind_index;
+                    opt->selected_column = 2;
+                }
+                if (input->mouse_left.clicked) {
+                    input->gp_binding = &action->gp_binds[0];
+                }
+            }
+            if (rect_contains_point(
+                        rect_in_menu_camera_space(gp2->body, cam),
+                        input->mouseX, input->mouseY,
+                        gp2->from_center)) {
+
+                if (input->was_mouse_moved) {
+                    opt->selected_row = bind_index;
+                    opt->selected_column = 3;
+                }
+                if (input->mouse_left.clicked) {
+                    input->gp_binding = &action->gp_binds[1];
                 }
             }
 
@@ -1545,6 +1539,7 @@ void options_menu_update() {
                 }
             }
 
+            // Activate the change of selection with keybindings
             if (opt->selected_row == bind_index &&
                     ACTION_CLICKED(PR_MENU_CLICK)) {
                 switch (opt->selected_column) {
@@ -1705,9 +1700,9 @@ void options_menu_update() {
                 &glob->rend_res.fonts[0], true);
         if (opt->resolution_selection !=
                 window_resolution_from_dim(win->width, win->height)) {
-            renderer_add_queue_uni(unsaved_resolution_background,
-                                   OPTION_BUTTON_DEFAULT_COLOR,
-                                   true);
+            button_render(unsaved_resolution_background,
+                          glm::vec4(0), // font color, useless here
+                          &glob->rend_res.fonts[0]); // font, useless here
         }
         button_render(opt->resolution_up,
                       color, &glob->rend_res.fonts[0]);
