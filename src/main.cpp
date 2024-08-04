@@ -7,9 +7,10 @@
 #include "../include/glfw3.h"
 #include "../include/glm/ext.hpp"
 
-#include "pp_globals.h"
-#include "pp_renderer.h"
-#include "pp_game.h"
+#include "pr_globals.h"
+#include "pr_renderer.h"
+#include "pr_game.h"
+#include "pr_window.h"
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow *window, int width, int height);
@@ -32,12 +33,12 @@ int main() {
     std::srand(std::time(nullptr));
 
     glob = (PR *) std::malloc(sizeof(PR));
-    glob->window.title = "PaperPlane";
+    glob->window.title = "Paper Rider";
     glob->window.display_mode = PR::WINDOWED;
     // These values are used only if display_mode == PR::WINDOWED
-    glob->window.width = 1200;
-    glob->window.height = 900;
     glob->window.windowed_resolution = PR::R1200x900;
+    glob->window.width = window_resolution_width(glob->window.windowed_resolution);
+    glob->window.height = window_resolution_height(glob->window.windowed_resolution);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);

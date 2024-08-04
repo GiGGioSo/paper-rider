@@ -1,8 +1,8 @@
-#ifndef PP_GAME_H
-#define PP_GAME_H
+#ifndef PR_GAME_H
+#define PR_GAME_H
 
 #include "../include/glm/trigonometric.hpp"
-#include "pp_globals.h"
+#include "pr_globals.h"
 
 #define CHANGE_CASE_TO_LEVEL(map_path, level_name, edit, is_new, ret)  do {\
     PR::Level t_level = glob->current_level;\

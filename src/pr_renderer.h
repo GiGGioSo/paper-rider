@@ -3,8 +3,8 @@
 
 #include "../include/glm/glm.hpp"
 #include "../include/stb_truetype.h"
-#include "pp_rect.h"
-#include "pp_shaderer.h"
+#include "pr_rect.h"
+#include "pr_shaderer.h"
 
 #include <iostream>
 

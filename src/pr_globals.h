@@ -1,15 +1,15 @@
-#ifndef PP_GLOBALS_H
-#define PP_GLOBALS_H
+#ifndef PR_GLOBALS_H
+#define PR_GLOBALS_H
 
 #include "../include/glfw3.h"
 #include "../include/glm/mat4x4.hpp"
 #include "../include/miniaudio.h"
 
 #include "pr_common.h"
-#include "pp_shaderer.h"
-#include "pp_renderer.h"
-#include "pp_input.h"
-#include "pp_rect.h"
+#include "pr_shaderer.h"
+#include "pr_renderer.h"
+#include "pr_input.h"
+#include "pr_rect.h"
 
 #define GAME_WIDTH 1440
 #define GAME_HEIGHT 1080

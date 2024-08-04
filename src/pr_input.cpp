@@ -1,6 +1,6 @@
-#include "pp_input.h"
+#include "pr_input.h"
 
-#include "pp_globals.h"
+#include "pr_globals.h"
 #include <iostream>
 
 #define IS_KEY_PRESSED(key) (glfwGetKey(window, key) == GLFW_PRESS)

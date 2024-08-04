@@ -1,10 +1,10 @@
-#include "pp_renderer.h"
+#include "pr_renderer.h"
 
 #include "../include/glad/glad.h"
 #include "../include/stb_image.h"
 
-#include "pp_globals.h"
-#include "pp_shaderer.h"
+#include "pr_globals.h"
+#include "pr_shaderer.h"
 
 #include <cstring>
 #include <iostream>

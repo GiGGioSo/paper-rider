@@ -5,12 +5,15 @@
 #include <cstdio>
 #include <cerrno>
 
-#include "pp_game.h"
+#include "pr_game.h"
 #include "pr_common.h"
-#include "pp_globals.h"
-#include "pp_input.h"
-#include "pp_renderer.h"
-#include "pp_rect.h"
+#include "pr_globals.h"
+#include "pr_input.h"
+#include "pr_renderer.h"
+#include "pr_rect.h"
+#include "pr_window.h"
+#include "pr_animation.h"
+#include "pr_parallax.h"
 
 #ifdef _WIN32
 #    define MINIRENT_IMPLEMENTATION
@@ -120,22 +123,6 @@ level_activate_edit_mode(PR::Level *level);
 void
 update_plane_physics_n_boost_collisions(PR::Level *level);
 
-// Parallax stuff
-void
-parallax_init(PR::Parallax *px, float fc, TexCoords tc, float p_start_x, float p_start_y, float p_w, float p_h);
-void
-parallax_update_n_queue_render(PR::Parallax *px, float current_x);
-
-// Animation stuff
-void
-animation_init(PR::Animation *a, Texture tex, size_t start_x, size_t start_y, size_t dim_x, size_t dim_y, size_t step_x, size_t step_y, size_t frame_number, float frame_duration, bool loop);
-void
-animation_step(PR::Animation *a);
-void
-animation_queue_render(Rect b, PR::Animation *a, bool inverse);
-void
-animation_reset(PR::Animation *a);
-
 inline void
 apply_air_resistances(PR::Plane* p);
 inline void
@@ -181,23 +168,6 @@ options_menu_selection_handle_mouse(PR::OptionsMenu *opt, float mouseX, float mo
 void
 options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions);
 
-void
-display_mode_update(PR::WinInfo *win, PR::DisplayMode dm);
-
-void
-window_resolution_set(PR::WinInfo *win, PR::WindowResolution res);
-PR::WindowResolution
-window_resolution_prev(PR::WindowResolution res);
-PR::WindowResolution
-window_resolution_next(PR::WindowResolution res);
-const char *
-window_resolution_to_str(PR::WindowResolution res);
-PR::WindowResolution
-window_resolution_from_dim(int width, int height);
-int
-window_resolution_width(PR::WindowResolution res);
-int
-window_resolution_height(PR::WindowResolution res);
 
 void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
                     PR::StartMenu *start, PR::OptionsMenu *opt) {
@@ -6034,126 +6004,7 @@ void update_plane_physics_n_boost_collisions(PR::Level *level) {
     p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
 }
 
-// Parallax system
-void parallax_init(PR::Parallax *px, float fc, TexCoords tc,
-                   float p_start_x, float p_start_y,
-                   float p_w, float p_h) {
-
-    px->tex_coords = tc;
-    px->follow_coeff = fc;
-    // NOTE: The reference is the middle of the middle piece at the start
-    px->reference_point = p_start_x + p_w * 1.5f;
-
-    for(size_t piece_index = 0;
-        piece_index < ARRAY_LENGTH(px->pieces);
-        ++piece_index) {
-
-        PR::ParallaxPiece *piece = px->pieces + piece_index;
-
-        *piece = {
-            .base_pos_x = p_start_x + (p_w * piece_index),
-            .body = {
-                .pos = glm::vec2(p_start_x + (p_w * piece_index), p_start_y),
-                .dim = glm::vec2(p_w, p_h),
-                .angle = 0.f,
-                .triangle = false,
-            }
-        };
-    }
-}
-
-void parallax_update_n_queue_render(PR::Parallax *px, float current_x) {
-    for(size_t piece_index = 0;
-        piece_index < ARRAY_LENGTH(px->pieces);
-        ++piece_index) {
-
-        PR::ParallaxPiece *piece = px->pieces + piece_index;
-        piece->body.pos.x = piece->base_pos_x +
-                            (px->reference_point - current_x) *
-                            (1.f - px->follow_coeff);
-
-        // NOTE: px->reference_point - piece->body.dim.x * 1.5f
-        //          would be the starting pos.x of the first piece.
-        //       px->reference_point - piece->body.dim.x * 1.5f
-        //          means half the width to the left of the first piece
-        //       In that case we change that piece so that piece
-        //          becomes the last one
-        if (piece->body.pos.x <
-                px->reference_point - piece->body.dim.x * 2.f) {
-            piece->base_pos_x += piece->body.dim.x * 3.f;
-        }
-        if (piece->body.pos.x + piece->body.dim.x >
-                px->reference_point + piece->body.dim.x * 2.f) {
-            piece->base_pos_x -= piece->body.dim.x * 3.f;
-        }
-        renderer_add_queue_tex(piece->body, px->tex_coords, false);
-    }
-}
-
-// Animation system
-void animation_init(PR::Animation *a, Texture tex,
-                    size_t start_x, size_t start_y,
-                    size_t dim_x, size_t dim_y,
-                    size_t step_x, size_t step_y,
-                    size_t frame_number, float frame_duration, bool loop) {
-    a->loop = loop;
-    a->frame_number = frame_number;
-    a->frame_stop = frame_number - 1;
-    a->frame_duration = frame_duration;
-
-    if (a->tc) std::free(a->tc);
-    a->tc = (TexCoords *) std::malloc(sizeof(TexCoords) * frame_number);
-
-    for(size_t i = 0; i < frame_number; ++i) {
-        a->tc[i] = texcoords_in_texture_space(start_x + (step_x * i),
-                                              start_y + (step_y * i),
-                                              dim_x, dim_y,
-                                              tex, false);
-    }
-
-    a->current = 0;
-    a->active = false;
-    a->finished = false;
-    a->frame_elapsed = 0.f;
-}
-void animation_step(PR::Animation *a) {
-    float dt = glob->state.delta_time;
-
-    if (!a->active) return;
-
-    a->frame_elapsed += dt;
-    if (a->frame_elapsed > a->frame_duration) {
-        a->frame_elapsed -= a->frame_duration;
-        if (a->loop) {
-            a->current = (a->current + 1) % a->frame_number;
-        } else {
-            if (a->current < a->frame_number-1 &&
-                 a->current < a->frame_stop) {
-                a->current++;
-            } else {
-                a->finished = true;
-                a->active = false;
-            }
-        }
-    }
-}
-void animation_queue_render(Rect b, PR::Animation *a, bool inverse) {
-    TexCoords tc = a->tc[a->current];
-    if (inverse) {
-        tc.ty += tc.th;
-        tc.th = -tc.th;
-    }
-    renderer_add_queue_tex(b, tc, false);
-}
-void animation_reset(PR::Animation *a) {
-    a->current = 0;
-    a->active = false;
-    a->finished = false;
-    a->frame_elapsed = 0.f;
-}
-
 // Particle systems
-
 void create_particle_plane_boost(PR::ParticleSystem *ps,
                                  PR::Particle *particle) {
     if (ps->active) {
@@ -6460,111 +6311,4 @@ void options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions) {
     }
 }
 
-void display_mode_update(PR::WinInfo *win, PR::DisplayMode dm) {
-    std::cout << "New display mode: " << dm << std::endl;
-
-    GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
-
-    if (dm == PR::FULLSCREEN) {
-        glfwSetWindowMonitor(win->glfw_win, main_monitor, 0, 0,
-                             mode->width, mode->height,
-                             GLFW_DONT_CARE);
-    } else if (dm == PR::BORDERLESS) {
-        glfwSetWindowAttrib(win->glfw_win, GLFW_DECORATED, false);
-        glfwSetWindowMonitor(win->glfw_win, NULL, 0, 0,
-                             mode->width, mode->height,
-                             GLFW_DONT_CARE);
-    } else if (dm == PR::WINDOWED) {
-        int windowed_w = window_resolution_width(win->windowed_resolution);
-        int windowed_h = window_resolution_height(win->windowed_resolution);
-        glfwSetWindowAttrib(win->glfw_win, GLFW_DECORATED, true);
-        glfwSetWindowMonitor(win->glfw_win, NULL,
-                             (mode->width - windowed_w) * 0.5f,
-                             (mode->height - windowed_h) * 0.5f,
-                             windowed_w, windowed_h,
-                             GLFW_DONT_CARE);
-    } else {
-        std::cout << "[ERROR] Unknown window mode: " << dm << std::endl;
-    }
-}
-
-void window_resolution_set(PR::WinInfo *win, PR::WindowResolution res) {
-    if (win->display_mode != PR::WINDOWED || res == PR::R_NONE) return;
-
-    win->windowed_resolution = res;
-
-    glfwSetWindowSize(win->glfw_win, window_resolution_width(res),
-                      window_resolution_height(res));
-}
-PR::WindowResolution window_resolution_prev(PR::WindowResolution res) {
-    switch(res) {
-        case PR::R1440x1080: return PR::R1280X960;
-        case PR::R1280X960: return PR::R1200x900;
-        case PR::R1200x900: return PR::R960x720;
-        case PR::R960x720: return PR::R800x600;
-        case PR::R800x600: return PR::R640x480;
-        case PR::R640x480: return PR::R400x300;
-        case PR::R400x300: return PR::R320x240;
-        case PR::R320x240: return PR::R320x240;
-        default:
-            std::cout << "Unknown window resolution: " << res << std::endl;
-            return PR::R_NONE;
-    }
-}
-PR::WindowResolution window_resolution_next(PR::WindowResolution res) {
-    switch(res) {
-        case PR::R1440x1080: return PR::R1440x1080;
-        case PR::R1280X960: return PR::R1440x1080;
-        case PR::R1200x900: return PR::R1280X960;
-        case PR::R960x720: return PR::R1200x900;
-        case PR::R800x600: return PR::R960x720;
-        case PR::R640x480: return PR::R800x600;
-        case PR::R400x300: return PR::R640x480;
-        case PR::R320x240: return PR::R400x300;
-        default:
-            std::cout << "Unknown window resolution: " << res << std::endl;
-            return PR::R_NONE;
-    }
-}
-const char *window_resolution_to_str(PR::WindowResolution res) {
-    switch(res) {
-        case PR::R1440x1080: return "1440x1080";
-        case PR::R1280X960: return "1280x960";
-        case PR::R1200x900: return "1200x900";
-        case PR::R960x720: return "960x720";
-        case PR::R800x600: return "800x600";
-        case PR::R640x480: return "640x480";
-        case PR::R400x300: return "400x300";
-        case PR::R320x240: return "320x240";
-        default: return "UKNOWN";
-    }
-}
-PR::WindowResolution window_resolution_from_dim(int width, int height) {
-    if (width == 1440 && height == 1080) {
-        return PR::R1440x1080;
-    } else if (width == 1280 && height == 960) {
-        return PR::R1280X960;
-    } else if (width == 1200 && height == 900) {
-        return PR::R1200x900;
-    } else if (width == 960 && height == 720) {
-        return PR::R960x720;
-    } else if (width == 800 && height == 600) {
-        return PR::R800x600;
-    } else if (width == 640 && height == 480) {
-        return PR::R640x480;
-    } else if (width == 400 && height == 300) {
-        return PR::R400x300;
-    } else if (width == 320 && height == 240) {
-        return PR::R320x240;
-    } else {
-        return PR::R_NONE;
-    }
-}
-int window_resolution_width(PR::WindowResolution res) {
-    return (int)(res / 3);
-}
-int window_resolution_height(PR::WindowResolution res) {
-    return (int)(res / 4);
-}
 
