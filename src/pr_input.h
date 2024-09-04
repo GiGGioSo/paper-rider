@@ -144,6 +144,12 @@ void key_pressed(Key *key) {
 void
 input_controller_init(InputController *input);
 
+void
+input_controller_set_default_keybindings(InputController *input);
+
+int
+input_controller_keybindings_reset(InputController *input, const char *filepath);
+
 /* Updates the InputController global struct */
 void
 input_controller_update(GLFWwindow *window, InputController *input, const int vertical_bar, const int horizontal_bar, const int screen_w, const int screen_h);
@@ -160,5 +166,6 @@ int
 keybindings_save_to_file(const char *file_path, InputAction *actions, int actions_len);
 int
 keybindings_load_from_file(const char *file_path, InputAction *actions, int actions_len);
+
 
 #endif

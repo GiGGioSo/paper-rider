@@ -23,6 +23,22 @@ void input_controller_init(InputController *input) {
     input->kb_disabled_until_released = KB_NO_BINDING;
     input->gp_disabled_until_released = GP_NO_BINDING;
 
+    input_controller_set_default_keybindings(input);
+
+    // Load keybindings from file, and overwrite the default ones
+    int keybinds_load_ret = keybindings_load_from_file("./my_binds.prkeys",
+                               input->actions, ARRAY_LENGTH(input->actions));
+    if (keybinds_load_ret) {
+        std::cout << "Could not load keybindings from file ./my_binds.prkeys: "
+                  << keybinds_load_ret
+                  << std::endl;
+    } else {
+        std::cout << "Loaded keybindings from file ./my_binds.prkeys"
+                  << std::endl;
+    }
+}
+
+void input_controller_set_default_keybindings(InputController *input) {
     InputAction *actions = input->actions;
 
     // Global actions
@@ -306,18 +322,20 @@ void input_controller_init(InputController *input) {
         .value = 0.f
     };
     // TODO: Complete
+}
 
-    // Load keybindings from file, and overwrite the default ones
-    int keybinds_load_ret = keybindings_load_from_file("./my_binds.prkeys",
-                               input->actions, ARRAY_LENGTH(input->actions));
-    if (keybinds_load_ret) {
-        std::cout << "Could not load keybindings from file ./my_binds.prkeys: "
-                  << keybinds_load_ret
-                  << std::endl;
-    } else {
-        std::cout << "Loaded keybindings from file ./my_binds.prkeys"
-                  << std::endl;
+int input_controller_keybindings_reset(InputController *input,
+                                       const char *filepath) {
+    if (std::remove(filepath)) {
+        std::cout << "[ERROR]: Could not delete the keybindings file: "
+            << filepath
+            << std::endl;
+        return 1;
     }
+
+    input_controller_set_default_keybindings(input);
+
+    return 0;
 }
 
 void input_controller_update(GLFWwindow *window, InputController *input,
