@@ -1,5 +1,6 @@
 #ifndef _RENDY_H_
 #define _RENDY_H_
+
 ///
 ////////////////////////////////////
 /// RY - RENDY THE (2D) RENDERER ///
@@ -16,11 +17,17 @@
 // - group by z level (needs a stable sorting)
 // - group by shader
 // - group by opaque/transparent
+//      (maybe nothing is transparent? because
+//          everything is a piece of paper,
+//          should I still implement the possibility?)
 
-// If not precised, order left to right:
-//  this way object on the right are rendered on top
+//  I will have an effect like things are sticked to the screen as they appear:
+//    - each layer itself must be rendered from left to right
+//   _OR_
+//    - i could calculate the left most vertex of a polygon in the
+//       rendering pipeline? maybe inside the geometry/vertex shader?
 
-// TODO(gio): Layers based VS Objects based
+// TODO(gio): Layers based VS Objects based:
 
 #define MAX_POLYGON_VERTICES 6
 
