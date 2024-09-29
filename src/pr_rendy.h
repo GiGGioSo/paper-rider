@@ -26,48 +26,75 @@
 //   _OR_
 //    - i could calculate the left most vertex of a polygon in the
 //       rendering pipeline? maybe inside the geometry/vertex shader?
+//   _OR_
+//    - the client does this by setting an order value inside of the layer, by which stuff is sorted
 
 // TODO(gio): Layers based VS Objects based:
 
 #define MAX_POLYGON_VERTICES 6
 
-struct RY_Vertex {
+typedef enum RY_Err {
+    RY_ERR_NONE = 0,
+    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS = 1,
+} RY_Err;
+
+typedef struct RY_Vertex {
     vec2f pos;
-};
+} RY_Vertex;
 
-struct RY_Polygon {
-    RY_Vertex vertices[MAX_POLYGON_VERTICES];
-};
-
-struct RY_Target {
+typedef struct RY_Target {
     unsigned int vao;
     unsigned int vbo;
     unsigned int bytes_offset;
     unsigned int vertex_count;
-};
+} RY_Target;
 
-struct RY_Layer {
+typedef struct RY_Layer {
     bool transpacency = false; // force disable transparency
                                // decides render order (back->front or reverse)
     bool textured;
     ArrayTexture *array_texture;
-};
 
-struct RY_Stats {
+    RY_Target target;
+} RY_Layer;
+
+typedef struct RY_Stats {
     int draw_calls = 0;
-};
+} RY_Stats;
 
-struct RY_Rendy {
+typedef struct RY_Rendy {
     RY_Layer *layers;
     size_t layers_count;
-};
 
-void ry_push_polygon(RY_Rendy *ry, int layer_index, float z, RY_Vertex vertices, int vertices_length) {
+    RY_Error err;
+} RY_Rendy;
+
+void ry_push_triangle() {
+}
+
+void ry_push_polygon(
+        RY_Rendy *ry,
+        int layer_index,
+        float z,
+        RY_Vertex vertices,
+        int vertices_length) {
+
     if (layer_index >= ry->layers_count) {
-        std::cout << "Unregistered layer index (" << layer_index << ")" << std::endl;
+        ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
+        return;
     }
 
     // TODO: implement somehow
+}
+
+char *ry_err_string(RY_Rendy *ry) {
+    if (ry->err == RY_ERR_NONE) {
+        return "No error";
+    } else if (ry->err == RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS) {
+        return "Layer index out of bounds";
+    }
+
+    return "Unknown error";
 }
 
 #endif // _RENDY_H_
