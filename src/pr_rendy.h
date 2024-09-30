@@ -42,12 +42,51 @@ typedef struct RY_Vertex {
     vec2f pos;
 } RY_Vertex;
 
+typedef struct RY_TexCoords {
+    union {
+        struct {
+            float tx, ty, tw, th;
+        };
+        float e[4];
+    };
+} RY_TexCoords;
+
+typedef struct RY_TextureElement {
+    char filename[256];
+    int32 width;
+    int32 height;
+    RY_TexCoords tex_coords;
+} RY_TextureElement;
+
+typedef struct RY_ArrayTexture {
+    RY_TextureElement *elements;
+    int32 elements_len;
+    uint32 id;
+} RY_ArrayTexture;
+
 typedef struct RY_Target {
-    unsigned int vao;
-    unsigned int vbo;
-    unsigned int bytes_offset;
-    unsigned int vertex_count;
+    uint32 vao;
+
+    uint32 vbo;
+    uint32 vbo_bytes_offset;
+    uint32 vbo_vertex_count;
+
+    uint32 ebo;
+    uint32 ebo_bytes_offset;
+    uint32 ebo_index_count;
 } RY_Target;
+
+
+typedef struct RY_Stats {
+    uint64 draw_calls = 0;
+} RY_Stats;
+
+typedef struct RY_Rendy {
+    RY_Layer *layers;
+    uint32 layers_count;
+
+    RY_Error err;
+} RY_Rendy;
 
 typedef struct RY_Layer {
     bool transpacency = false; // force disable transparency
@@ -56,18 +95,25 @@ typedef struct RY_Layer {
     ArrayTexture *array_texture;
 
     RY_Target target;
+
+    RY_DrawCommands commands;
 } RY_Layer;
 
-typedef struct RY_Stats {
-    int draw_calls = 0;
-} RY_Stats;
+typedef struct RY_DrawCommands {
+    RY_DrawCommand *elements;
+    uint32 count; // number of elements present
+    uint32 size;  // buffer capacity in number of elements
+} RY_DrawCommands;
 
-typedef struct RY_Rendy {
-    RY_Layer *layers;
-    size_t layers_count;
+typedef struct RY_DrawCommand {
+    uint64 sort_key; // intra-level sorting
 
-    RY_Error err;
-} RY_Rendy;
+    void *vertices_data;
+    uint32 vertices_data_length;
+
+    void *indices_data;
+    uint32 indices_data_length;
+} RY_DrawCommand;
 
 void ry_push_triangle() {
 }
