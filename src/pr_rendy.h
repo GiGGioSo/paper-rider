@@ -29,19 +29,7 @@
 //   _OR_
 //    - the client does this by setting an order value inside of the layer, by which stuff is sorted
 
-// TODO(gio): Layers based VS Objects based:
-
-#define MAX_POLYGON_VERTICES 6
-
-typedef enum RY_Err {
-    RY_ERR_NONE = 0,
-    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS = 1,
-} RY_Err;
-
-typedef struct RY_Vertex {
-    vec2f pos;
-} RY_Vertex;
-
+// ### Textures ###
 typedef struct RY_TexCoords {
     union {
         struct {
@@ -63,6 +51,16 @@ typedef struct RY_ArrayTexture {
     int32 elements_len;
     uint32 id;
 } RY_ArrayTexture;
+// ################
+
+typedef enum RY_Err {
+    RY_ERR_NONE = 0,
+    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS = 1,
+} RY_Err;
+
+typedef struct RY_Vertex {
+    vec2f pos;
+} RY_Vertex;
 
 typedef struct RY_Target {
     uint32 vao;
@@ -120,14 +118,22 @@ void ry_push_triangle() {
 
 void ry_push_polygon(
         RY_Rendy *ry,
-        int layer_index,
+        uint32 layer_index,
         float z,
         RY_Vertex vertices,
-        int vertices_length) {
+        uint32 vertices_length,
+        uint32 *indices,
+        uint32 indices_length) {
 
     if (layer_index >= ry->layers_count) {
         ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
         return;
+    }
+
+    if (indices == NULL) {
+        // TODO(gio): Default triangulation/indicization, which assumes:
+        //              - the polygon is convex
+        //              - the vertices are in counter clock-wise order
     }
 
     // TODO: implement somehow
