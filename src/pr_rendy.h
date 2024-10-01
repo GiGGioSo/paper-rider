@@ -58,6 +58,11 @@ typedef enum RY_Err {
     RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS = 1,
 } RY_Err;
 
+typedef enum RY_LayerFlags {
+    RY_LAYER_TRANSPARENT = 1 << 0;
+    RY_LAYER_TEXTURED = 1 << 1;
+} RY_LayerFlags;
+
 typedef struct RY_Vertex {
     vec2f pos;
 } RY_Vertex;
@@ -65,12 +70,12 @@ typedef struct RY_Vertex {
 typedef struct RY_Target {
     uint32 vao;
 
+    uint32 vertex_size; // number of bytes needed to store a single vertex
+
     uint32 vbo;
-    uint32 vbo_bytes_offset;
     uint32 vbo_vertex_count;
 
     uint32 ebo;
-    uint32 ebo_bytes_offset;
     uint32 ebo_index_count;
 } RY_Target;
 
@@ -82,20 +87,31 @@ typedef struct RY_Stats {
 typedef struct RY_Rendy {
     RY_Layer *layers;
     uint32 layers_count;
-
     RY_Error err;
 } RY_Rendy;
 
 typedef struct RY_Layer {
-    bool transpacency = false; // force disable transparency
-                               // decides render order (back->front or reverse)
-    bool textured;
+    uint32 flags;
     ArrayTexture *array_texture;
 
     RY_Target target;
 
     RY_DrawCommands commands;
+    RY_IndexBuffer index_buffer;
+    RY_VertexBuffer vertex_buffer;
 } RY_Layer;
+
+typedef struct RY_IndexBuffer {
+    uint32 *indices_data;
+    uint32 indices_count;
+    uint32 buffer_size;
+} RY_IndexBuffer;
+
+typedef struct RY_VertexBuffer {
+    void *vertex_data;
+    uint32 vertices_bytes;
+    uint32 buffer_size;
+} RY_VertexBuffer;
 
 typedef struct RY_DrawCommands {
     RY_DrawCommand *elements;
@@ -106,10 +122,10 @@ typedef struct RY_DrawCommands {
 typedef struct RY_DrawCommand {
     uint64 sort_key; // intra-level sorting
 
-    void *vertices_data;
+    void *vertices_data_start;
     uint32 vertices_data_length;
 
-    void *indices_data;
+    void *indices_data_start;
     uint32 indices_data_length;
 } RY_DrawCommand;
 
@@ -121,14 +137,17 @@ void ry_push_polygon(
         uint32 layer_index,
         float z,
         RY_Vertex vertices,
-        uint32 vertices_length,
+        uint32 vertices_number,
         uint32 *indices,
-        uint32 indices_length) {
+        uint32 indices_number) {
 
     if (layer_index >= ry->layers_count) {
         ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
         return;
     }
+
+    RY_Layer *layer = &ry->layers[layer_index];
+    RY_Target *target = &layer->target;
 
     if (indices == NULL) {
         // TODO(gio): Default triangulation/indicization, which assumes:
@@ -136,7 +155,22 @@ void ry_push_polygon(
         //              - the vertices are in counter clock-wise order
     }
 
-    // TODO: implement somehow
+    // TODO: Populate a draw command
+    RY_DrawCommand cmd = {};
+
+}
+
+void *ry__push_index_data_to_buffer(
+        RY_IndexBuffer ib,
+        uint32 *indices,
+        uint32 indices_bytes) {
+    // TODO(gio) push indices in the buffer and return pointer to start of allocated data
+}
+void *ry__push_vertex_data_to_buffer(
+        RY_VertesBuffer vb,
+        uint32 *vertices,
+        uint32 vertices_bytes) {
+    // TODO(gio) push vertices in the buffer and return pointer to start of allocated data
 }
 
 char *ry_err_string(RY_Rendy *ry) {
