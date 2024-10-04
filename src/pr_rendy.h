@@ -10,10 +10,11 @@
 #include "pr_mathy.h"
 
 // TODO(gio):
-// [ ] Function to initialize the context
-// [ ] All buffers creation
+// [x] Layer registration (creation)
+// [x] Function to initialize the context
+// [x] Target creation
+// [ ] ArrayTexture creation
 // [ ] Single function call to draw all the layers
-// [ ] Layer registration (creation)
 // [ ] Tests!! please compile
 
 // Custom z layering
@@ -72,6 +73,7 @@ typedef enum RY_Err {
     RY_ERR_INVALID_ARGUMENTS = 2;
     RY_ERR_NOT_IMPLEMENTED = 3;
     RY_ERR_MEMORY_ALLOCATION = 4;
+    RY_ERR_OUT_OF_BUFFER_MEMORY = 5;
 } RY_Err;
 
 typedef enum RY_LayerFlags {
@@ -99,14 +101,22 @@ typedef struct RY_Stats {
 } RY_Stats;
 
 typedef struct RY_Rendy {
-    RY_Layer *layers;
-    uint32 layers_count;
+    RY_Layers layers;
+
     RY_Error err;
 } RY_Rendy;
 
+typedef struct RY_Layers {
+    RY_Layer *elements;
+    uint32 count; // number of elements present
+    uint32 size;  // buffer capacity in number of elements
+} RY_Layers;
+
 typedef struct RY_Layer {
+    uint32 sort_key;
     uint32 flags;
-    RY_ArrayTexture *array_texture;
+
+    RY_ArrayTexture array_texture;
 
     RY_Target target;
     RY_ShaderProgram program;
@@ -152,6 +162,15 @@ typedef struct RY_DrawCommand {
 
 // ### API functions ###
 
+RY_Rendy *
+ry_init();
+
+RY_Target
+ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length uint32 max_vertices_number);
+
+void
+ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ArrayTexture array_texture, RY_ShaderProgram program, RY_Target target, uint32 flags);
+
 //  - check for the context error after each usage
 //  - context error is set to RY_ERR_NONE at the end of each one of them
 
@@ -176,10 +195,10 @@ void
 ry__insert_draw_command(RY_DrawCommands *commands, RY_DrawCommand cmd);
 
 void *
-ry__push_vertex_data_to_buffer(RY_VertexBuffer *vb, void *vertices, uint32 vertices_bytes);
+ry__push_vertex_data_to_buffer(RY_Rendy *ry, RY_VertexBuffer *vb, void *vertices, uint32 vertices_bytes);
 
 void *
-ry__push_index_data_to_buffer(RY_IndexBuffer *ib, void *indices, uint32 indices_bytes);
+ry__push_index_data_to_buffer(RY_Rendy *ry, RY_IndexBuffer *ib, void *indices, uint32 indices_bytes);
 
 /*
  * #######################
@@ -189,6 +208,154 @@ ry__push_index_data_to_buffer(RY_IndexBuffer *ib, void *indices, uint32 indices_
 #ifdef RENDY_IMPLEMENTATION
 
 // ### API functions ###
+
+RY_Rendy *ry_init() {
+    RY_Rendy *ry = malloc(sizeof(RY_Rendy));
+    if (ry == NULL) return NULL;
+
+    ry->err = RY_ERR_NONE;
+
+    return ry;
+}
+
+RY_Target ry_create_target(
+        RY_Rendy *ry,
+        uint32 *vertex_info,
+        uint32 vertex_info_length
+        uint32 max_vertices_number) {
+    RY_Target target = {};
+
+    // vertex info should come in tris
+    if (ry == NULL || vertex_info == NULL || vertex_info_length % 3 != 0) {
+        ry->err = RY_ERR_INVALID_ARGUMENTS;
+        return target;
+    }
+
+    // calculate vertex size in bytes
+    uint32 vertex_size = 0;
+    for(uint32 info_index = 0;
+        info_index < vertex_info_length / 3;
+        ++info_index) {
+        uint32 type_bytes = vertex_info[info_index * 3 + 1];
+        uint32 type_repetitions = vertex_info[info_index * 3 + 2];
+
+        vertex_size += type_bytes * type_repetitions;
+    }
+    target.vertex_size = vertex_size;
+
+    glGenVertexArrays(1, &target.vao);
+
+    glGenBuffers(1, &target.vbo);
+    target.vbo_bytes = 0;
+    target.vbo_capacity = target.vertex_size * max_vertices_number;
+
+    glGenBuffers(1, &target.ebo);
+    target.ebo_bytes = 0;
+    target.ebo_capacity = sizeof(uint32) * max_vertices_number;
+
+    glBindVertexArray(target.vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, target.vbo);
+    // TODO(gio): you sure about GL_DYNAMIC_DRAW ?
+    glBufferData(GL_ARRAY_BUFFER, target.vbo_capacity, NULL, GL_DYNAMIC_DRAW);
+
+    // set vertex attributes
+    uint32 current_info_offset = 0;
+    for(uint32 vertex_info_index = 0;
+        vertex_info_index < vertex_info_length / 3;
+        ++vertex_info_index) {
+
+        uint32 type_enum = vertex_info[vertex_info_index * 3 + 0];
+        uint32 type_bytes = vertex_info[vertex_info_index * 3 + 1];
+        uint32 type_repetitions = vertex_info[vertex_info_index * 3 + 2];
+
+        glEnableVertexAttribArray(vertex_info_index);
+        glVertexAttribPointer(
+                vertex_info_index,
+                type_repetitions,
+                type_enum,
+                GL_FALSE,
+                target.vertex_size,
+                (void *) current_info_offset);
+
+        current_info_offset += type_bytes * type_repetitions;
+    }
+
+    ry->err = RY_ERR_NONE;
+    return target;
+}
+
+RY_Layer *ry_register_layer(
+        RY_Rendy *ry,
+        uint32 sort_key,
+        RY_ArrayTexture array_texture,
+        RY_ShaderProgram program,
+        RY_Target target,
+        uint32 flags) {
+
+    // allocate the memory
+    RY_Layers *layers = &ry->layers;
+    if (layers->count >= layers->size) {
+        layers->size = (layers->size * 2) + 1;
+        layers->elements = realloc(
+                layers->elements,
+                layers->size * sizeof(RY_Layer));
+        if (!layers->elements) {
+            ry->err = RY_ERR_MEMORY_ALLOCATION;
+            return NULL;
+        }
+    }
+
+    // find in order position
+    uint32 comparison_index;
+    for(comparison_index = 0;
+        comparison_index < commands->count;
+        ++comparison_index) {
+
+        RY_Layer *comparison_layer = &layers->elements[comparison_index];
+        if (sort_key < comparison_cmd->sort_key) {
+            break;
+        }
+    }
+
+    if (comparison_index < layers->count) { // move the data afterwards
+        memmove(layers->elements + comparison_index+1,
+                layers->elements + comparison_index,
+                layers->count - comparison_index);
+    }
+    layers->count++;
+
+    // fill in the layer
+    RY_Layer *layer = &layers->elements[comparison_index];
+
+    layer->sort_key = sort_key;
+    layer->array_texture = array_texture;
+    layer->program = program;
+    layer->target = target;
+    layer->flags = flags;
+    layer->draw_commands = {};
+
+    layer->index_buffer = {};
+    layer->index_buffer.buffer_bytes = target.ebo_capacity;
+    layer->index_buffer.indices_data =
+        (uint32 *) malloc(layer->index_buffer.buffer_bytes);
+    if (layer->index_buffer.indices_data == NULL) {
+        ry->err = RY_ERR_MEMORY_ALLOCATION;
+        return NULL;
+    }
+
+    layer->vertex_buffer = {};
+    layer->vertex_buffer.buffer_bytes = target.vbo_capacity;
+    layer->vertex_buffer.vertices_data =
+        (uint32 *) malloc(layer->vertex_buffer.buffer_bytes);
+    if (layer->vertex_buffer.vertices_data == NULL) {
+        ry->err = RY_ERR_MEMORY_ALLOCATION;
+        return NULL;
+    }
+
+    ry->err = RY_ERR_NONE;
+    return layer;
+}
 
 void ry_push_polygon(
         RY_Rendy *ry,
@@ -218,6 +385,15 @@ void ry_push_polygon(
         //              - the vertices are in counter clock-wise order
         ry->err = RY_ERR_NOT_IMPLEMENTED;
         return;
+    }
+
+    // offset indices based on already present vertices
+    uint32 index_offset =
+        layer->vertex_buffer.vertices_bytes / target->vertex_size;
+    for(uint32 index_index = 0;
+        index_index < indices_number;
+        ++index_index) {
+        indices[index_index] += index_offset;
     }
 
     RY_DrawCommand cmd = {};
@@ -326,12 +502,6 @@ void ry__insert_draw_command(
         RY_DrawCommands *commands,
         RY_DrawCommand cmd) {
 
-    // TODO(gio): Insert in order.
-    //            Assume the already present commands are already sorted.
-    //            Make it stable:
-    //             - if an equal element is present, the new one must be
-    //                  placed afterwards
-
     if (commands->count >= commands->size) {
         commands->size = (commands->size * 2) + 1;
         commands->elements = realloc(
@@ -342,7 +512,26 @@ void ry__insert_draw_command(
             return;
         }
     }
-    commands->elements[commands->count] = cmd;
+
+    // Inserting in order
+    uint32 comparison_index;
+    for(comparison_index = 0;
+        comparison_index < commands->count;
+        ++comparison_index) {
+
+        RY_DrawCommand *comparison_cmd = &commands->elements[comparison_index];
+        if (cmd.sort_key < comparison_cmd->sort_key) {
+            break;
+        }
+    }
+
+    if (comparison_index < commands->count) { // move the data afterwards
+        memmove(commands->elements + comparison_index+1,
+                commands->elements + comparison_index,
+                commands->count - comparison_index);
+    }
+
+    commands->elements[comparison_index] = cmd;
     commands->count++;
 
     ry->err = RY_ERR_NONE;
@@ -351,20 +540,14 @@ void ry__insert_draw_command(
 
 void *ry__push_vertex_data_to_buffer(
         RY_Rendy *ry,
-        RY_icesertexBuffer *vb,
+        RY_VertexBuffer *vb,
         void *vertices,
         uint32 vertices_bytes) {
-    // TODO(gio): Check buffer size remains less than the target buffer size
 
+    // The vertex buffer has the size of the target buffer
     if (vb->vertices_bytes + vertices_bytes >= vb->buffer_bytes) {
-        uint32 new_buffer_bytes =
-            MAX(vb->vertices_bytes + vertices_bytes, vb->buffer_bytes * 2 + 1);
-
-        vb->vertices_data = realloc(vb->vertices_data, new_buffer_bytes);
-        if (!vb->vertices_data) {
-            ry->RY_ERR_MEMORY_ALLOCATION;
-            return;
-        }
+        ry->RY_ERR_OUT_OF_BUFFER_MEMORY;
+        return;
     }
 
     memcpy(vb->vertices_data + vb->vertices_bytes, vertices, vertices_bytes);
@@ -375,20 +558,15 @@ void *ry__push_vertex_data_to_buffer(
 }
 
 void *ry__push_index_data_to_buffer(
+        RY_Rendy *ry,
         RY_IndexBuffer *ib,
         void *indices,
         uint32 indices_bytes) {
-    // TODO(gio): Check buffer size remains less than the target buffer size
 
+    // The index buffer has the size of the target buffer
     if (vb->indices_bytes + indices_bytes >= vb->buffer_bytes) {
-        uint32 new_buffer_bytes =
-            MAX(vb->indices_bytes + indices_bytes, vb->buffer_bytes * 2 + 1);
-
-        vb->indices_data = realloc(vb->indices_data, new_buffer_bytes);
-        if (!vb->indices_data) {
-            ry->RY_ERR_MEMORY_ALLOCATION;
-            return;
-        }
+        ry->RY_ERR_OUT_OF_BUFFER_MEMORY;
+        return;
     }
 
     memcpy(vb->indices_data + vb->indices_bytes, indices, indices_bytes);
