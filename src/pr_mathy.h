@@ -75,14 +75,6 @@ vec4f mat4f_x_vec4f(mat4f m, vec4f v) {
     return result;
 }
 
-// x x x x    x x x x     x x x x
-//                |  
-// x_x_x_x    x x x x     x x o x
-//                |  
-// x x x x    x x x x     x x x x
-//                |  
-// x x x x    x x x x     x x x x
-
 mat4f mat4f_x_mat4f(mat4f m1, mat4f m2) {
     mat4f result = {};
 

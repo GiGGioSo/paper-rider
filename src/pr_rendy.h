@@ -8,12 +8,14 @@
 ///
 
 #include "pr_mathy.h"
+#include "../include/stb_image.h"
 
 // TODO(gio):
 // [x] Layer registration (creation)
 // [x] Function to initialize the context
 // [x] Target creation
-// [ ] ArrayTexture creation
+// [/] Shaders - defer deallocation of code buffers and closing of code files
+// [/] ArrayTexture creation - improve creation
 // [ ] Single function call to draw all the layers
 // [ ] Tests!! please compile
 
@@ -66,6 +68,10 @@ typedef struct RY_ArrayTexture {
     uint32 id;
 } RY_ArrayTexture;
 // ################
+
+// ### SHADERS ###
+typedef uint32 RY_ShaderProgram;
+// ###############
 
 typedef enum RY_Err {
     RY_ERR_NONE = 0;
@@ -169,6 +175,9 @@ RY_Target
 ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length uint32 max_vertices_number);
 
 void
+ry_create_array_texture(RY_Rendy *ry, RY_ArrayTexture *at);
+
+void
 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ArrayTexture array_texture, RY_ShaderProgram program, RY_Target target, uint32 flags);
 
 //  - check for the context error after each usage
@@ -185,6 +194,18 @@ ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ArrayTexture array_texture, 
  */
 void
 ry_push_polygon(RY_Rendy *ry, uint32 layer_index, uint64 in_layer_sort, void *vertices, uint32 vertices_number, uint32 *indices, uint32 indices_number);
+
+// # shaders
+RY_ShaderProgram
+ry_shader_create_program(RY_Rendy *ry, const char* vertexPath, const char* fragmentPath);
+void
+ry_shader_set_int32(RY_ShaderProgram s, const char* name, int32 value);
+void
+ry_shader_set_float(RY_ShaderProgram s, const char* name, float value);
+void
+ry_shader_set_mat4f(RY_ShaderProgram s, const char* name, mat4f value);
+void
+ry_shader_set_vec3f(RY_ShaderProgram s, const char* name, vec3f value);
 
 char *
 ry_err_string(RY_Rendy *ry);
@@ -283,6 +304,139 @@ RY_Target ry_create_target(
 
     ry->err = RY_ERR_NONE;
     return target;
+}
+
+void ry_create_array_texture(
+        RY_Rendy *ry,
+        RY_ArrayTexture *at) {
+    stbi_set_flip_vertically_on_load(true);
+
+    RY_DataImage empty_data_image = {};
+    RY_DataImages images = {};
+
+    int32 max_width = -1;
+    int32 max_height = -1;
+
+    for(uint32 image_index = 0;
+        image_index < at->elements_len;
+        ++image_index) {
+
+        if (images.count >= images.capacity) {
+            images.capacity = iamges.capacity * 2 + 1;
+            images.items = realloc(images.items,
+                                   images.capacity * sizeof(RY_DataImage));
+            if (images.items == NULL) {
+                ry->err = RY_ERR_MEMORY_ALLOCATION;
+                return;
+            }
+        }
+        
+        RY_DataImage *new_image = &images.items[count++];
+        new_image->path = at->elements[image_index].filename;
+        // NOTE: Need to free this data later
+        uint8 *image_data = stbi_load(new_image->path,
+                                        &new_image->width, &new_image->height,
+                                        &new_image->nr_channels, 0);
+        printf("Loading image (%s) data from file\n",
+                at->elements[image_index].filename);
+
+        if (new_image->width > max_width) max_width = new_image->width;
+        if (new_image->height > max_height) max_height = new_image->height;
+
+        // Generate texture
+        if (image_data) {
+            new_image->data = image_data;
+        } else {
+            printf("[ERROR] Failed to load image: %s\n", new_image->path);
+            ry->err = RY_ERR_FAILED_IO;
+            return;
+        }
+    }
+
+    // Get GPU limits
+    uint32 max_texture_size;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    uint32 max_array_texture_layers;
+    glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
+
+    if (max_width > max_texture_size || max_height > max_texture_size) {
+        printf("[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
+                ((max_width > max_height) ? max_width : max_height),
+                max_texture_size);
+        ry->err = RY_ERR_TEXTURE_SIZE;
+        return;
+    }
+
+    if ((uint32)images.count > max_array_texture_layers) {
+        printf("[ERROR] Failed to create array texture: number of textures (%d) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
+                images.count,
+                max_array_texture_layers);
+        ry->err = RY_ERR_TEXTURE_LAYER;
+        return;
+    }
+
+    at->elements = (RY_TextureElement *)
+        malloc(sizeof(RY_TextureElement) * images.count);
+    if (at->elements == NULL) {
+        ry->err = RY_ERR_MEMORY_ALLOCATION;
+        return;
+    }
+
+    glGenTextures(1, &at->id);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
+
+    glTexStorage3D(
+        GL_TEXTURE_2D_ARRAY, // GLenum target
+        1, // GLsizei levels
+        GL_RGBA8, // GLenum internalformat
+        max_width, // GLsizei width
+        max_height, // GLsizei height
+        images.count // GLsizei depth
+    );
+
+    for(uint32 image_index = 0;
+        image_index < images.count;
+        ++image_index) {
+
+        RY_DataImage *image = &(images.items[image_index]);
+        RY_TextureElement *t_element = &(at->elements[image_index]);
+        t_element->width = image->width;
+        t_element->height = image->height;
+        t_element->tex_coords = {
+            .tx = 0,
+            .ty = 0,
+            .tw = (float) t_element->width / max_width,
+            .th = (float) t_element->height / max_height,
+        };
+
+        printf("Loading image (%s) data into the texture\n", image->path);
+
+        glTexSubImage3D(
+            GL_TEXTURE_2D_ARRAY, // GLenum target
+            0, // GLint level
+            0, // GLint xoffset
+            0, // GLint yoffset
+            image_index, // GLint zoffset
+            image->width, // GLsizei width
+            image->height, // GLsizei height
+            1, // GLsizei depth
+            GL_RGBA, // GLenum format
+            GL_UNSIGNED_BYTE, // GLenum type
+            image->data // const GLvoid * pixels
+        );
+
+        // Don't need it anymore, because the data is inside the texture now
+        stbi_image_free(image->data);
+        image->data = NULL;
+    }
+
+    // texture options
+    // TODO(gio): personalize texture options?
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 RY_Layer *ry_register_layer(
@@ -422,6 +576,153 @@ void ry_push_polygon(
     ry->err = RY_ERR_NONE;
 }
 
+RY_ShaderProgram ry_shader_create_program(
+        RY_Rendy *ry,
+        const char *vertex_shader_path,
+        const char *fragment_shader_path) {
+    RY_ShaderProgram program = 0;
+
+    // Reading the vertex shader code
+    FILE *vertex_file = fopen(vertex_shader_path, "rb");
+    if (vertex_file == NULL) {
+        ry->err = RY_ERR_IO_COULD_NOT_OPEN;
+        return program;
+    }
+
+    if (fseek(vertex_file, 0, SEEK_END)) {
+        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
+        return program;
+    }
+    uint64 vertex_file_size = ftell(vertex_file);
+    if (fseek(vertex_file, 0, SEEK_SET)) {
+        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
+        return program;
+    }
+
+    uint8 *vertex_code = malloc(vertex_file_size + 1);
+    if (vertex_code == NULL) {
+        ry->err = RY_ERR_MEMORY_ALLOCATION;
+        return program;
+    }
+
+    if (fread(vertex_code, vertex_file_size, 1, vertex_file) != 1) {
+        ry->err = RY_ERR_IO_COULD_NOT_READ;
+        return program;
+    }
+    fclose(vertex_file);
+
+    vertex_code[vertex_file_size] = '\0';
+
+    // Reading the fragment shader code
+    FILE *fragment_file = fopen(fragment_shader_path, "rb");
+    if (fragment_file == NULL) {
+        ry->err = RY_ERR_IO_COULD_NOT_OPEN;
+        return program;
+    }
+
+    if (fseek(fragment_file, 0, SEEK_END)) {
+        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
+        return program;
+    }
+    uint64 fragment_file_size = ftell(fragment_file);
+    if (fseek(fragment_file, 0, SEEK_SET)) {
+        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
+        return program;
+    }
+
+    uint8 *fragment_code = malloc(fragment_file_size + 1);
+    if (fragment_code == NULL) {
+        ry->err = RY_ERR_MEMORY_ALLOCATION;
+        return program;
+    }
+
+    if (fread(fragment_code, fragment_file_size, 1, fragment_file) != 1) {
+        ry->err = RY_ERR_IO_COULD_NOT_READ;
+        return program;
+    }
+    fclose(fragment_file);
+
+    fragment_code[fragment_file_size] = '\0';
+
+    // compile shaders and create program
+    uint32 vertex, fragment;
+    int32 success;
+    char err_log[512];
+
+    // vertex shader
+    vertex = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex, 1, &vertex_code, NULL);
+    glCompileShader(vertex);
+    // print compile errors if any
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+    if(!success) {
+        glGetShaderInfoLog(vertex, 512, NULL, err_log);
+        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
+                vertex_shader_path, err_log);
+        ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
+        return program;
+    }
+
+    // fragment shader
+    fragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment, 1, &fragment_code, NULL);
+    glCompileShader(fragment);
+    //print compile errors if any
+    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+    if(!success) {
+        glGetShaderInfoLog(fragment, 512, NULL, err_log);
+        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED (%s)\n%s\n",
+                fragment_shader_path, err_log);
+        ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
+        return program;
+    }
+
+    // program
+    program = glCreateProgram();
+    glAttachShader(program, vertex);
+    glAttachShader(program, fragment);
+    glLinkProgram(program);
+    // print linking errors if any
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    if(!success) {
+        glGetProgramInfoLog(program, 512, NULL, err_log);
+        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n", err_log);
+        ry->err = RY_ERR_SHADER_COULD_NOT_LINK;
+        return program;
+    }
+
+    // delete the single shaders
+    glDeleteShader(vertex);
+    glDeleteShader(fragment);
+
+    ry->err = RY_ERR_NONE;
+    return program;
+}
+
+void ry_shader_set_int32(
+        RY_ShaderProgram s,
+        const char* name,
+        int32 value) {
+}
+
+void ry_shader_set_float(
+        RY_ShaderProgram s,
+        const char* name,
+        float value) {
+}
+
+void ry_shader_set_mat4f(
+        RY_ShaderProgram s,
+        const char* name,
+        mat4f value) {
+}
+
+void ry_shader_set_vec3f(
+        RY_ShaderProgram s,
+        const char* name,
+        vec3f value) {
+}
+
 char *ry_err_string(RY_Rendy *ry) {
     if (ry->err == RY_ERR_NONE) {
         return "No error";
@@ -433,6 +734,14 @@ char *ry_err_string(RY_Rendy *ry) {
         return "Feature not implemented";
     } else if (ry->err == RY_ERR_MEMORY_ALLOCATION) {
         return "Failed during a memory allocation";
+    } else if (ry->err == RY_ERR_OUT_OF_BUFFER_MEMORY) {
+        return "Ran out of buffer memory";
+    } else if (ry->err == RY_ERR_TEXTURE_SIZE) {
+        return "TextureArray component size is greater than hardware limit";
+    } else if (ry->err == RY_ERR_TEXTURE_LAYER) {
+        return "TextureArray layers number is greater than hardware limit";
+    } else if (ry->err == RY_ERR_FAILED_IO) {
+        return "Failed to read file";
     }
 
     return "Unknown error";
