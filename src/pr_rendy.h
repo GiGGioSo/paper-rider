@@ -83,11 +83,18 @@ typedef uint32 RY_ShaderProgram;
 
 typedef enum RY_Err {
     RY_ERR_NONE = 0;
-    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS = 1;
-    RY_ERR_INVALID_ARGUMENTS = 2;
-    RY_ERR_NOT_IMPLEMENTED = 3;
-    RY_ERR_MEMORY_ALLOCATION = 4;
-    RY_ERR_OUT_OF_BUFFER_MEMORY = 5;
+    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
+    RY_ERR_INVALID_ARGUMENTS;
+    RY_ERR_NOT_IMPLEMENTED;
+    RY_ERR_MEMORY_ALLOCATION;
+    RY_ERR_OUT_OF_BUFFER_MEMORY;
+    RY_ERR_TEXTURE_SIZE;
+    RY_ERR_TEXTURE_LAYER;
+    RY_ERR_IO_COULD_NOT_OPEN;
+    RY_ERR_IO_COULD_NOT_SEEK;
+    RY_ERR_IO_COULD_NOT_READ;
+    RY_ERR_SHADER_COULD_NOT_COMPILE;
+    RY_ERR_SHADER_COULD_NOT_LINK;
 } RY_Err;
 
 typedef enum RY_LayerFlags {
@@ -603,7 +610,7 @@ RY_ShaderProgram ry_shader_create_program(
     vertex_file = fopen(vertex_shader_path, "rb");
     if (vertex_file == NULL) {
         ry->err = RY_ERR_IO_COULD_NOT_OPEN;
-        RY_RETURN_DEALLOC;
+        return_defer_err;
     }
 
     if (fseek(vertex_file, 0, SEEK_END)) {
@@ -627,7 +634,7 @@ RY_ShaderProgram ry_shader_create_program(
         RY_RETURN_DEALLOC;
     }
     fclose(vertex_file);
-
+    vertex_file = NULL,
     vertex_code[vertex_file_size] = '\0';
 
     // Reading the fragment shader code
@@ -658,7 +665,7 @@ RY_ShaderProgram ry_shader_create_program(
         RY_RETURN_DEALLOC;
     }
     fclose(fragment_file);
-
+    fragment_file = NULL;
     fragment_code[fragment_file_size] = '\0';
 
     // creating the program
@@ -673,8 +680,8 @@ RY_ShaderProgram ry_shader_create_program(
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if(!success) {
         glGetShaderInfoLog(vertex, 512, NULL, err_log);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
-                vertex_shader_path, err_log);
+        // printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
+        //         vertex_shader_path, err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
         RY_RETURN_DEALLOC;
     }
@@ -702,7 +709,7 @@ RY_ShaderProgram ry_shader_create_program(
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if(!success) {
         glGetProgramInfoLog(program, sizeof(err_log), NULL, err_log);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n", err_log);
+        // printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n", err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_LINK;
         RY_RETURN_DEALLOC;
     }
@@ -726,24 +733,33 @@ void ry_shader_set_int32(
         RY_ShaderProgram s,
         const char* name,
         int32 value) {
+    glUseProgram(s);
+    glUniform1i(glGetUniformLocation(s, name), value);
 }
 
 void ry_shader_set_float(
         RY_ShaderProgram s,
         const char* name,
         float value) {
-}
-
-void ry_shader_set_mat4f(
-        RY_ShaderProgram s,
-        const char* name,
-        mat4f value) {
+    glUseProgram(s);
+    glUniform1f(glGetUniformLocation(s, name), value);
 }
 
 void ry_shader_set_vec3f(
         RY_ShaderProgram s,
         const char* name,
         vec3f value) {
+    glUseProgram(s);
+    glUniform3f(glGetUniformLocation(s, name), value.x, value.y, value.z);
+}
+
+// TODO(gio): check if the matrix is correctly passed along
+void ry_shader_set_mat4f(
+        RY_ShaderProgram s,
+        const char* name,
+        mat4f value) {
+    glUseProgram(s);
+    glUniformMatrix4fv(glGetUniformLocation(s, name), 1, GL_FALSE, value.e);
 }
 
 char *ry_err_string(RY_Rendy *ry) {
@@ -763,8 +779,16 @@ char *ry_err_string(RY_Rendy *ry) {
         return "TextureArray component size is greater than hardware limit";
     } else if (ry->err == RY_ERR_TEXTURE_LAYER) {
         return "TextureArray layers number is greater than hardware limit";
-    } else if (ry->err == RY_ERR_FAILED_IO) {
+    } else if (ry->err == RY_ERR_IO_COULD_NOT_OPEN) {
+        return "Failed to open file";
+    } else if (ry->err == RY_ERR_IO_COULD_NOT_SEEK) {
+        return "Failed to seek file";
+    } else if (ry->err == RY_ERR_IO_COULD_NOT_READ) {
         return "Failed to read file";
+    } else if (ry->err == RY_ERR_SHADER_COULD_NOT_COMPILE) {
+        return "Failed to compile shader";
+    } else if (ry->err == RY_ERR_SHADER_COULD_NOT_LINK) {
+        return "Failed to link shader";
     }
 
     return "Unknown error";
