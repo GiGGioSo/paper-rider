@@ -40,6 +40,14 @@
 //    - the client does this by setting an order value inside of the layer, by which stuff is sorted
 
 /*
+ * ##############
+ * ### MACROS ###
+ * ##############
+ */
+
+#define RY_RETURN_DEALLOC do { goto defer_dealloc; } while(0)
+
+/*
  * #######################
  * ### DATA STRUCTURES ###
  * #######################
@@ -580,72 +588,80 @@ RY_ShaderProgram ry_shader_create_program(
         RY_Rendy *ry,
         const char *vertex_shader_path,
         const char *fragment_shader_path) {
+
+    FILE *vertex_file = NULL;
+    uint8 *vertex_code = NULL;
+
+    FILE *fragment_file = NULL;
+    uint8 *fragment_code = NULL;
+
     RY_ShaderProgram program = 0;
+    uint32 vertex = 0;
+    uint32 fragment = 0;
 
     // Reading the vertex shader code
-    FILE *vertex_file = fopen(vertex_shader_path, "rb");
+    vertex_file = fopen(vertex_shader_path, "rb");
     if (vertex_file == NULL) {
         ry->err = RY_ERR_IO_COULD_NOT_OPEN;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
     if (fseek(vertex_file, 0, SEEK_END)) {
         ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        return program;
+        RY_RETURN_DEALLOC;
     }
     uint64 vertex_file_size = ftell(vertex_file);
     if (fseek(vertex_file, 0, SEEK_SET)) {
         ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
-    uint8 *vertex_code = malloc(vertex_file_size + 1);
+    vertex_code = malloc(vertex_file_size + 1);
     if (vertex_code == NULL) {
         ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
     if (fread(vertex_code, vertex_file_size, 1, vertex_file) != 1) {
         ry->err = RY_ERR_IO_COULD_NOT_READ;
-        return program;
+        RY_RETURN_DEALLOC;
     }
     fclose(vertex_file);
 
     vertex_code[vertex_file_size] = '\0';
 
     // Reading the fragment shader code
-    FILE *fragment_file = fopen(fragment_shader_path, "rb");
+    fragment_file = fopen(fragment_shader_path, "rb");
     if (fragment_file == NULL) {
         ry->err = RY_ERR_IO_COULD_NOT_OPEN;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
     if (fseek(fragment_file, 0, SEEK_END)) {
         ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        return program;
+        RY_RETURN_DEALLOC;
     }
     uint64 fragment_file_size = ftell(fragment_file);
     if (fseek(fragment_file, 0, SEEK_SET)) {
         ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
-    uint8 *fragment_code = malloc(fragment_file_size + 1);
+    fragment_code = malloc(fragment_file_size + 1);
     if (fragment_code == NULL) {
         ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
     if (fread(fragment_code, fragment_file_size, 1, fragment_file) != 1) {
         ry->err = RY_ERR_IO_COULD_NOT_READ;
-        return program;
+        RY_RETURN_DEALLOC;
     }
     fclose(fragment_file);
 
     fragment_code[fragment_file_size] = '\0';
 
-    // compile shaders and create program
-    uint32 vertex, fragment;
+    // creating the program
     int32 success;
     char err_log[512];
 
@@ -660,7 +676,7 @@ RY_ShaderProgram ry_shader_create_program(
         printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
                 vertex_shader_path, err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
     // fragment shader
@@ -670,11 +686,11 @@ RY_ShaderProgram ry_shader_create_program(
     //print compile errors if any
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if(!success) {
-        glGetShaderInfoLog(fragment, 512, NULL, err_log);
+        glGetShaderInfoLog(fragment, sizeof(err_log), NULL, err_log);
         printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED (%s)\n%s\n",
                 fragment_shader_path, err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
     // program
@@ -685,18 +701,25 @@ RY_ShaderProgram ry_shader_create_program(
     // print linking errors if any
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if(!success) {
-        glGetProgramInfoLog(program, 512, NULL, err_log);
+        glGetProgramInfoLog(program, sizeof(err_log), NULL, err_log);
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n", err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_LINK;
-        return program;
+        RY_RETURN_DEALLOC;
     }
 
-    // delete the single shaders
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
-
     ry->err = RY_ERR_NONE;
-    return program;
+
+    defer_dealloc:
+    {
+        if (vertex_file) fclose(vertex_file);
+        if (vertex_code) free(vertex_code);
+        if (fragment_file) fclose(fragment_file);
+        if (fragment_code) free(fragment_code);
+
+        if (vertex) glDeleteShader(vertex);
+        if (fragment) glDeleteShader(fragment);
+        return program;
+    }
 }
 
 void ry_shader_set_int32(
