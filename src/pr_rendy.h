@@ -17,6 +17,7 @@
 // [/] Shaders - defer deallocation of code buffers and closing of code files
 // [/] ArrayTexture creation - improve creation
 // [ ] Single function call to draw all the layers
+// [ ] OpenGL initialization?
 // [ ] Tests!! please compile
 
 // Custom z layering
@@ -64,7 +65,7 @@ typedef struct RY_TexCoords {
 } RY_TexCoords;
 
 typedef struct RY_TextureElement {
-    char filename[256];
+    char filename[512];
     int32 width;
     int32 height;
     RY_TexCoords tex_coords;
@@ -73,7 +74,7 @@ typedef struct RY_TextureElement {
 typedef struct RY_ArrayTexture {
     RY_TextureElement *elements;
     int32 elements_len;
-    uint32 id;
+    GLuint id;
 } RY_ArrayTexture;
 // ################
 
@@ -321,137 +322,181 @@ RY_Target ry_create_target(
     return target;
 }
 
-void ry_create_array_texture(
+RY_ArrayTexture ry_create_array_texture(
         RY_Rendy *ry,
-        RY_ArrayTexture *at) {
-    stbi_set_flip_vertically_on_load(true);
-
-    RY_DataImage empty_data_image = {};
+        const char **paths,
+        uint32 paths_length) {
+    RY_ArrayTexture at = {};
     RY_DataImages images = {};
 
-    int32 max_width = -1;
-    int32 max_height = -1;
+    {
+        if (paths == NULL) {
+            ry->err = RY_ERR_INVALID_ARGUMENTS;
+            RY_RETURN_DEALLOC;
+        }
+        stbi_set_flip_vertically_on_load(true);
 
-    for(uint32 image_index = 0;
-        image_index < at->elements_len;
-        ++image_index) {
+        at.elements_len = paths_length;
+        at.elements = (RY_TextureElement *)
+            malloc(sizeof(RY_TextureElement) * at.elements_len);
+        if (at.elements == NULL) {
+            ry->err = RY_ERR_MEMORY_ALLOCATION;
+            RY_RETURN_DEALLOC;
+        }
 
-        if (images.count >= images.capacity) {
-            images.capacity = iamges.capacity * 2 + 1;
-            images.items = realloc(images.items,
-                                   images.capacity * sizeof(RY_DataImage));
-            if (images.items == NULL) {
-                ry->err = RY_ERR_MEMORY_ALLOCATION;
-                return;
+        for(uint32 element_index = 0;
+            element_index < at.elements_len;
+            ++element_index) {
+            RY_TextureElement *element = &at.elements[element_index];
+            const char *path = paths[element_index];
+
+            element->filename = {};
+            element->width = 0;
+            element->height = 0;
+            element->tex_coords = {};
+
+            uint32 filename_length =
+                MIN(sizeof(element->filename), strlen(path)+1);
+
+            memcpy(element.filename, path, filename_length);
+            element.filename[filename_length-1] = '\0'
+        }
+
+        int32 max_width = -1;
+        int32 max_height = -1;
+
+        for(uint32 image_index = 0;
+            image_index < at.elements_len;
+            ++image_index) {
+
+            if (images.count >= images.capacity) {
+                images.capacity = images.capacity * 2 + 1;
+                images.items = realloc(images.items,
+                                       images.capacity * sizeof(RY_DataImage));
+                if (images.items == NULL) {
+                    ry->err = RY_ERR_MEMORY_ALLOCATION;
+                    RY_RETURN_DEALLOC;
+                }
+            }
+            
+            RY_DataImage *new_image = &images.items[count++];
+            new_image->path = at.elements[image_index].filename;
+            // NOTE: Need to free this data later
+            uint8 *image_data = stbi_load(
+                    new_image->path,
+                    &new_image->width, &new_image->height,
+                    &new_image->nr_channels, 0);
+            printf("Loading image (%s) data from file\n",
+                    at.elements[image_index].filename);
+
+            if (new_image->width > max_width) max_width = new_image->width;
+            if (new_image->height > max_height) max_height = new_image->height;
+
+            // Generate texture
+            if (image_data) {
+                new_image->data = image_data;
+            } else {
+                printf("[ERROR] Failed to load image: %s\n", new_image->path);
+                ry->err = RY_ERR_FAILED_IO;
+                RY_RETURN_DEALLOC;
             }
         }
-        
-        RY_DataImage *new_image = &images.items[count++];
-        new_image->path = at->elements[image_index].filename;
-        // NOTE: Need to free this data later
-        uint8 *image_data = stbi_load(new_image->path,
-                                        &new_image->width, &new_image->height,
-                                        &new_image->nr_channels, 0);
-        printf("Loading image (%s) data from file\n",
-                at->elements[image_index].filename);
 
-        if (new_image->width > max_width) max_width = new_image->width;
-        if (new_image->height > max_height) max_height = new_image->height;
+        // Get GPU limits
+        uint32 max_texture_size;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+        uint32 max_array_texture_layers;
+        glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
 
-        // Generate texture
-        if (image_data) {
-            new_image->data = image_data;
-        } else {
-            printf("[ERROR] Failed to load image: %s\n", new_image->path);
-            ry->err = RY_ERR_FAILED_IO;
-            return;
+        if (max_width > max_texture_size || max_height > max_texture_size) {
+            printf("[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
+                    ((max_width > max_height) ? max_width : max_height),
+                    max_texture_size);
+            ry->err = RY_ERR_TEXTURE_SIZE;
+            RY_RETURN_DEALLOC;
         }
-    }
 
-    // Get GPU limits
-    uint32 max_texture_size;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
-    uint32 max_array_texture_layers;
-    glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
+        if ((uint32)images.count > max_array_texture_layers) {
+            printf("[ERROR] Failed to create array texture: number of textures (%d) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
+                    images.count,
+                    max_array_texture_layers);
+            ry->err = RY_ERR_TEXTURE_LAYER;
+            RY_RETURN_DEALLOC;
+        }
 
-    if (max_width > max_texture_size || max_height > max_texture_size) {
-        printf("[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
-                ((max_width > max_height) ? max_width : max_height),
-                max_texture_size);
-        ry->err = RY_ERR_TEXTURE_SIZE;
-        return;
-    }
+        glGenTextures(1, &at.id);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, at.id);
 
-    if ((uint32)images.count > max_array_texture_layers) {
-        printf("[ERROR] Failed to create array texture: number of textures (%d) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
-                images.count,
-                max_array_texture_layers);
-        ry->err = RY_ERR_TEXTURE_LAYER;
-        return;
-    }
-
-    at->elements = (RY_TextureElement *)
-        malloc(sizeof(RY_TextureElement) * images.count);
-    if (at->elements == NULL) {
-        ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return;
-    }
-
-    glGenTextures(1, &at->id);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
-
-    glTexStorage3D(
-        GL_TEXTURE_2D_ARRAY, // GLenum target
-        1, // GLsizei levels
-        GL_RGBA8, // GLenum internalformat
-        max_width, // GLsizei width
-        max_height, // GLsizei height
-        images.count // GLsizei depth
-    );
-
-    for(uint32 image_index = 0;
-        image_index < images.count;
-        ++image_index) {
-
-        RY_DataImage *image = &(images.items[image_index]);
-        RY_TextureElement *t_element = &(at->elements[image_index]);
-        t_element->width = image->width;
-        t_element->height = image->height;
-        t_element->tex_coords = {
-            .tx = 0,
-            .ty = 0,
-            .tw = (float) t_element->width / max_width,
-            .th = (float) t_element->height / max_height,
-        };
-
-        printf("Loading image (%s) data into the texture\n", image->path);
-
-        glTexSubImage3D(
+        glTexStorage3D(
             GL_TEXTURE_2D_ARRAY, // GLenum target
-            0, // GLint level
-            0, // GLint xoffset
-            0, // GLint yoffset
-            image_index, // GLint zoffset
-            image->width, // GLsizei width
-            image->height, // GLsizei height
-            1, // GLsizei depth
-            GL_RGBA, // GLenum format
-            GL_UNSIGNED_BYTE, // GLenum type
-            image->data // const GLvoid * pixels
+            1, // GLsizei levels
+            GL_RGBA8, // GLenum internalformat
+            max_width, // GLsizei width
+            max_height, // GLsizei height
+            images.count // GLsizei depth
         );
 
-        // Don't need it anymore, because the data is inside the texture now
-        stbi_image_free(image->data);
-        image->data = NULL;
+        for(uint32 image_index = 0;
+            image_index < images.count;
+            ++image_index) {
+
+            RY_DataImage *image = &(images.items[image_index]);
+            RY_TextureElement *t_element = &(at.elements[image_index]);
+            t_element->width = image->width;
+            t_element->height = image->height;
+            t_element->tex_coords = {
+                .tx = 0,
+                .ty = 0,
+                .tw = (float) t_element->width / max_width,
+                .th = (float) t_element->height / max_height,
+            };
+
+            printf("Loading image (%s) data into the texture\n", image->path);
+
+            glTexSubImage3D(
+                GL_TEXTURE_2D_ARRAY, // GLenum target
+                0, // GLint level
+                0, // GLint xoffset
+                0, // GLint yoffset
+                image_index, // GLint zoffset
+                image->width, // GLsizei width
+                image->height, // GLsizei height
+                1, // GLsizei depth
+                GL_RGBA, // GLenum format
+                GL_UNSIGNED_BYTE, // GLenum type
+                image->data // const GLvoid * pixels
+            );
+
+            // Don't need it anymore, because the data is inside the texture now
+            stbi_image_free(image->data);
+            image->data = NULL;
+        }
+
+        // texture options
+        // TODO(gio): personalize texture options?
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     }
 
-    // texture options
-    // TODO(gio): personalize texture options?
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    defer_dealloc:
+    {
+        if (at.elements) free(at.elements);
+        for(uint32 image_index = 0;
+            image_index < images.count;
+            ++image_index) {
+
+            RY_DataImage *image = &(images.items[image_index]);
+            if (image->data) {
+                stbi_image_free(image->data);
+                image->data = NULL;
+            }
+        }
+        if (images.items) free(images.items);
+        return at;
+    }
 }
 
 RY_Layer *ry_register_layer(

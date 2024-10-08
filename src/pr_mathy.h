@@ -10,6 +10,9 @@
 #ifndef MAX
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
+#ifndef MIN
+#define MIN(a, b) (((a) > (b)) ? (b) : (a))
+#endif
 
 typedef uint8_t uint8;
 typedef uint16_t uint16;
