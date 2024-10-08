@@ -74,18 +74,20 @@ int main() {
     } else {
         std::cout << "[ERROR] Unknown window mode: "
                   << glob->window.display_mode << std::endl;
+        glfwTerminate();
+        return 1;
     }
     if (glob->window.glfw_win == NULL) {
         std::cout << "[ERROR] Failed to create GLFW window" << std::endl;
         glfwTerminate();
-        return -1;
+        return 1;
     }
     glfwMakeContextCurrent(glob->window.glfw_win);
     glfwSwapInterval(0);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "[ERROR] Failed to initialize GLAD" << std::endl;
-        return -1;
+        return 1;
     }
 
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);

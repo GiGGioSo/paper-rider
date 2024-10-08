@@ -14,10 +14,14 @@
 // [x] Layer registration (creation)
 // [x] Function to initialize the context
 // [x] Target creation
-// [/] Shaders - defer deallocation of code buffers and closing of code files
-// [/] ArrayTexture creation - improve creation
+// [x] Shaders - defer deallocation of code buffers and closing of code files
+// [x] ArrayTexture creation - improve creation
 // [ ] Single function call to draw all the layers
-// [ ] OpenGL initialization?
+// [ ] OpenGL setup (OpenGL is always assumed loaded):
+//     [x] set debug function
+//     [x] frontend to glEnable / glDisable
+//     [ ] set clear color and clear
+//     [ ] set and modify viewport
 // [ ] Tests!! please compile
 
 // Custom z layering
@@ -225,6 +229,9 @@ ry_shader_set_vec3f(RY_ShaderProgram s, const char* name, vec3f value);
 
 char *
 ry_err_string(RY_Rendy *ry);
+
+void
+ry_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, GLchar *));
 
 // ### Internal functions ###
 
@@ -805,6 +812,19 @@ void ry_shader_set_mat4f(
         mat4f value) {
     glUseProgram(s);
     glUniformMatrix4fv(glGetUniformLocation(s, name), 1, GL_FALSE, value.e);
+}
+
+void ry_gl_enable(GLenum capability) {
+    glEnable(capability);
+}
+
+void ry_gl_disable(GLenum capability) {
+    glDisable(capability);
+}
+
+void ry_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, GLchar *)) {
+    glDebugMessageCallback(&callback_debug, NULL);
+    ry_gl_enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 }
 
 char *ry_err_string(RY_Rendy *ry) {
