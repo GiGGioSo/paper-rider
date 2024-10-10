@@ -16,12 +16,13 @@
 // [x] Target creation
 // [x] Shaders - defer deallocation of code buffers and closing of code files
 // [x] ArrayTexture creation - improve creation
-// [ ] Single function call to draw all the layers
-// [ ] OpenGL setup (OpenGL is always assumed loaded):
+// [x] OpenGL setup (OpenGL is always assumed loaded):
 //     [x] set debug function
 //     [x] frontend to glEnable / glDisable
-//     [ ] set clear color and clear
-//     [ ] set and modify viewport
+//     [x] set blend function
+//     [x] set clear color and clear
+//     [x] set and modify viewport
+// [ ] Single function call to draw all the layers
 // [ ] Tests!! please compile
 
 // Custom z layering
@@ -223,15 +224,27 @@ ry_shader_set_int32(RY_ShaderProgram s, const char* name, int32 value);
 void
 ry_shader_set_float(RY_ShaderProgram s, const char* name, float value);
 void
-ry_shader_set_mat4f(RY_ShaderProgram s, const char* name, mat4f value);
-void
 ry_shader_set_vec3f(RY_ShaderProgram s, const char* name, vec3f value);
+void
+ry_shader_set_mat4f(RY_ShaderProgram s, const char* name, mat4f value);
+
+void
+ry_gl_enable(GLenum capability);
+void
+ry_gl_disable(GLenum capability);
+void
+ry_gl_blend_func(GLenum sfactor, GLenum dfactor);
+void
+ry_gl_clear_color(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void
+ry_gl_clear(GLbitfield mask);
+void
+ry_gl_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, GLchar *));
+void
+ry_gl_viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 char *
 ry_err_string(RY_Rendy *ry);
-
-void
-ry_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, GLchar *));
 
 // ### Internal functions ###
 
@@ -822,9 +835,36 @@ void ry_gl_disable(GLenum capability) {
     glDisable(capability);
 }
 
-void ry_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, GLchar *)) {
+void ry_gl_blend_func(GLenum sfactor, GLenum dfactor) {
+    glBlendFunc(sfactor, dfactor);
+}
+
+void ry_gl_clear_color(
+        GLfloat red,
+        GLfloat green,
+        GLfloat blue,
+        GLfloat alpha) {
+    glClearColor(red, green, blue, alpha);
+}
+
+void ry_gl_clear(GLbitfield mask) {
+    glClear(mask);
+}
+
+void ry_gl_debug_message_callback(
+        void (*callback)(
+            GLenum,
+            GLenum,
+            GLuint,
+            GLenum,
+            GLsizei,
+            GLchar *)) {
     glDebugMessageCallback(&callback_debug, NULL);
     ry_gl_enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+}
+
+void ry_gl_viewport(GLint x, GLint y, GLsizei width, GLsizei height) {
+    glViewport(x, y, width, height);
 }
 
 char *ry_err_string(RY_Rendy *ry) {
