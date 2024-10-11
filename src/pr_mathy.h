@@ -7,6 +7,8 @@
 ////////////////////////////////////
 ///
 
+#include <stdint.h>
+
 #ifndef MAX
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -70,7 +72,7 @@ vec4f mat4f_x_vec4f(mat4f m, vec4f v) {
     for(int i = 0; i < 4; i++) {
         float row_x_column = 0.f;
         for(int j = 0; j < 4; j++) {
-            row_x_column += m.m[i][j] * vec.e[j];
+            row_x_column += m.m[i][j] * v.e[j];
         }
         result.e[i] = row_x_column;
     }
@@ -88,7 +90,7 @@ mat4f mat4f_x_mat4f(mat4f m1, mat4f m2) {
             for(int iter = 0; iter < 4; iter++) {
                 row_x_column += m1.m[row][iter] * m2.m[iter][col];
             }
-            result.m[i][j] = row_x_column;
+            result.m[row][col] = row_x_column;
         }
     }
 

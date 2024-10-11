@@ -7,6 +7,8 @@
 ////////////////////////////////////
 ///
 
+#include "string.h"
+
 #include "pr_mathy.h"
 #include "../include/stb_image.h"
 
@@ -22,6 +24,13 @@
 //     [x] set blend function
 //     [x] set clear color and clear
 //     [x] set and modify viewport
+//
+// [ ] Fix up polygon pushing / cmd sorting / buffers population
+//     [ ] vertex buffer MUST NOT be sorted inside of the VBO
+//          because the EBO uses the unsorted indices
+//     [ ] At this point, vertex buffer will be copied as is
+//          inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
+//          (we actually just need to sort the indices, not the vertices)
 // [ ] Single function call to draw all the layers
 // [ ] Tests!! please compile
 
@@ -69,6 +78,20 @@ typedef struct RY_TexCoords {
     };
 } RY_TexCoords;
 
+typedef struct RY_DataImage {
+    uint8_t *data;
+    int width;
+    int height;
+    int nr_channels;
+    const char *path;
+} RY_DataImage;
+
+typedef struct RY_DataImages {
+    RY_DataImage *items;
+    int32 count;
+    int32 capacity;
+} RY_DataImages;
+
 typedef struct RY_TextureElement {
     char filename[512];
     int32 width;
@@ -78,7 +101,7 @@ typedef struct RY_TextureElement {
 
 typedef struct RY_ArrayTexture {
     RY_TextureElement *elements;
-    int32 elements_len;
+    uint32 elements_len;
     GLuint id;
 } RY_ArrayTexture;
 // ################
@@ -88,30 +111,31 @@ typedef uint32 RY_ShaderProgram;
 // ###############
 
 typedef enum RY_Err {
-    RY_ERR_NONE = 0;
-    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
-    RY_ERR_INVALID_ARGUMENTS;
-    RY_ERR_NOT_IMPLEMENTED;
-    RY_ERR_MEMORY_ALLOCATION;
-    RY_ERR_OUT_OF_BUFFER_MEMORY;
-    RY_ERR_TEXTURE_SIZE;
-    RY_ERR_TEXTURE_LAYER;
-    RY_ERR_IO_COULD_NOT_OPEN;
-    RY_ERR_IO_COULD_NOT_SEEK;
-    RY_ERR_IO_COULD_NOT_READ;
-    RY_ERR_SHADER_COULD_NOT_COMPILE;
-    RY_ERR_SHADER_COULD_NOT_LINK;
+    RY_ERR_NONE = 0,
+    RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS,
+    RY_ERR_INVALID_ARGUMENTS,
+    RY_ERR_NOT_IMPLEMENTED,
+    RY_ERR_MEMORY_ALLOCATION,
+    RY_ERR_OUT_OF_BUFFER_MEMORY,
+    RY_ERR_TEXTURE_SIZE,
+    RY_ERR_TEXTURE_LAYER,
+    RY_ERR_IO_COULD_NOT_OPEN,
+    RY_ERR_IO_COULD_NOT_SEEK,
+    RY_ERR_IO_COULD_NOT_READ,
+    RY_ERR_SHADER_COULD_NOT_COMPILE,
+    RY_ERR_SHADER_COULD_NOT_LINK,
 } RY_Err;
 
 typedef enum RY_LayerFlags {
-    RY_LAYER_TRANSPARENT = 1 << 0;
-    RY_LAYER_TEXTURED = 1 << 1;
+    RY_LAYER_TRANSPARENT = 1 << 0,
+    RY_LAYER_TEXTURED = 1 << 1,
 } RY_LayerFlags;
 
 typedef struct RY_Target {
     GLuint vao;
 
     uint32 vertex_size; // number of bytes needed to store a single vertex
+    uint32 index_size; // number of bytes needed to store a single index
 
     GLuint vbo;
     uint32 vbo_bytes;
@@ -124,20 +148,36 @@ typedef struct RY_Target {
 
 
 typedef struct RY_Stats {
-    uint64 draw_calls = 0;
+    uint64 draw_calls;
 } RY_Stats;
 
-typedef struct RY_Rendy {
-    RY_Layers layers;
+typedef struct RY_VertexBuffer {
+    void *vertices_data;
+    uint32 vertices_bytes;
+    uint32 buffer_bytes;
+} RY_VertexBuffer;
 
-    RY_Error err;
-} RY_Rendy;
+typedef struct RY_IndexBuffer {
+    void *indices_data;
+    uint32 indices_bytes;
+    uint32 buffer_bytes;
+} RY_IndexBuffer;
 
-typedef struct RY_Layers {
-    RY_Layer *elements;
+typedef struct RY_DrawCommand {
+    uint64 sort_key; // intra-level sorting
+
+    void *vertices_data_start;
+    uint32 vertices_data_bytes;
+
+    void *indices_data_start;
+    uint32 indices_data_bytes;
+} RY_DrawCommand;
+
+typedef struct RY_DrawCommands {
+    RY_DrawCommand *elements;
     uint32 count; // number of elements present
     uint32 size;  // buffer capacity in number of elements
-} RY_Layers;
+} RY_DrawCommands;
 
 typedef struct RY_Layer {
     uint32 sort_key;
@@ -153,33 +193,17 @@ typedef struct RY_Layer {
     RY_VertexBuffer vertex_buffer;
 } RY_Layer;
 
-typedef struct RY_VertexBuffer {
-    void *vertices_data;
-    uint32 vertices_bytes;
-    uint32 buffer_bytes;
-} RY_VertexBuffer;
-
-typedef struct RY_IndexBuffer {
-    void *indices_data;
-    uint32 indices_bytes;
-    uint32 buffer_bytes;
-} RY_IndexBuffer;
-
-typedef struct RY_DrawCommands {
-    RY_DrawCommand *elements;
+typedef struct RY_Layers {
+    RY_Layer *elements;
     uint32 count; // number of elements present
     uint32 size;  // buffer capacity in number of elements
-} RY_DrawCommands;
+} RY_Layers;
 
-typedef struct RY_DrawCommand {
-    uint64 sort_key; // intra-level sorting
+typedef struct RY_Rendy {
+    RY_Layers layers;
 
-    void *vertices_data_start;
-    uint32 vertices_data_bytes;
-
-    void *indices_data_start;
-    uint32 indices_data_bytes;
-} RY_DrawCommand;
+    RY_Err err;
+} RY_Rendy;
 
 /*
  * #################
@@ -193,12 +217,12 @@ RY_Rendy *
 ry_init();
 
 RY_Target
-ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length uint32 max_vertices_number);
+ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length, uint32 max_vertices_number);
 
-void
-ry_create_array_texture(RY_Rendy *ry, RY_ArrayTexture *at);
+RY_ArrayTexture
+ry_create_array_texture(RY_Rendy *ry, const char **paths, uint32 paths_length);
 
-void
+RY_Layer *
 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ArrayTexture array_texture, RY_ShaderProgram program, RY_Target target, uint32 flags);
 
 //  - check for the context error after each usage
@@ -271,14 +295,13 @@ RY_Rendy *ry_init() {
     if (ry == NULL) return NULL;
 
     ry->err = RY_ERR_NONE;
-
     return ry;
 }
 
 RY_Target ry_create_target(
         RY_Rendy *ry,
         uint32 *vertex_info,
-        uint32 vertex_info_length
+        uint32 vertex_info_length,
         uint32 max_vertices_number) {
     RY_Target target = {};
 
@@ -300,6 +323,8 @@ RY_Target ry_create_target(
     }
     target.vertex_size = vertex_size;
 
+    target.index_size = sizeof(uint32);
+
     glGenVertexArrays(1, &target.vao);
 
     glGenBuffers(1, &target.vbo);
@@ -308,6 +333,7 @@ RY_Target ry_create_target(
 
     glGenBuffers(1, &target.ebo);
     target.ebo_bytes = 0;
+    // TODO(gio): should this really the max number of indices?
     target.ebo_capacity = sizeof(uint32) * max_vertices_number;
 
     glBindVertexArray(target.vao);
@@ -317,7 +343,7 @@ RY_Target ry_create_target(
     glBufferData(GL_ARRAY_BUFFER, target.vbo_capacity, NULL, GL_DYNAMIC_DRAW);
 
     // set vertex attributes
-    uint32 current_info_offset = 0;
+    uint64 current_info_offset = 0;
     for(uint32 vertex_info_index = 0;
         vertex_info_index < vertex_info_length / 3;
         ++vertex_info_index) {
@@ -354,7 +380,7 @@ RY_ArrayTexture ry_create_array_texture(
             ry->err = RY_ERR_INVALID_ARGUMENTS;
             RY_RETURN_DEALLOC;
         }
-        stbi_set_flip_vertically_on_load(true);
+        stbi_set_flip_vertically_on_load(1);
 
         at.elements_len = paths_length;
         at.elements = (RY_TextureElement *)
@@ -370,16 +396,16 @@ RY_ArrayTexture ry_create_array_texture(
             RY_TextureElement *element = &at.elements[element_index];
             const char *path = paths[element_index];
 
-            element->filename = {};
+            memset(element->filename, 0, sizeof(element->filename));
             element->width = 0;
             element->height = 0;
-            element->tex_coords = {};
+            memset(element->tex_coords.e, 0, sizeof(element->tex_coords.e));
 
             uint32 filename_length =
                 MIN(sizeof(element->filename), strlen(path)+1);
 
-            memcpy(element.filename, path, filename_length);
-            element.filename[filename_length-1] = '\0'
+            memcpy(element->filename, path, filename_length);
+            element->filename[filename_length-1] = '\0';
         }
 
         int32 max_width = -1;
@@ -399,7 +425,7 @@ RY_ArrayTexture ry_create_array_texture(
                 }
             }
             
-            RY_DataImage *new_image = &images.items[count++];
+            RY_DataImage *new_image = &images.items[images.count++];
             new_image->path = at.elements[image_index].filename;
             // NOTE: Need to free this data later
             uint8 *image_data = stbi_load(
@@ -417,15 +443,15 @@ RY_ArrayTexture ry_create_array_texture(
                 new_image->data = image_data;
             } else {
                 printf("[ERROR] Failed to load image: %s\n", new_image->path);
-                ry->err = RY_ERR_FAILED_IO;
+                ry->err = RY_ERR_IO_COULD_NOT_READ;
                 RY_RETURN_DEALLOC;
             }
         }
 
         // Get GPU limits
-        uint32 max_texture_size;
+        int32 max_texture_size;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
-        uint32 max_array_texture_layers;
+        int32 max_array_texture_layers;
         glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
 
         if (max_width > max_texture_size || max_height > max_texture_size) {
@@ -436,8 +462,8 @@ RY_ArrayTexture ry_create_array_texture(
             RY_RETURN_DEALLOC;
         }
 
-        if ((uint32)images.count > max_array_texture_layers) {
-            printf("[ERROR] Failed to create array texture: number of textures (%d) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
+        if (images.count > max_array_texture_layers) {
+            printf("[ERROR] Failed to create array texture: number of textures (%u) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
                     images.count,
                     max_array_texture_layers);
             ry->err = RY_ERR_TEXTURE_LAYER;
@@ -456,7 +482,7 @@ RY_ArrayTexture ry_create_array_texture(
             images.count // GLsizei depth
         );
 
-        for(uint32 image_index = 0;
+        for(int32 image_index = 0;
             image_index < images.count;
             ++image_index) {
 
@@ -464,12 +490,10 @@ RY_ArrayTexture ry_create_array_texture(
             RY_TextureElement *t_element = &(at.elements[image_index]);
             t_element->width = image->width;
             t_element->height = image->height;
-            t_element->tex_coords = {
-                .tx = 0,
-                .ty = 0,
-                .tw = (float) t_element->width / max_width,
-                .th = (float) t_element->height / max_height,
-            };
+            t_element->tex_coords.tx = 0;
+            t_element->tex_coords.ty = 0;
+            t_element->tex_coords.tw = (float) t_element->width / max_width;
+            t_element->tex_coords.th = (float) t_element->height / max_height;
 
             printf("Loading image (%s) data into the texture\n", image->path);
 
@@ -504,7 +528,7 @@ RY_ArrayTexture ry_create_array_texture(
     defer_dealloc:
     {
         if (at.elements) free(at.elements);
-        for(uint32 image_index = 0;
+        for(int32 image_index = 0;
             image_index < images.count;
             ++image_index) {
 
@@ -908,23 +932,26 @@ void ry__draw_layer(
     RY_DrawCommands *commands = &layer->draw_commands;
     RY_Target *target = &layer->target;
 
+    glBindVertexArray(target->vao);
+
+    // Setting the vertices data into the VBO
+    // TODO(gio): the vertex buffer is copied AS IS inside of
+    //             the VBO, does the vertex buffer even
+    //             need to exist for any possible context?
+    glBindBuffer(GL_ARRAY_BUFFER, target->vbo);
+    glBufferSubData(
+            GL_ARRAY_BUFFER,
+            0,
+            layer->vertex_buffer.vertices_bytes,
+            layer->vertex_buffer.vertices_data);
+    target->vbo_bytes = layer->vertex_buffer.vertices_bytes;
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     for(uint32 cmd_index = 0;
         cmd_index < layer->draw_commands.count;
         ++cmd_index) {
 
         RY_DrawCommand *cmd = &commands->elements[cmd_index];
-
-        glBindVertexArray(target->vao);
-
-        // Setting the vertices data into the VBO
-        glBindBuffer(GL_ARRAY_BUFFER, target->vbo);
-        glBufferSubData(
-                GL_ARRAY_BUFFER,
-                target->vbo_bytes,
-                cmd->vertices_data_bytes,
-                cmd->vertices_data_start);
-        target->vbo_bytes += cmd->vertices_data_bytes;
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         // Setting the indices data into the EBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target->ebo);
@@ -933,26 +960,33 @@ void ry__draw_layer(
                 target->ebo_bytes,
                 cmd->indices_data_bytes,
                 cmd->indices_data_start);
-        target->ebo_bytes += cmd->vertices_data_bytes;
+        target->ebo_bytes += cmd->indices_data_bytes;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        glBindVertexArray(0); // maybe you don't need to unbind it now
     }
 
-    // TODO(gio): Do the actual draw call with glDrawElements(...)
-    ry->err = RY_ERR_NOT_IMPLEMENTED;
-    return;
+    glUseProgram(layer->program);
 
-    // glUseProgram(s);
-    // shaderer_set_int(s, "tex", 0); // something like this
-    // glActiveTexture(GL_TEXTURE0);
-    // glBindTexture(GL_TEXTURE_2D, t->id);
-    // glBindVertexArray(renderer->tex_vao);
-    // glDrawArrays(GL_TRIANGLES, 0, renderer->tex_vertex_count);
-    // glBindTexture(GL_TEXTURE_2D, 0);
-    // glBindVertexArray(0);
-    // target->vbo_bytes = 0;
-    // target->ebo_bytes = 0;
+    uint32 number_of_indices = target->ebo_bytes / index_size;
+
+    if (layer->flags & RY_LAYER_TEXTURED) {
+        // TODO(gio): Implement texture array drawing
+        ry->err = RY_ERR_NOT_IMPLEMENTED;
+        return;
+        // shaderer_set_int(s, "tex", 0); // something like this
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, t->id);
+        // glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glDrawElements(
+            GL_TRIANGLES,
+            number_of_indices,
+            GL_UNSIGNED_BYTE,
+            NULL);
+
+    glBindVertexArray(0);
+
+    target->vbo_bytes = 0;
+    target->ebo_bytes = 0;
 
     ry->err = RY_ERR_NONE;
     return;
