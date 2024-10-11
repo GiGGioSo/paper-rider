@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-#include "include/glad/glad.h"
-#include "include/glfw3.h"
+#include "../include/glad/glad.h"
+#include "../include/glfw3.h"
 
-#include "src/pr_mathy.h"
+#include "../src/pr_mathy.h"
 #define RENDY_IMPLEMENTATION
-#include "src/pr_rendy.h"
+#include "../src/pr_rendy.h"
 
 GLFWwindow *glfw_win;
 
@@ -24,16 +24,16 @@ int main(void) {
     glfw_win = glfwCreateWindow(800, 600, "RENDY TEST", NULL, NULL);
 
     if (glfw_win == NULL) {
-        fprintf(stderr, "[ERROR] Failed to create GLFW window");
+        fprintf(stderr, "[ERROR] Failed to create GLFW window\n");
         glfwTerminate();
         return 1;
     }
 
-    glfwMakeContextCurrent(glob->window.glfw_win);
+    glfwMakeContextCurrent(glfw_win);
     glfwSwapInterval(0);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        std::cout << "[ERROR] Failed to initialize GLAD" << std::endl;
+        fprintf(stderr, "[ERROR] Failed to initialize GLAD\n");
         return 1;
     }
 

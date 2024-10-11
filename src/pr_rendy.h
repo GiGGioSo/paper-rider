@@ -263,7 +263,7 @@ ry_gl_clear_color(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void
 ry_gl_clear(GLbitfield mask);
 void
-ry_gl_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, GLchar *));
+ry_gl_debug_message_callback(void (*callback)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar *, const void *));
 void
 ry_gl_viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
@@ -273,7 +273,7 @@ ry_err_string(RY_Rendy *ry);
 // ### Internal functions ###
 
 void
-ry__insert_draw_command(RY_DrawCommands *commands, RY_DrawCommand cmd);
+ry__insert_draw_command(RY_Rendy *ry, RY_DrawCommands *commands, RY_DrawCommand cmd);
 
 void *
 ry__push_vertex_data_to_buffer(RY_Rendy *ry, RY_VertexBuffer *vb, void *vertices, uint32 vertices_bytes);
@@ -567,11 +567,11 @@ RY_Layer *ry_register_layer(
     // find in order position
     uint32 comparison_index;
     for(comparison_index = 0;
-        comparison_index < commands->count;
+        comparison_index < layers->count;
         ++comparison_index) {
 
         RY_Layer *comparison_layer = &layers->elements[comparison_index];
-        if (sort_key < comparison_cmd->sort_key) {
+        if (sort_key < comparison_layer->sort_key) {
             break;
         }
     }
@@ -591,9 +591,11 @@ RY_Layer *ry_register_layer(
     layer->program = program;
     layer->target = target;
     layer->flags = flags;
-    layer->draw_commands = {};
+    layer->draw_commands.elements = NULL;
+    layer->draw_commands.count = 0;
+    layer->draw_commands.size = 0;
 
-    layer->index_buffer = {};
+    layer->index_buffer.indices_bytes = 0;
     layer->index_buffer.buffer_bytes = target.ebo_capacity;
     layer->index_buffer.indices_data =
         (uint32 *) malloc(layer->index_buffer.buffer_bytes);
@@ -602,7 +604,7 @@ RY_Layer *ry_register_layer(
         return NULL;
     }
 
-    layer->vertex_buffer = {};
+    layer->vertex_buffer.vertices_bytes = 0;
     layer->vertex_buffer.buffer_bytes = target.vbo_capacity;
     layer->vertex_buffer.vertices_data =
         (uint32 *) malloc(layer->vertex_buffer.buffer_bytes);
@@ -629,12 +631,12 @@ void ry_push_polygon(
         return;
     }
 
-    if (layer_index >= ry->layers_count) {
+    if (layer_index >= ry->layers.count) {
         ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
         return;
     }
 
-    RY_Layer *layer = &ry->layers[layer_index];
+    RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_Target *target = &layer->target;
 
     if (indices == NULL) {
@@ -661,6 +663,7 @@ void ry_push_polygon(
     cmd.vertices_data_bytes = vertices_number * sizeof(*vertices);
     cmd.vertices_data_start =
         ry__push_vertex_data_to_buffer(
+                ry,
                 &layer->vertex_buffer,
                 (void *)vertices,
                 cmd.vertices_data_bytes);
@@ -669,6 +672,7 @@ void ry_push_polygon(
     cmd.indices_data_bytes = indices_number * sizeof(*indices);
     cmd.indices_data_start =
         ry__push_index_data_to_buffer(
+                ry,
                 &layer->index_buffer,
                 (void *)indices,
                 cmd.indices_data_bytes);
@@ -686,10 +690,10 @@ RY_ShaderProgram ry_shader_create_program(
         const char *fragment_shader_path) {
 
     FILE *vertex_file = NULL;
-    uint8 *vertex_code = NULL;
+    int8 *vertex_code = NULL;
 
     FILE *fragment_file = NULL;
-    uint8 *fragment_code = NULL;
+    int8 *fragment_code = NULL;
 
     RY_ShaderProgram program = 0;
     uint32 vertex = 0;
@@ -699,7 +703,7 @@ RY_ShaderProgram ry_shader_create_program(
     vertex_file = fopen(vertex_shader_path, "rb");
     if (vertex_file == NULL) {
         ry->err = RY_ERR_IO_COULD_NOT_OPEN;
-        return_defer_err;
+        RY_RETURN_DEALLOC;
     }
 
     if (fseek(vertex_file, 0, SEEK_END)) {
@@ -763,7 +767,7 @@ RY_ShaderProgram ry_shader_create_program(
 
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vertex_code, NULL);
+    glShaderSource(vertex, 1, (const char **) &vertex_code, NULL);
     glCompileShader(vertex);
     // print compile errors if any
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
@@ -777,7 +781,7 @@ RY_ShaderProgram ry_shader_create_program(
 
     // fragment shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fragment_code, NULL);
+    glShaderSource(fragment, 1, (const char **) &fragment_code, NULL);
     glCompileShader(fragment);
     //print compile errors if any
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
@@ -882,8 +886,9 @@ void ry_gl_debug_message_callback(
             GLuint,
             GLenum,
             GLsizei,
-            GLchar *)) {
-    glDebugMessageCallback(&callback_debug, NULL);
+            const GLchar *,
+            const void *)) {
+    glDebugMessageCallback(callback, NULL);
     ry_gl_enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 }
 
@@ -966,7 +971,7 @@ void ry__draw_layer(
 
     glUseProgram(layer->program);
 
-    uint32 number_of_indices = target->ebo_bytes / index_size;
+    uint32 number_of_indices = target->ebo_bytes / target->index_size;
 
     if (layer->flags & RY_LAYER_TEXTURED) {
         // TODO(gio): Implement texture array drawing
@@ -1039,17 +1044,19 @@ void *ry__push_vertex_data_to_buffer(
         void *vertices,
         uint32 vertices_bytes) {
 
+    void *result = NULL;
     // The vertex buffer has the size of the target buffer
     if (vb->vertices_bytes + vertices_bytes >= vb->buffer_bytes) {
-        ry->RY_ERR_OUT_OF_BUFFER_MEMORY;
-        return;
+        ry->err = RY_ERR_OUT_OF_BUFFER_MEMORY;
+        return result;
     }
 
+    result = vb->vertices_data + vb->vertices_bytes;
     memcpy(vb->vertices_data + vb->vertices_bytes, vertices, vertices_bytes);
     vb->vertices_bytes += vertices_bytes;
 
     ry->err = RY_ERR_NONE;
-    return;
+    return result;
 }
 
 void *ry__push_index_data_to_buffer(
@@ -1058,17 +1065,19 @@ void *ry__push_index_data_to_buffer(
         void *indices,
         uint32 indices_bytes) {
 
+    void *result = NULL;
     // The index buffer has the size of the target buffer
-    if (vb->indices_bytes + indices_bytes >= vb->buffer_bytes) {
-        ry->RY_ERR_OUT_OF_BUFFER_MEMORY;
-        return;
+    if (ib->indices_bytes + indices_bytes >= ib->buffer_bytes) {
+        ry->err = RY_ERR_OUT_OF_BUFFER_MEMORY;
+        return result;
     }
 
-    memcpy(vb->indices_data + vb->indices_bytes, indices, indices_bytes);
-    vb->indices_bytes += indices_bytes;
+    result = ib->indices_data + ib->indices_bytes;
+    memcpy(ib->indices_data + ib->indices_bytes, indices, indices_bytes);
+    ib->indices_bytes += indices_bytes;
 
     ry->err = RY_ERR_NONE;
-    return;
+    return result;
 }
 
 #endif // RENDY_IMPLEMENTATION

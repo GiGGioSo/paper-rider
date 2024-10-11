@@ -28,9 +28,9 @@ CFLAGS="-ggdb"
 # CFLAGS="${CFLAGS} -Wwrite-strings"
 LIBS="-lglfw -ldl -lpthread -lm"
 
-EXE="./bin/test_rendy"
+EXE="./test_rendy"
 
-SRCS_FILES="test_rendy.c"
+SRCS_FILES="test_rendy.c ../include/"
 
 echo "Compiling test_rendy..."
 

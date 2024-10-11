@@ -26,7 +26,7 @@ CFLAGS="-ggdb"
 # CFLAGS="${CFLAGS} -Wunreachable-code"
 # CFLAGS="${CFLAGS} -Wunused-but-set-parameter"
 # CFLAGS="${CFLAGS} -Wwrite-strings"
-LIBS="-lglfw -ldl -lpthread -lm"
+LIBS="-lglfw -ldl -lpthread -lm -lGL"
 
 EXE="./bin/paper"
 
