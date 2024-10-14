@@ -183,7 +183,7 @@ typedef struct RY_Layer {
     uint32 sort_key;
     uint32 flags;
 
-    RY_ArrayTexture array_texture;
+    RY_ArrayTexture *array_texture;
 
     RY_Target target;
     RY_ShaderProgram program;
@@ -216,14 +216,21 @@ typedef struct RY_Rendy {
 RY_Rendy *
 ry_init();
 
+/*
+ * The vertex_info array must be a flattened list of triples
+ *  where each value in the triple represents:
+ *      - type enum  -> OpenGL enum identifier of that type
+ *      - type bytes -> size of that type
+ *      - type repetitions -> how many adjacent values of that type
+ */
 RY_Target
 ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length, uint32 max_vertices_number);
 
 RY_ArrayTexture
 ry_create_array_texture(RY_Rendy *ry, const char **paths, uint32 paths_length);
 
-RY_Layer *
-ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ArrayTexture array_texture, RY_ShaderProgram program, RY_Target target, uint32 flags);
+uint32
+ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags);
 
 //  - check for the context error after each usage
 //  - context error is set to RY_ERR_NONE at the end of each one of them
@@ -259,7 +266,7 @@ ry_gl_disable(GLenum capability);
 void
 ry_gl_blend_func(GLenum sfactor, GLenum dfactor);
 void
-ry_gl_clear_color(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+ry_gl_clear_color(vec4f color);
 void
 ry_gl_clear(GLbitfield mask);
 void
@@ -270,7 +277,13 @@ ry_gl_viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 char *
 ry_err_string(RY_Rendy *ry);
 
+int
+ry_error(RY_Rendy *ry);
+
 // ### Internal functions ###
+
+void
+ry__draw_layer(RY_Rendy *ry, uint32 layer_index);
 
 void
 ry__insert_draw_command(RY_Rendy *ry, RY_DrawCommands *commands, RY_DrawCommand cmd);
@@ -291,7 +304,7 @@ ry__push_index_data_to_buffer(RY_Rendy *ry, RY_IndexBuffer *ib, void *indices, u
 // ### API functions ###
 
 RY_Rendy *ry_init() {
-    RY_Rendy *ry = malloc(sizeof(RY_Rendy));
+    RY_Rendy *ry = calloc(sizeof(RY_Rendy), 1);
     if (ry == NULL) return NULL;
 
     ry->err = RY_ERR_NONE;
@@ -322,7 +335,6 @@ RY_Target ry_create_target(
         vertex_size += type_bytes * type_repetitions;
     }
     target.vertex_size = vertex_size;
-
     target.index_size = sizeof(uint32);
 
     glGenVertexArrays(1, &target.vao);
@@ -334,7 +346,7 @@ RY_Target ry_create_target(
     glGenBuffers(1, &target.ebo);
     target.ebo_bytes = 0;
     // TODO(gio): should this really the max number of indices?
-    target.ebo_capacity = sizeof(uint32) * max_vertices_number;
+    target.ebo_capacity = target.index_size * max_vertices_number;
 
     glBindVertexArray(target.vao);
 
@@ -342,6 +354,11 @@ RY_Target ry_create_target(
     // TODO(gio): you sure about GL_DYNAMIC_DRAW ?
     glBufferData(GL_ARRAY_BUFFER, target.vbo_capacity, NULL, GL_DYNAMIC_DRAW);
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target.ebo);
+    // TODO(gio): you sure about GL_DYNAMIC_DRAW ?
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, target.ebo_capacity, NULL, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, target.vbo);
     // set vertex attributes
     uint64 current_info_offset = 0;
     for(uint32 vertex_info_index = 0;
@@ -363,6 +380,10 @@ RY_Target ry_create_target(
 
         current_info_offset += type_bytes * type_repetitions;
     }
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     ry->err = RY_ERR_NONE;
     return target;
@@ -543,13 +564,8 @@ RY_ArrayTexture ry_create_array_texture(
     }
 }
 
-RY_Layer *ry_register_layer(
-        RY_Rendy *ry,
-        uint32 sort_key,
-        RY_ArrayTexture array_texture,
-        RY_ShaderProgram program,
-        RY_Target target,
-        uint32 flags) {
+uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags) {
+    uint32 layer_index = 0;
 
     // allocate the memory
     RY_Layers *layers = &ry->layers;
@@ -560,7 +576,7 @@ RY_Layer *ry_register_layer(
                 layers->size * sizeof(RY_Layer));
         if (!layers->elements) {
             ry->err = RY_ERR_MEMORY_ALLOCATION;
-            return NULL;
+            return layer_index;
         }
     }
 
@@ -585,6 +601,7 @@ RY_Layer *ry_register_layer(
 
     // fill in the layer
     RY_Layer *layer = &layers->elements[comparison_index];
+    layer_index = comparison_index;
 
     layer->sort_key = sort_key;
     layer->array_texture = array_texture;
@@ -601,7 +618,7 @@ RY_Layer *ry_register_layer(
         (uint32 *) malloc(layer->index_buffer.buffer_bytes);
     if (layer->index_buffer.indices_data == NULL) {
         ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return NULL;
+        return layer_index;
     }
 
     layer->vertex_buffer.vertices_bytes = 0;
@@ -610,11 +627,11 @@ RY_Layer *ry_register_layer(
         (uint32 *) malloc(layer->vertex_buffer.buffer_bytes);
     if (layer->vertex_buffer.vertices_data == NULL) {
         ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return NULL;
+        return layer_index;
     }
 
     ry->err = RY_ERR_NONE;
-    return layer;
+    return layer_index;
 }
 
 void ry_push_polygon(
@@ -773,8 +790,8 @@ RY_ShaderProgram ry_shader_create_program(
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if(!success) {
         glGetShaderInfoLog(vertex, 512, NULL, err_log);
-        // printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
-        //         vertex_shader_path, err_log);
+        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
+                vertex_shader_path, err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
         RY_RETURN_DEALLOC;
     }
@@ -802,7 +819,7 @@ RY_ShaderProgram ry_shader_create_program(
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if(!success) {
         glGetProgramInfoLog(program, sizeof(err_log), NULL, err_log);
-        // printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n", err_log);
+        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED %s\n", err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_LINK;
         RY_RETURN_DEALLOC;
     }
@@ -867,12 +884,8 @@ void ry_gl_blend_func(GLenum sfactor, GLenum dfactor) {
     glBlendFunc(sfactor, dfactor);
 }
 
-void ry_gl_clear_color(
-        GLfloat red,
-        GLfloat green,
-        GLfloat blue,
-        GLfloat alpha) {
-    glClearColor(red, green, blue, alpha);
+void ry_gl_clear_color(vec4f color) {
+    glClearColor(color.r, color.g, color.b, color.a);
 }
 
 void ry_gl_clear(GLbitfield mask) {
@@ -928,12 +941,17 @@ char *ry_err_string(RY_Rendy *ry) {
     return "Unknown error";
 }
 
+int ry_error(RY_Rendy *ry) {
+    return ry->err;
+}
+
 // ### Internal functions ###
 
 void ry__draw_layer(
         RY_Rendy *ry,
-        RY_Layer *layer) {
+        uint32 layer_index) {
 
+    RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_DrawCommands *commands = &layer->draw_commands;
     RY_Target *target = &layer->target;
 
@@ -952,22 +970,24 @@ void ry__draw_layer(
     target->vbo_bytes = layer->vertex_buffer.vertices_bytes;
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target->ebo);
     for(uint32 cmd_index = 0;
         cmd_index < layer->draw_commands.count;
         ++cmd_index) {
 
         RY_DrawCommand *cmd = &commands->elements[cmd_index];
 
+        printf("index: %d\n", cmd->indices_data_bytes);
+
         // Setting the indices data into the EBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target->ebo);
         glBufferSubData(
                 GL_ELEMENT_ARRAY_BUFFER,
                 target->ebo_bytes,
                 cmd->indices_data_bytes,
                 cmd->indices_data_start);
         target->ebo_bytes += cmd->indices_data_bytes;
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glUseProgram(layer->program);
 
@@ -982,16 +1002,22 @@ void ry__draw_layer(
         // glBindTexture(GL_TEXTURE_2D, t->id);
         // glBindTexture(GL_TEXTURE_2D, 0);
     }
+    printf("draw call...\n");
     glDrawElements(
             GL_TRIANGLES,
             number_of_indices,
-            GL_UNSIGNED_BYTE,
+            GL_UNSIGNED_INT,
             NULL);
+    printf("draw call done\n");
 
     glBindVertexArray(0);
 
     target->vbo_bytes = 0;
     target->ebo_bytes = 0;
+
+    layer->draw_commands.count = 0;
+    layer->vertex_buffer.vertices_bytes = 0;
+    layer->index_buffer.indices_bytes = 0;
 
     ry->err = RY_ERR_NONE;
     return;

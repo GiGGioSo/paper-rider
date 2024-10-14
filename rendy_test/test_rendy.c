@@ -8,10 +8,12 @@
 #include "../src/pr_rendy.h"
 
 GLFWwindow *glfw_win;
+float delta_time;
+uint64 fps_counter;
+
+RY_Rendy *ry;
 
 int main(void) {
-    printf("Hello!\n");
-
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -37,5 +39,91 @@ int main(void) {
         return 1;
     }
 
+    // Init rendy
+    ry = ry_init();
+    if (ry == NULL) {
+        fprintf(stderr, "Could not initialize Rendy!\n");
+        glfwTerminate();
+        return 1;
+    }
+
+    uint32 vertex_info[] = {
+        GL_FLOAT, sizeof(float), 2, // position
+        GL_FLOAT, sizeof(float), 4, // color
+    };
+    uint32 max_vertex_number = 5;
+
+    // Create a target VAO
+    RY_Target target = ry_create_target(ry, vertex_info, 6, max_vertex_number);
+    if (ry_error(ry)) {
+        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        return ry_error(ry);
+    }
+
+    // Create a shader program
+    RY_ShaderProgram program = ry_shader_create_program(
+            ry,
+            "shaders/default.vs",
+            "shaders/default.fs");
+    if (ry_error(ry)) {
+        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        return ry_error(ry);
+    }
+
+    // Create rendering layer
+    uint32 layer_index = ry_register_layer(ry, 1, program, NULL, target, 0);
+    if (ry_error(ry)) {
+        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        return ry_error(ry);
+    }
+
+    float this_frame = 0.f;
+    float last_frame = 0.f;
+    float time_from_last_fps_update = 0.f;
+
+    float vertices[] = {
+        0.f, -0.5f, 1.f, 0.f, 0.f, 1.f,
+        -0.5f, 0.5f, 1.f, 0.f, 0.f, 1.f,
+        0.5f, 0.5f, 1.f, 0.f, 0.f, 1.f
+    };
+
+    uint32 indices[] = {
+        0, 1, 2
+    };
+
+    while (!glfwWindowShouldClose(glfw_win)) {
+        this_frame = (float)glfwGetTime();
+        delta_time = this_frame - last_frame;
+        last_frame = this_frame;
+
+        fps_counter++;
+        time_from_last_fps_update += delta_time;
+        if (time_from_last_fps_update > 1.f) {
+            printf("FPS: %lu\n", fps_counter);
+            fps_counter = 0;
+            time_from_last_fps_update -= 1.f;
+        }
+
+        ry_gl_clear_color(make_vec4f(0.5f, 0.2f, 0.2f, 1.0f));
+        ry_gl_clear(GL_COLOR_BUFFER_BIT);
+
+        ry_push_polygon(
+                ry,
+                layer_index, 5,
+                (void *) vertices, 3,
+                indices, 3
+                );
+
+        printf("pushed on layer: %d\n", layer_index);
+
+        ry__draw_layer(ry, layer_index);
+
+        printf("drawn\n");
+
+        glfwSwapBuffers(glfw_win);
+        glfwPollEvents();
+    }
+
+    glfwTerminate();
     return 0;
 }

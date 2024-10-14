@@ -30,7 +30,7 @@ LIBS="-lglfw -ldl -lpthread -lm"
 
 EXE="./test_rendy"
 
-SRCS_FILES="test_rendy.c ../include/"
+SRCS_FILES="test_rendy.c ../src/glad.c stb_image.c stb_truetype.c"
 
 echo "Compiling test_rendy..."
 

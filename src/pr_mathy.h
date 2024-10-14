@@ -66,6 +66,17 @@ typedef struct mat4f {
     };
 } mat4f;
 
+vec4f make_vec4f(float x, float y, float z, float w) {
+    vec4f result;
+
+    result.x = x;
+    result.y = y;
+    result.z = z;
+    result.w = w;
+
+    return result;
+}
+
 vec4f mat4f_x_vec4f(mat4f m, vec4f v) {
     vec4f result = {};
 
