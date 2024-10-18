@@ -62,6 +62,8 @@
 
 #define RY_RETURN_DEALLOC do { goto defer_dealloc; } while(0)
 
+#define RY_PRINT_INT(x) printf(#x": %d\n", x)
+
 /*
  * #######################
  * ### DATA STRUCTURES ###
@@ -463,7 +465,7 @@ RY_ArrayTexture ry_create_array_texture(
             if (image_data) {
                 new_image->data = image_data;
             } else {
-                printf("[ERROR] Failed to load image: %s\n", new_image->path);
+                fprintf(stderr, "[ERROR] Failed to load image: %s\n", new_image->path);
                 ry->err = RY_ERR_IO_COULD_NOT_READ;
                 RY_RETURN_DEALLOC;
             }
@@ -476,7 +478,7 @@ RY_ArrayTexture ry_create_array_texture(
         glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
 
         if (max_width > max_texture_size || max_height > max_texture_size) {
-            printf("[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
+            fprintf(stderr, "[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
                     ((max_width > max_height) ? max_width : max_height),
                     max_texture_size);
             ry->err = RY_ERR_TEXTURE_SIZE;
@@ -484,7 +486,7 @@ RY_ArrayTexture ry_create_array_texture(
         }
 
         if (images.count > max_array_texture_layers) {
-            printf("[ERROR] Failed to create array texture: number of textures (%u) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
+            fprintf(stderr, "[ERROR] Failed to create array texture: number of textures (%u) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
                     images.count,
                     max_array_texture_layers);
             ry->err = RY_ERR_TEXTURE_LAYER;
@@ -667,6 +669,7 @@ void ry_push_polygon(
     // offset indices based on already present vertices
     uint32 index_offset =
         layer->vertex_buffer.vertices_bytes / target->vertex_size;
+    printf("index offset: %d\n", index_offset);
     for(uint32 index_index = 0;
         index_index < indices_number;
         ++index_index) {
@@ -677,7 +680,8 @@ void ry_push_polygon(
 
     cmd.sort_key = in_layer_sort;
 
-    cmd.vertices_data_bytes = vertices_number * sizeof(*vertices);
+    cmd.vertices_data_bytes = vertices_number * target->vertex_size;
+    printf("vertices bytes: %d\n", cmd.vertices_data_bytes);
     cmd.vertices_data_start =
         ry__push_vertex_data_to_buffer(
                 ry,
@@ -686,7 +690,8 @@ void ry_push_polygon(
                 cmd.vertices_data_bytes);
     if (ry->err) return;
 
-    cmd.indices_data_bytes = indices_number * sizeof(*indices);
+    cmd.indices_data_bytes = indices_number * target->index_size;
+    printf("indices bytes: %d\n", cmd.indices_data_bytes);
     cmd.indices_data_start =
         ry__push_index_data_to_buffer(
                 ry,
@@ -790,7 +795,7 @@ RY_ShaderProgram ry_shader_create_program(
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if(!success) {
         glGetShaderInfoLog(vertex, 512, NULL, err_log);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
+        fprintf(stderr, "ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
                 vertex_shader_path, err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
         RY_RETURN_DEALLOC;
@@ -804,7 +809,7 @@ RY_ShaderProgram ry_shader_create_program(
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if(!success) {
         glGetShaderInfoLog(fragment, sizeof(err_log), NULL, err_log);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED (%s)\n%s\n",
+        fprintf(stderr, "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED (%s)\n%s\n",
                 fragment_shader_path, err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
         RY_RETURN_DEALLOC;
@@ -819,7 +824,7 @@ RY_ShaderProgram ry_shader_create_program(
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if(!success) {
         glGetProgramInfoLog(program, sizeof(err_log), NULL, err_log);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED %s\n", err_log);
+        fprintf(stderr, "ERROR::SHADER::PROGRAM::LINKING_FAILED %s\n", err_log);
         ry->err = RY_ERR_SHADER_COULD_NOT_LINK;
         RY_RETURN_DEALLOC;
     }
@@ -977,7 +982,8 @@ void ry__draw_layer(
 
         RY_DrawCommand *cmd = &commands->elements[cmd_index];
 
-        printf("index: %d\n", cmd->indices_data_bytes);
+        RY_PRINT_INT(target->ebo_bytes);
+        // printf("target->ebo_bytes: %d\n", cmd->indices_data_bytes);
 
         // Setting the indices data into the EBO
         glBufferSubData(
@@ -986,6 +992,8 @@ void ry__draw_layer(
                 cmd->indices_data_bytes,
                 cmd->indices_data_start);
         target->ebo_bytes += cmd->indices_data_bytes;
+
+        RY_PRINT_INT(target->ebo_bytes);
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -1002,7 +1010,7 @@ void ry__draw_layer(
         // glBindTexture(GL_TEXTURE_2D, t->id);
         // glBindTexture(GL_TEXTURE_2D, 0);
     }
-    printf("draw call...\n");
+    printf("draw calling on %d indices...\n", number_of_indices);
     glDrawElements(
             GL_TRIANGLES,
             number_of_indices,
