@@ -25,14 +25,14 @@
 //     [x] set clear color and clear
 //     [x] set and modify viewport
 //
-// [ ] Fix up polygon pushing / cmd sorting / buffers population
-//     [ ] vertex buffer MUST NOT be sorted inside of the VBO
+// [/] Tests!! please compile
+// [/] Fix up polygon pushing / cmd sorting / buffers population
+//     [x] vertex buffer MUST NOT be sorted inside of the VBO
 //          because the EBO uses the unsorted indices
 //     [ ] At this point, vertex buffer will be copied as is
 //          inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
 //          (we actually just need to sort the indices, not the vertices)
 // [ ] Single function call to draw all the layers
-// [ ] Tests!! please compile
 
 // Custom z layering
 
@@ -62,7 +62,7 @@
 
 #define RY_RETURN_DEALLOC do { goto defer_dealloc; } while(0)
 
-#define RY_PRINT_INT(x) printf(#x": %d\n", x)
+#define RY_PRINT(x, fmt) printf(#x": "fmt"\n", (x))
 
 /*
  * #######################
@@ -360,7 +360,6 @@ RY_Target ry_create_target(
     // TODO(gio): you sure about GL_DYNAMIC_DRAW ?
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, target.ebo_capacity, NULL, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, target.vbo);
     // set vertex attributes
     uint64 current_info_offset = 0;
     for(uint32 vertex_info_index = 0;
@@ -383,8 +382,6 @@ RY_Target ry_create_target(
         current_info_offset += type_bytes * type_repetitions;
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     ry->err = RY_ERR_NONE;
@@ -669,7 +666,6 @@ void ry_push_polygon(
     // offset indices based on already present vertices
     uint32 index_offset =
         layer->vertex_buffer.vertices_bytes / target->vertex_size;
-    printf("index offset: %d\n", index_offset);
     for(uint32 index_index = 0;
         index_index < indices_number;
         ++index_index) {
@@ -681,7 +677,6 @@ void ry_push_polygon(
     cmd.sort_key = in_layer_sort;
 
     cmd.vertices_data_bytes = vertices_number * target->vertex_size;
-    printf("vertices bytes: %d\n", cmd.vertices_data_bytes);
     cmd.vertices_data_start =
         ry__push_vertex_data_to_buffer(
                 ry,
@@ -691,7 +686,6 @@ void ry_push_polygon(
     if (ry->err) return;
 
     cmd.indices_data_bytes = indices_number * target->index_size;
-    printf("indices bytes: %d\n", cmd.indices_data_bytes);
     cmd.indices_data_start =
         ry__push_index_data_to_buffer(
                 ry,
@@ -966,24 +960,18 @@ void ry__draw_layer(
     // TODO(gio): the vertex buffer is copied AS IS inside of
     //             the VBO, does the vertex buffer even
     //             need to exist for any possible context?
-    glBindBuffer(GL_ARRAY_BUFFER, target->vbo);
     glBufferSubData(
             GL_ARRAY_BUFFER,
             0,
             layer->vertex_buffer.vertices_bytes,
             layer->vertex_buffer.vertices_data);
     target->vbo_bytes = layer->vertex_buffer.vertices_bytes;
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target->ebo);
     for(uint32 cmd_index = 0;
         cmd_index < layer->draw_commands.count;
         ++cmd_index) {
 
         RY_DrawCommand *cmd = &commands->elements[cmd_index];
-
-        RY_PRINT_INT(target->ebo_bytes);
-        // printf("target->ebo_bytes: %d\n", cmd->indices_data_bytes);
 
         // Setting the indices data into the EBO
         glBufferSubData(
@@ -992,10 +980,7 @@ void ry__draw_layer(
                 cmd->indices_data_bytes,
                 cmd->indices_data_start);
         target->ebo_bytes += cmd->indices_data_bytes;
-
-        RY_PRINT_INT(target->ebo_bytes);
     }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glUseProgram(layer->program);
 
@@ -1010,13 +995,11 @@ void ry__draw_layer(
         // glBindTexture(GL_TEXTURE_2D, t->id);
         // glBindTexture(GL_TEXTURE_2D, 0);
     }
-    printf("draw calling on %d indices...\n", number_of_indices);
     glDrawElements(
             GL_TRIANGLES,
             number_of_indices,
             GL_UNSIGNED_INT,
             NULL);
-    printf("draw call done\n");
 
     glBindVertexArray(0);
 

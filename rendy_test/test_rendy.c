@@ -114,11 +114,7 @@ int main(void) {
                 indices, 3
                 );
 
-        printf("pushed on layer: %d\n", layer_index);
-
         ry__draw_layer(ry, layer_index);
-
-        printf("drawn\n");
 
         glfwSwapBuffers(glfw_win);
         glfwPollEvents();
