@@ -51,7 +51,7 @@ int main(void) {
         GL_FLOAT, sizeof(float), 2, // position
         GL_FLOAT, sizeof(float), 4, // color
     };
-    uint32 max_vertex_number = 5;
+    uint32 max_vertex_number = 6;
 
     // Create a target VAO
     RY_Target target = ry_create_target(ry, vertex_info, 6, max_vertex_number);
@@ -82,13 +82,15 @@ int main(void) {
     float time_from_last_fps_update = 0.f;
 
     float vertices[] = {
-        0.f, -0.5f, 1.f, 0.f, 0.f, 1.f,
-        -0.5f, 0.5f, 1.f, 0.f, 0.f, 1.f,
-        0.5f, 0.5f, 1.f, 0.f, 0.f, 1.f
+        -0.5f, -0.5f, 1.f, 0.f, 0.f, 1.f,
+        -0.5f, 0.5f, 0.f, 1.f, 0.f, 1.f,
+        0.5f, 0.5f, 0.f, 0.f, 1.f, 1.f,
+        0.5f, -0.5f, 0.f, 0.f, 0.f, 1.f
     };
 
     uint32 indices[] = {
-        0, 1, 2
+        0, 1, 2,
+        0, 2, 3
     };
 
     while (!glfwWindowShouldClose(glfw_win)) {
@@ -109,10 +111,14 @@ int main(void) {
 
         ry_push_polygon(
                 ry,
-                layer_index, 5,
-                (void *) vertices, 3,
-                indices, 3
+                layer_index, 0,
+                (void *) vertices, 4,
+                indices, 6
                 );
+        if (ry_error(ry)) {
+            fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+            break;
+        }
 
         ry__draw_layer(ry, layer_index);
 

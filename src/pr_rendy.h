@@ -25,7 +25,7 @@
 //     [x] set clear color and clear
 //     [x] set and modify viewport
 //
-// [/] Tests!! please compile
+// [x] Tests!! please compile
 // [/] Fix up polygon pushing / cmd sorting / buffers population
 //     [x] vertex buffer MUST NOT be sorted inside of the VBO
 //          because the EBO uses the unsorted indices
@@ -33,6 +33,8 @@
 //          inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
 //          (we actually just need to sort the indices, not the vertices)
 // [ ] Single function call to draw all the layers
+// [ ] Make indices size independent
+//     [ ] adding the offset is shit when you just have a void *
 
 // Custom z layering
 
@@ -681,7 +683,7 @@ void ry_push_polygon(
         ry__push_vertex_data_to_buffer(
                 ry,
                 &layer->vertex_buffer,
-                (void *)vertices,
+                vertices,
                 cmd.vertices_data_bytes);
     if (ry->err) return;
 
@@ -980,11 +982,14 @@ void ry__draw_layer(
                 cmd->indices_data_bytes,
                 cmd->indices_data_start);
         target->ebo_bytes += cmd->indices_data_bytes;
+        RY_PRINT(cmd->indices_data_bytes, "%d");
     }
 
     glUseProgram(layer->program);
 
     uint32 number_of_indices = target->ebo_bytes / target->index_size;
+    RY_PRINT(target->ebo_bytes, "%d");
+    RY_PRINT(number_of_indices, "%d");
 
     if (layer->flags & RY_LAYER_TEXTURED) {
         // TODO(gio): Implement texture array drawing
@@ -1063,7 +1068,7 @@ void *ry__push_vertex_data_to_buffer(
 
     void *result = NULL;
     // The vertex buffer has the size of the target buffer
-    if (vb->vertices_bytes + vertices_bytes >= vb->buffer_bytes) {
+    if (vb->vertices_bytes + vertices_bytes > vb->buffer_bytes) {
         ry->err = RY_ERR_OUT_OF_BUFFER_MEMORY;
         return result;
     }
@@ -1084,7 +1089,7 @@ void *ry__push_index_data_to_buffer(
 
     void *result = NULL;
     // The index buffer has the size of the target buffer
-    if (ib->indices_bytes + indices_bytes >= ib->buffer_bytes) {
+    if (ib->indices_bytes + indices_bytes > ib->buffer_bytes) {
         ry->err = RY_ERR_OUT_OF_BUFFER_MEMORY;
         return result;
     }
