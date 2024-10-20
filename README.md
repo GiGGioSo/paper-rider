@@ -1,3 +1,5 @@
+**ATTENTION**: Heavy rework in progress, hence this README is valid only for the last release, which is _very_ outdated at this point
+
 # PaperRider features
 - 2 basic campaing levels
 - ability to create custom levels
