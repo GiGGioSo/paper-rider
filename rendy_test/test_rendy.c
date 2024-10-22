@@ -4,6 +4,7 @@
 #include "../include/glfw3.h"
 
 #include "../src/pr_mathy.h"
+
 #define RENDY_IMPLEMENTATION
 #include "../src/pr_rendy.h"
 
@@ -51,12 +52,13 @@ int main(void) {
         GL_FLOAT, sizeof(float), 2, // position
         GL_FLOAT, sizeof(float), 4, // color
     };
-    uint32 max_vertex_number = 6;
+    uint32 max_vertex_number = 30;
 
     // Create a target VAO
     RY_Target target = ry_create_target(ry, vertex_info, 6, max_vertex_number);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        glfwTerminate();
         return ry_error(ry);
     }
 
@@ -67,6 +69,7 @@ int main(void) {
             "shaders/default.fs");
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        glfwTerminate();
         return ry_error(ry);
     }
 
@@ -74,6 +77,7 @@ int main(void) {
     uint32 layer_index = ry_register_layer(ry, 1, program, NULL, target, 0);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        glfwTerminate();
         return ry_error(ry);
     }
 
@@ -81,17 +85,42 @@ int main(void) {
     float last_frame = 0.f;
     float time_from_last_fps_update = 0.f;
 
-    float vertices[] = {
+    float vertices1[] = {
         -0.5f, -0.5f, 1.f, 0.f, 0.f, 1.f,
-        -0.5f, 0.5f, 0.f, 1.f, 0.f, 1.f,
+        -0.5f, 0.f, 0.f, 1.f, 0.f, 1.f,
+        0.f, 0.f, 0.f, 0.f, 1.f, 1.f,
+        0.f, -0.5f, 0.f, 0.f, 0.f, 1.f
+    };
+
+    float vertices2[] = {
+        0.f, 0.f, 1.f, 0.f, 0.f, 1.f,
+        0.f, 0.5f, 0.f, 1.f, 0.f, 1.f,
         0.5f, 0.5f, 0.f, 0.f, 1.f, 1.f,
-        0.5f, -0.5f, 0.f, 0.f, 0.f, 1.f
+        0.5f, 0.f, 0.f, 0.f, 0.f, 1.f
     };
 
     uint32 indices[] = {
         0, 1, 2,
         0, 2, 3
     };
+
+    ry_push_polygon(
+            ry,
+            layer_index, 0,
+            (void *) vertices1, 4,
+            indices, 6
+            );
+    ry_push_polygon(
+            ry,
+            layer_index, 0,
+            (void *) vertices2, 4,
+            indices, 6
+            );
+    if (ry_error(ry)) {
+        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        glfwTerminate();
+        return ry_error(ry);
+    }
 
     while (!glfwWindowShouldClose(glfw_win)) {
         this_frame = (float)glfwGetTime();
@@ -109,18 +138,9 @@ int main(void) {
         ry_gl_clear_color(make_vec4f(0.5f, 0.2f, 0.2f, 1.0f));
         ry_gl_clear(GL_COLOR_BUFFER_BIT);
 
-        ry_push_polygon(
-                ry,
-                layer_index, 0,
-                (void *) vertices, 4,
-                indices, 6
-                );
-        if (ry_error(ry)) {
-            fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
-            break;
-        }
 
-        ry__draw_layer(ry, layer_index);
+        ry_draw_layer(ry, layer_index);
+        // ry_reset_layer(ry, layer_index);
 
         glfwSwapBuffers(glfw_win);
         glfwPollEvents();

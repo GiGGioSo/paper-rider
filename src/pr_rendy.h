@@ -121,6 +121,7 @@ typedef enum RY_Err {
     RY_ERR_NOT_IMPLEMENTED,
     RY_ERR_MEMORY_ALLOCATION,
     RY_ERR_OUT_OF_BUFFER_MEMORY,
+    RY_ERR_OUT_OF_INDICES,
     RY_ERR_TEXTURE_SIZE,
     RY_ERR_TEXTURE_LAYER,
     RY_ERR_IO_COULD_NOT_OPEN,
@@ -249,7 +250,7 @@ ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_Ar
  *              - the vertices are in counter clock-wise order
  */
 void
-ry_push_polygon(RY_Rendy *ry, uint32 layer_index, uint64 in_layer_sort, void *vertices, uint32 vertices_number, uint32 *indices, uint32 indices_number);
+ry_push_polygon(RY_Rendy *ry, uint32 layer_index, uint64 in_layer_sort, void *vertices, uint32 vertices_number, void *indices, uint32 indices_number);
 
 // # shaders
 RY_ShaderProgram
@@ -287,7 +288,10 @@ ry_error(RY_Rendy *ry);
 // ### Internal functions ###
 
 void
-ry__draw_layer(RY_Rendy *ry, uint32 layer_index);
+ry_draw_layer(RY_Rendy *ry, uint32 layer_index);
+
+void
+ry_reset_layer(RY_Rendy *ry, uint32 layer_index);
 
 void
 ry__insert_draw_command(RY_Rendy *ry, RY_DrawCommands *commands, RY_DrawCommand cmd);
@@ -641,7 +645,7 @@ void ry_push_polygon(
         uint64 in_layer_sort,
         void *vertices,
         uint32 vertices_number,
-        uint32 *indices,
+        void *indices,
         uint32 indices_number) {
 
     if (vertices == NULL) {
@@ -671,7 +675,50 @@ void ry_push_polygon(
     for(uint32 index_index = 0;
         index_index < indices_number;
         ++index_index) {
-        indices[index_index] += index_offset;
+
+        uint8 *index_start =
+            ((uint8 *)indices) + (index_index * target->index_size);
+        uint64 result = 0;
+
+        // transfer bytes into the result,
+        //  because it can surely contain the data
+        for(int32 byte_index = target->index_size - 1;
+            byte_index >= 0;
+            byte_index--) {
+
+            result = (result << 8) + index_start[byte_index];
+        }
+
+        // check for 64bit overflow
+        if (result > result + index_offset) {
+            ry->err = RY_ERR_OUT_OF_INDICES;
+            return;
+        }
+
+        // increment it
+        result += index_offset;
+
+        // check for index_size overflow if index_size != 8.
+        //  If index_size == 8, then we already check before and
+        //  there is no 64bit (8byte) overflow
+        if (target->index_size != 8) {
+            // this could not be correctly calculated if index_size was 8
+            uint64 overflow_limit = (1l << (target->index_size * 8)) - 1l;
+            if (result > overflow_limit) {
+                ry->err = RY_ERR_OUT_OF_INDICES;
+                return;
+            }
+        }
+
+        // transfer bytes from result to the original array
+        //   this starts from the front, cause shit happens
+        for(uint32 byte_index = 0;
+            byte_index < target->index_size;
+            byte_index--) {
+
+            index_start[byte_index] =
+                (result & (0xff << byte_index)) >> byte_index;
+        }
     }
 
     RY_DrawCommand cmd = {};
@@ -692,7 +739,7 @@ void ry_push_polygon(
         ry__push_index_data_to_buffer(
                 ry,
                 &layer->index_buffer,
-                (void *)indices,
+                indices,
                 cmd.indices_data_bytes);
     if (ry->err) return;
 
@@ -700,6 +747,90 @@ void ry_push_polygon(
     if (ry->err) return;
 
     ry->err = RY_ERR_NONE;
+}
+
+void ry_draw_layer(
+        RY_Rendy *ry,
+        uint32 layer_index) {
+
+    RY_Layer *layer = &ry->layers.elements[layer_index];
+    RY_DrawCommands *commands = &layer->draw_commands;
+    RY_Target *target = &layer->target;
+
+    glBindVertexArray(target->vao);
+
+    // Setting the vertices data into the VBO
+    // TODO(gio): the vertex buffer is copied AS IS inside of
+    //             the VBO, does the vertex buffer even
+    //             need to exist for any possible context?
+    glBufferSubData(
+            GL_ARRAY_BUFFER,
+            0,
+            layer->vertex_buffer.vertices_bytes,
+            layer->vertex_buffer.vertices_data);
+    target->vbo_bytes = layer->vertex_buffer.vertices_bytes;
+
+    for(uint32 cmd_index = 0;
+        cmd_index < layer->draw_commands.count;
+        ++cmd_index) {
+
+        RY_DrawCommand *cmd = &commands->elements[cmd_index];
+
+        // Setting the indices data into the EBO
+        glBufferSubData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                target->ebo_bytes,
+                cmd->indices_data_bytes,
+                cmd->indices_data_start);
+        target->ebo_bytes += cmd->indices_data_bytes;
+        // RY_PRINT(cmd->indices_data_bytes, "%d");
+    }
+
+    glUseProgram(layer->program);
+
+    uint32 number_of_indices = target->ebo_bytes / target->index_size;
+    // RY_PRINT(target->ebo_bytes, "%d");
+    // RY_PRINT(number_of_indices, "%d");
+
+    if (layer->flags & RY_LAYER_TEXTURED) {
+        // TODO(gio): Could this be anything other than 0?
+        ry_shader_set_int32(layer->program, "tex", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, layer->array_texture->id);
+    }
+
+    glDrawElements(
+            GL_TRIANGLES,
+            number_of_indices,
+            GL_UNSIGNED_INT,
+            NULL);
+
+    if (layer->flags & RY_LAYER_TEXTURED) {
+        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    }
+
+    glBindVertexArray(0);
+
+    ry->err = RY_ERR_NONE;
+    return;
+}
+
+void ry_reset_layer(
+        RY_Rendy *ry,
+        uint32 layer_index) {
+
+    RY_Layer *layer = &ry->layers.elements[layer_index];
+    RY_Target *target = &layer->target;
+
+    target->vbo_bytes = 0;
+    target->ebo_bytes = 0;
+
+    layer->draw_commands.count = 0;
+    layer->vertex_buffer.vertices_bytes = 0;
+    layer->index_buffer.indices_bytes = 0;
+
+    ry->err = RY_ERR_NONE;
+    return;
 }
 
 RY_ShaderProgram ry_shader_create_program(
@@ -923,6 +1054,8 @@ char *ry_err_string(RY_Rendy *ry) {
         return "Failed during a memory allocation";
     } else if (ry->err == RY_ERR_OUT_OF_BUFFER_MEMORY) {
         return "Ran out of buffer memory";
+    } else if (ry->err == RY_ERR_OUT_OF_INDICES) {
+        return "Ran out of indices for the index size given";
     } else if (ry->err == RY_ERR_TEXTURE_SIZE) {
         return "TextureArray component size is greater than hardware limit";
     } else if (ry->err == RY_ERR_TEXTURE_LAYER) {
@@ -947,77 +1080,6 @@ int ry_error(RY_Rendy *ry) {
 }
 
 // ### Internal functions ###
-
-void ry__draw_layer(
-        RY_Rendy *ry,
-        uint32 layer_index) {
-
-    RY_Layer *layer = &ry->layers.elements[layer_index];
-    RY_DrawCommands *commands = &layer->draw_commands;
-    RY_Target *target = &layer->target;
-
-    glBindVertexArray(target->vao);
-
-    // Setting the vertices data into the VBO
-    // TODO(gio): the vertex buffer is copied AS IS inside of
-    //             the VBO, does the vertex buffer even
-    //             need to exist for any possible context?
-    glBufferSubData(
-            GL_ARRAY_BUFFER,
-            0,
-            layer->vertex_buffer.vertices_bytes,
-            layer->vertex_buffer.vertices_data);
-    target->vbo_bytes = layer->vertex_buffer.vertices_bytes;
-
-    for(uint32 cmd_index = 0;
-        cmd_index < layer->draw_commands.count;
-        ++cmd_index) {
-
-        RY_DrawCommand *cmd = &commands->elements[cmd_index];
-
-        // Setting the indices data into the EBO
-        glBufferSubData(
-                GL_ELEMENT_ARRAY_BUFFER,
-                target->ebo_bytes,
-                cmd->indices_data_bytes,
-                cmd->indices_data_start);
-        target->ebo_bytes += cmd->indices_data_bytes;
-        RY_PRINT(cmd->indices_data_bytes, "%d");
-    }
-
-    glUseProgram(layer->program);
-
-    uint32 number_of_indices = target->ebo_bytes / target->index_size;
-    RY_PRINT(target->ebo_bytes, "%d");
-    RY_PRINT(number_of_indices, "%d");
-
-    if (layer->flags & RY_LAYER_TEXTURED) {
-        // TODO(gio): Implement texture array drawing
-        ry->err = RY_ERR_NOT_IMPLEMENTED;
-        return;
-        // shaderer_set_int(s, "tex", 0); // something like this
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, t->id);
-        // glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    glDrawElements(
-            GL_TRIANGLES,
-            number_of_indices,
-            GL_UNSIGNED_INT,
-            NULL);
-
-    glBindVertexArray(0);
-
-    target->vbo_bytes = 0;
-    target->ebo_bytes = 0;
-
-    layer->draw_commands.count = 0;
-    layer->vertex_buffer.vertices_bytes = 0;
-    layer->index_buffer.indices_bytes = 0;
-
-    ry->err = RY_ERR_NONE;
-    return;
-}
 
 void ry__insert_draw_command(
         RY_Rendy *ry,
