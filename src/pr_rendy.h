@@ -33,8 +33,11 @@
 //          inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
 //          (we actually just need to sort the indices, not the vertices)
 // [ ] Single function call to draw all the layers
-// [ ] Make indices size independent
-//     [ ] adding the offset is shit when you just have a void *
+// [x] Make indices of generic byte size (max is uint32)
+//     [ ] maybe this can be hardcoded to use uint8, uint16 or uint32
+//          depending on index_size.
+//         No reason to support an arbitrary index_size if then OpenGL
+//          forces you to only use on of them
 
 // Custom z layering
 
@@ -229,7 +232,7 @@ ry_init();
  *      - type repetitions -> how many adjacent values of that type
  */
 RY_Target
-ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length, uint32 max_vertices_number);
+ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length, uint32 index_size, uint32 max_vertices_number);
 
 RY_ArrayTexture
 ry_create_array_texture(RY_Rendy *ry, const char **paths, uint32 paths_length);
@@ -302,6 +305,9 @@ ry__push_vertex_data_to_buffer(RY_Rendy *ry, RY_VertexBuffer *vb, void *vertices
 void *
 ry__push_index_data_to_buffer(RY_Rendy *ry, RY_IndexBuffer *ib, void *indices, uint32 indices_bytes);
 
+GLenum
+ry__gl_type_from_index_size(uint32 index_size);
+
 /*
  * #######################
  * ### IMPLEMENTATIONS ###
@@ -323,11 +329,16 @@ RY_Target ry_create_target(
         RY_Rendy *ry,
         uint32 *vertex_info,
         uint32 vertex_info_length,
+        uint32 index_size,
         uint32 max_vertices_number) {
     RY_Target target = {};
 
     // vertex info should come in tris
-    if (ry == NULL || vertex_info == NULL || vertex_info_length % 3 != 0) {
+    if (ry == NULL ||
+        vertex_info == NULL ||
+        vertex_info_length % 3 != 0 ||
+        (index_size != 1 && index_size != 2 && index_size != 4)) {
+
         ry->err = RY_ERR_INVALID_ARGUMENTS;
         return target;
     }
@@ -343,7 +354,7 @@ RY_Target ry_create_target(
         vertex_size += type_bytes * type_repetitions;
     }
     target.vertex_size = vertex_size;
-    target.index_size = sizeof(uint32);
+    target.index_size = index_size;
 
     glGenVertexArrays(1, &target.vao);
 
@@ -802,7 +813,7 @@ void ry_draw_layer(
     glDrawElements(
             GL_TRIANGLES,
             number_of_indices,
-            GL_UNSIGNED_INT,
+            ry__gl_type_from_index_size(target->index_size),
             NULL);
 
     if (layer->flags & RY_LAYER_TEXTURED) {
@@ -1163,6 +1174,18 @@ void *ry__push_index_data_to_buffer(
     ry->err = RY_ERR_NONE;
     return result;
 }
+
+GLenum ry__gl_type_from_index_size(uint32 index_size) {
+    if (index_size == 1) {
+        return GL_UNSIGNED_BYTE;
+    } else if (index_size == 2) {
+        return GL_UNSIGNED_SHORT;
+    } else if (index_size == 4) {
+        return GL_UNSIGNED_INT;
+    }
+    return GL_UNSIGNED_INT; // default, but should never happen
+}
+
 
 #endif // RENDY_IMPLEMENTATION
 

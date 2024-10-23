@@ -55,7 +55,12 @@ int main(void) {
     uint32 max_vertex_number = 30;
 
     // Create a target VAO
-    RY_Target target = ry_create_target(ry, vertex_info, 6, max_vertex_number);
+    RY_Target target =
+        ry_create_target(
+                ry,
+                vertex_info, 6,
+                sizeof(uint16),
+                max_vertex_number);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
         glfwTerminate();
@@ -63,10 +68,11 @@ int main(void) {
     }
 
     // Create a shader program
-    RY_ShaderProgram program = ry_shader_create_program(
-            ry,
-            "shaders/default.vs",
-            "shaders/default.fs");
+    RY_ShaderProgram program =
+        ry_shader_create_program(
+                ry,
+                "shaders/default.vs",
+                "shaders/default.fs");
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
         glfwTerminate();
@@ -99,7 +105,7 @@ int main(void) {
         0.5f, 0.f, 0.f, 0.f, 0.f, 1.f
     };
 
-    uint32 indices[] = {
+    uint16 indices[] = {
         0, 1, 2,
         0, 2, 3
     };
