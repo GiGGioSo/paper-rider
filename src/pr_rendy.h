@@ -13,6 +13,17 @@
 #include "../include/stb_image.h"
 
 // TODO(gio):
+// [ ] Single function call to draw all the layers
+// 
+// XXX(gio):
+// [ ] At this point, vertex buffer will be copied as is
+//      inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
+//      (we actually just need to sort the indices, not the vertices)
+// [ ] maybe this can be hardcoded to use uint8, uint16 or uint32
+//      depending on index_size.
+//     No reason to support an arbitrary index_size if then OpenGL
+//      forces you to only use on of them
+//
 // [x] Layer registration (creation)
 // [x] Function to initialize the context
 // [x] Target creation
@@ -26,18 +37,10 @@
 //     [x] set and modify viewport
 //
 // [x] Tests!! please compile
-// [/] Fix up polygon pushing / cmd sorting / buffers population
+// [x] Fix up polygon pushing / cmd sorting / buffers population
 //     [x] vertex buffer MUST NOT be sorted inside of the VBO
 //          because the EBO uses the unsorted indices
-//     [ ] At this point, vertex buffer will be copied as is
-//          inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
-//          (we actually just need to sort the indices, not the vertices)
-// [ ] Single function call to draw all the layers
 // [x] Make indices of generic byte size (max is uint32)
-//     [ ] maybe this can be hardcoded to use uint8, uint16 or uint32
-//          depending on index_size.
-//         No reason to support an arbitrary index_size if then OpenGL
-//          forces you to only use on of them
 
 // Custom z layering
 
@@ -295,6 +298,12 @@ ry_draw_layer(RY_Rendy *ry, uint32 layer_index);
 
 void
 ry_reset_layer(RY_Rendy *ry, uint32 layer_index);
+
+void
+ry_draw_all_layers(RY_Rendy *ry);
+
+void
+ry_reset_all_layers(RY_Rendy *ry);
 
 void
 ry__insert_draw_command(RY_Rendy *ry, RY_DrawCommands *commands, RY_DrawCommand cmd);
@@ -839,6 +848,32 @@ void ry_reset_layer(
     layer->draw_commands.count = 0;
     layer->vertex_buffer.vertices_bytes = 0;
     layer->index_buffer.indices_bytes = 0;
+
+    ry->err = RY_ERR_NONE;
+    return;
+}
+
+void ry_draw_all_layers(RY_Rendy *ry) {
+    for(uint32 layer_index = 0;
+        layer_index < ry->layers.count;
+        ++layer_index) {
+
+        ry_draw_layer(ry, layer_index);
+        if (ry->err) return;
+    }
+
+    ry->err = RY_ERR_NONE;
+    return;
+}
+
+void ry_reset_all_layers(RY_Rendy *ry) {
+    for(uint32 layer_index = 0;
+        layer_index < ry->layers.count;
+        ++layer_index) {
+
+        ry_reset_layer(ry, layer_index);
+        if (ry->err) return;
+    }
 
     ry->err = RY_ERR_NONE;
     return;

@@ -110,23 +110,28 @@ int main(void) {
         0, 2, 3
     };
 
-    ry_push_polygon(
-            ry,
-            layer_index, 0,
-            (void *) vertices1, 4,
-            indices, 6
-            );
-    ry_push_polygon(
-            ry,
-            layer_index, 0,
-            (void *) vertices2, 4,
-            indices, 6
-            );
-    if (ry_error(ry)) {
-        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
-        glfwTerminate();
-        return ry_error(ry);
-    }
+    // ry_push_polygon(
+    //         ry,
+    //         layer_index, 0,
+    //         (void *) vertices1, 4,
+    //         indices, 6
+    //         );
+    // if (ry_error(ry)) {
+    //     fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+    //     glfwTerminate();
+    //     return ry_error(ry);
+    // }
+    // ry_push_polygon(
+    //         ry,
+    //         layer_index, 0,
+    //         (void *) vertices2, 4,
+    //         indices, 6
+    //         );
+    // if (ry_error(ry)) {
+    //     fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+    //     glfwTerminate();
+    //     return ry_error(ry);
+    // }
 
     while (!glfwWindowShouldClose(glfw_win)) {
         this_frame = (float)glfwGetTime();
@@ -144,9 +149,31 @@ int main(void) {
         ry_gl_clear_color(make_vec4f(0.5f, 0.2f, 0.2f, 1.0f));
         ry_gl_clear(GL_COLOR_BUFFER_BIT);
 
+        ry_push_polygon(
+                ry,
+                layer_index, 0,
+                (void *) vertices1, 4,
+                indices, 6
+                );
+        if (ry_error(ry)) {
+            fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+            glfwTerminate();
+            return ry_error(ry);
+        }
+        ry_push_polygon(
+                ry,
+                layer_index, 0,
+                (void *) vertices2, 4,
+                indices, 6
+                );
+        if (ry_error(ry)) {
+            fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+            glfwTerminate();
+            return ry_error(ry);
+        }
 
-        ry_draw_layer(ry, layer_index);
-        // ry_reset_layer(ry, layer_index);
+        ry_draw_all_layers(ry);
+        ry_reset_all_layers(ry);
 
         glfwSwapBuffers(glfw_win);
         glfwPollEvents();
