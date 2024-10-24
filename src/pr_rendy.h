@@ -773,6 +773,11 @@ void ry_draw_layer(
         RY_Rendy *ry,
         uint32 layer_index) {
 
+    if (layer_index >= ry->layers.count) {
+        ry->err = RY_ERR_INVALID_ARGUMENTS;
+        return;
+    }
+
     RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_DrawCommands *commands = &layer->draw_commands;
     RY_Target *target = &layer->target;
@@ -838,6 +843,11 @@ void ry_draw_layer(
 void ry_reset_layer(
         RY_Rendy *ry,
         uint32 layer_index) {
+
+    if (layer_index >= ry->layers.count) {
+        ry->err = RY_ERR_INVALID_ARGUMENTS;
+        return;
+    }
 
     RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_Target *target = &layer->target;
