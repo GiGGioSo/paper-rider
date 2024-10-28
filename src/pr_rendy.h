@@ -7,14 +7,20 @@
 ////////////////////////////////////
 ///
 
-#include "string.h"
+#include <string.h>
 
 #include "pr_mathy.h"
 #include "../include/stb_image.h"
 
 // TODO(gio):
-// [ ] Single function call to draw all the layers
+// [ ] customizable error management
+//     [ ] returns and sets error
+//     [ ] asserts every check
+//     [ ] ignores every check
 // 
+// FIXME(gio):
+// [ ] rendering flickers when pushing polygon/resetting the layer each frame
+//
 // XXX(gio):
 // [ ] At this point, vertex buffer will be copied as is
 //      inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
@@ -24,6 +30,9 @@
 //     No reason to support an arbitrary index_size if then OpenGL
 //      forces you to only use on of them
 //
+// DONE(gio):
+// [x] Single function call to draw all the layers
+// [x] Single function call to reset all the layers
 // [x] Layer registration (creation)
 // [x] Function to initialize the context
 // [x] Target creation
@@ -35,8 +44,6 @@
 //     [x] set blend function
 //     [x] set clear color and clear
 //     [x] set and modify viewport
-//
-// [x] Tests!! please compile
 // [x] Fix up polygon pushing / cmd sorting / buffers population
 //     [x] vertex buffer MUST NOT be sorted inside of the VBO
 //          because the EBO uses the unsorted indices
@@ -71,6 +78,25 @@
 #define RY_RETURN_DEALLOC do { goto defer_dealloc; } while(0)
 
 #define RY_PRINT(x, fmt) printf(#x": "fmt"\n", (x))
+
+#ifdef RENDY_ASSERT_ERRORS
+#   ifndef RENDY_ASSERT
+#       include <assert.h>
+#       define RENDY_ASSERT assert
+#   endif
+#   define RY_CHECK(check, err_code, ret) RENDY_ASSERT(!(check))
+#else
+#   ifdef RENDY_IGNORE_ERRORS
+#      define RY_CHECK(check, err_code, ret) (void)0
+#   else // default
+#      define RY_CHECK(check, err_code, ret) do {\
+           if ((check)) {\
+               ry->err = (err_code);\
+               ret;\
+           }\
+       } while(0)
+#   endif
+#endif
 
 /*
  * #######################
@@ -343,14 +369,11 @@ RY_Target ry_create_target(
     RY_Target target = {};
 
     // vertex info should come in tris
-    if (ry == NULL ||
-        vertex_info == NULL ||
-        vertex_info_length % 3 != 0 ||
-        (index_size != 1 && index_size != 2 && index_size != 4)) {
-
-        ry->err = RY_ERR_INVALID_ARGUMENTS;
-        return target;
-    }
+    RY_CHECK((vertex_info == NULL ||
+                vertex_info_length % 3 != 0 ||
+                (index_size != 1 && index_size != 2 && index_size != 4)),
+            RY_ERR_INVALID_ARGUMENTS,
+            return target);
 
     // calculate vertex size in bytes
     uint32 vertex_size = 0;
@@ -422,19 +445,18 @@ RY_ArrayTexture ry_create_array_texture(
     RY_DataImages images = {};
 
     {
-        if (paths == NULL) {
-            ry->err = RY_ERR_INVALID_ARGUMENTS;
-            RY_RETURN_DEALLOC;
-        }
+        RY_CHECK(paths == NULL,
+                RY_ERR_INVALID_ARGUMENTS,
+                RY_RETURN_DEALLOC);
         stbi_set_flip_vertically_on_load(1);
 
         at.elements_len = paths_length;
         at.elements = (RY_TextureElement *)
             malloc(sizeof(RY_TextureElement) * at.elements_len);
-        if (at.elements == NULL) {
-            ry->err = RY_ERR_MEMORY_ALLOCATION;
-            RY_RETURN_DEALLOC;
-        }
+
+        RY_CHECK(at.elements == NULL,
+                RY_ERR_MEMORY_ALLOCATION,
+                RY_RETURN_DEALLOC);
 
         for(uint32 element_index = 0;
             element_index < at.elements_len;
@@ -465,10 +487,9 @@ RY_ArrayTexture ry_create_array_texture(
                 images.capacity = images.capacity * 2 + 1;
                 images.items = realloc(images.items,
                                        images.capacity * sizeof(RY_DataImage));
-                if (images.items == NULL) {
-                    ry->err = RY_ERR_MEMORY_ALLOCATION;
-                    RY_RETURN_DEALLOC;
-                }
+                RY_CHECK(images.items == NULL,
+                        RY_ERR_MEMORY_ALLOCATION,
+                        RY_RETURN_DEALLOC);
             }
             
             RY_DataImage *new_image = &images.items[images.count++];
@@ -478,20 +499,19 @@ RY_ArrayTexture ry_create_array_texture(
                     new_image->path,
                     &new_image->width, &new_image->height,
                     &new_image->nr_channels, 0);
-            printf("Loading image (%s) data from file\n",
-                    at.elements[image_index].filename);
+
+            RY_CHECK(image_data == NULL,
+                    RY_ERR_IO_COULD_NOT_READ,
+                    RY_RETURN_DEALLOC);
+
+            // printf("Loading image (%s) data from file\n",
+            //         at.elements[image_index].filename);
 
             if (new_image->width > max_width) max_width = new_image->width;
             if (new_image->height > max_height) max_height = new_image->height;
 
             // Generate texture
-            if (image_data) {
-                new_image->data = image_data;
-            } else {
-                fprintf(stderr, "[ERROR] Failed to load image: %s\n", new_image->path);
-                ry->err = RY_ERR_IO_COULD_NOT_READ;
-                RY_RETURN_DEALLOC;
-            }
+            new_image->data = image_data;
         }
 
         // Get GPU limits
@@ -500,21 +520,13 @@ RY_ArrayTexture ry_create_array_texture(
         int32 max_array_texture_layers;
         glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
 
-        if (max_width > max_texture_size || max_height > max_texture_size) {
-            fprintf(stderr, "[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
-                    ((max_width > max_height) ? max_width : max_height),
-                    max_texture_size);
-            ry->err = RY_ERR_TEXTURE_SIZE;
-            RY_RETURN_DEALLOC;
-        }
+        RY_CHECK((max_width > max_texture_size || max_height > max_texture_size),
+                RY_ERR_TEXTURE_SIZE,
+                RY_RETURN_DEALLOC);
 
-        if (images.count > max_array_texture_layers) {
-            fprintf(stderr, "[ERROR] Failed to create array texture: number of textures (%u) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)",
-                    images.count,
-                    max_array_texture_layers);
-            ry->err = RY_ERR_TEXTURE_LAYER;
-            RY_RETURN_DEALLOC;
-        }
+        RY_CHECK(images.count > max_array_texture_layers,
+                RY_ERR_TEXTURE_LAYER,
+                RY_RETURN_DEALLOC);
 
         glGenTextures(1, &at.id);
         glBindTexture(GL_TEXTURE_2D_ARRAY, at.id);
@@ -599,10 +611,9 @@ uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program
         layers->elements = realloc(
                 layers->elements,
                 layers->size * sizeof(RY_Layer));
-        if (!layers->elements) {
-            ry->err = RY_ERR_MEMORY_ALLOCATION;
-            return layer_index;
-        }
+        RY_CHECK(layers->elements == NULL,
+                RY_ERR_MEMORY_ALLOCATION,
+                return layer_index);
     }
 
     // find in order position
@@ -641,19 +652,17 @@ uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program
     layer->index_buffer.buffer_bytes = target.ebo_capacity;
     layer->index_buffer.indices_data =
         (uint32 *) malloc(layer->index_buffer.buffer_bytes);
-    if (layer->index_buffer.indices_data == NULL) {
-        ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return layer_index;
-    }
+    RY_CHECK(layer->index_buffer.indices_data == NULL,
+            RY_ERR_MEMORY_ALLOCATION,
+            return layer_index);
 
     layer->vertex_buffer.vertices_bytes = 0;
     layer->vertex_buffer.buffer_bytes = target.vbo_capacity;
     layer->vertex_buffer.vertices_data =
         (uint32 *) malloc(layer->vertex_buffer.buffer_bytes);
-    if (layer->vertex_buffer.vertices_data == NULL) {
-        ry->err = RY_ERR_MEMORY_ALLOCATION;
-        return layer_index;
-    }
+    RY_CHECK(layer->vertex_buffer.vertices_data == NULL,
+            ry->err = RY_ERR_MEMORY_ALLOCATION,
+            return layer_index);
 
     ry->err = RY_ERR_NONE;
     return layer_index;
@@ -668,15 +677,13 @@ void ry_push_polygon(
         void *indices,
         uint32 indices_number) {
 
-    if (vertices == NULL) {
-        ry->err = RY_ERR_INVALID_ARGUMENTS;
-        return;
-    }
+    RY_CHECK(vertices == NULL,
+            RY_ERR_INVALID_ARGUMENTS,
+            return);
 
-    if (layer_index >= ry->layers.count) {
-        ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS;
-        return;
-    }
+    RY_CHECK(layer_index >= ry->layers.count,
+            ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS,
+            return);
 
     RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_Target *target = &layer->target;
@@ -710,10 +717,9 @@ void ry_push_polygon(
         }
 
         // check for 64bit overflow
-        if (result > result + index_offset) {
-            ry->err = RY_ERR_OUT_OF_INDICES;
-            return;
-        }
+        RY_CHECK(result > result + index_offset,
+                RY_ERR_OUT_OF_INDICES,
+                return);
 
         // increment it
         result += index_offset;
@@ -724,10 +730,9 @@ void ry_push_polygon(
         if (target->index_size != 8) {
             // this could not be correctly calculated if index_size was 8
             uint64 overflow_limit = (1l << (target->index_size * 8)) - 1l;
-            if (result > overflow_limit) {
-                ry->err = RY_ERR_OUT_OF_INDICES;
-                return;
-            }
+            RY_CHECK(result > overflow_limit,
+                    RY_ERR_OUT_OF_INDICES,
+                    return);
         }
 
         // transfer bytes from result to the original array
@@ -767,16 +772,16 @@ void ry_push_polygon(
     if (ry->err) return;
 
     ry->err = RY_ERR_NONE;
+    return;
 }
 
 void ry_draw_layer(
         RY_Rendy *ry,
         uint32 layer_index) {
 
-    if (layer_index >= ry->layers.count) {
-        ry->err = RY_ERR_INVALID_ARGUMENTS;
-        return;
-    }
+    RY_CHECK(layer_index >= ry->layers.count,
+            RY_ERR_INVALID_ARGUMENTS,
+            return);
 
     RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_DrawCommands *commands = &layer->draw_commands;
@@ -844,10 +849,9 @@ void ry_reset_layer(
         RY_Rendy *ry,
         uint32 layer_index) {
 
-    if (layer_index >= ry->layers.count) {
-        ry->err = RY_ERR_INVALID_ARGUMENTS;
-        return;
-    }
+    RY_CHECK(layer_index >= ry->layers.count,
+            RY_ERR_INVALID_ARGUMENTS,
+            return);
 
     RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_Target *target = &layer->target;
@@ -906,62 +910,63 @@ RY_ShaderProgram ry_shader_create_program(
 
     // Reading the vertex shader code
     vertex_file = fopen(vertex_shader_path, "rb");
-    if (vertex_file == NULL) {
-        ry->err = RY_ERR_IO_COULD_NOT_OPEN;
-        RY_RETURN_DEALLOC;
-    }
+    RY_CHECK(vertex_file == NULL,
+            RY_ERR_IO_COULD_NOT_OPEN,
+            RY_RETURN_DEALLOC);
 
-    if (fseek(vertex_file, 0, SEEK_END)) {
-        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        RY_RETURN_DEALLOC;
-    }
+    int vs_seek_end_result = fseek(vertex_file, 0, SEEK_END);
+    RY_CHECK(vs_seek_end_result,
+            RY_ERR_IO_COULD_NOT_SEEK,
+            RY_RETURN_DEALLOC);
+
     uint64 vertex_file_size = ftell(vertex_file);
-    if (fseek(vertex_file, 0, SEEK_SET)) {
-        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        RY_RETURN_DEALLOC;
-    }
+    int vs_seek_set_result = fseek(vertex_file, 0, SEEK_SET);
+    RY_CHECK(vs_seek_set_result,
+            RY_ERR_IO_COULD_NOT_SEEK,
+            RY_RETURN_DEALLOC);
 
     vertex_code = malloc(vertex_file_size + 1);
-    if (vertex_code == NULL) {
-        ry->err = RY_ERR_MEMORY_ALLOCATION;
-        RY_RETURN_DEALLOC;
-    }
+    RY_CHECK(vertex_code == NULL,
+            RY_ERR_MEMORY_ALLOCATION,
+            RY_RETURN_DEALLOC);
 
-    if (fread(vertex_code, vertex_file_size, 1, vertex_file) != 1) {
-        ry->err = RY_ERR_IO_COULD_NOT_READ;
-        RY_RETURN_DEALLOC;
-    }
+    int vs_read_result = fread(vertex_code, vertex_file_size, 1, vertex_file);
+    RY_CHECK(vs_read_result != 1,
+            RY_ERR_IO_COULD_NOT_READ,
+            RY_RETURN_DEALLOC);
+
     fclose(vertex_file);
     vertex_file = NULL,
     vertex_code[vertex_file_size] = '\0';
 
     // Reading the fragment shader code
     fragment_file = fopen(fragment_shader_path, "rb");
-    if (fragment_file == NULL) {
-        ry->err = RY_ERR_IO_COULD_NOT_OPEN;
-        RY_RETURN_DEALLOC;
-    }
+    RY_CHECK(fragment_file == NULL,
+            RY_ERR_IO_COULD_NOT_OPEN,
+            RY_RETURN_DEALLOC);
 
-    if (fseek(fragment_file, 0, SEEK_END)) {
-        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        RY_RETURN_DEALLOC;
-    }
+    int fs_seek_end_result = fseek(fragment_file, 0, SEEK_END);
+    RY_CHECK(fs_seek_end_result,
+            RY_ERR_IO_COULD_NOT_SEEK,
+            RY_RETURN_DEALLOC);
+
     uint64 fragment_file_size = ftell(fragment_file);
-    if (fseek(fragment_file, 0, SEEK_SET)) {
-        ry->err = RY_ERR_IO_COULD_NOT_SEEK;
-        RY_RETURN_DEALLOC;
-    }
+    int fs_seek_set_result = fseek(fragment_file, 0, SEEK_SET);
+    RY_CHECK(fs_seek_set_result,
+            RY_ERR_IO_COULD_NOT_SEEK,
+            RY_RETURN_DEALLOC);
 
     fragment_code = malloc(fragment_file_size + 1);
-    if (fragment_code == NULL) {
-        ry->err = RY_ERR_MEMORY_ALLOCATION;
-        RY_RETURN_DEALLOC;
-    }
+    RY_CHECK(fragment_code == NULL,
+            RY_ERR_MEMORY_ALLOCATION,
+            RY_RETURN_DEALLOC);
 
-    if (fread(fragment_code, fragment_file_size, 1, fragment_file) != 1) {
-        ry->err = RY_ERR_IO_COULD_NOT_READ;
-        RY_RETURN_DEALLOC;
-    }
+    int fs_read_result = fread(fragment_code, fragment_file_size, 1, fragment_file);
+
+    RY_CHECK(fs_read_result != 1,
+            RY_ERR_IO_COULD_NOT_READ,
+            RY_RETURN_DEALLOC);
+
     fclose(fragment_file);
     fragment_file = NULL;
     fragment_code[fragment_file_size] = '\0';
@@ -980,8 +985,9 @@ RY_ShaderProgram ry_shader_create_program(
         glGetShaderInfoLog(vertex, 512, NULL, err_log);
         fprintf(stderr, "ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
                 vertex_shader_path, err_log);
-        ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
-        RY_RETURN_DEALLOC;
+        RY_CHECK(1 == 1,
+                RY_ERR_SHADER_COULD_NOT_COMPILE,
+                RY_RETURN_DEALLOC);
     }
 
     // fragment shader
@@ -994,8 +1000,9 @@ RY_ShaderProgram ry_shader_create_program(
         glGetShaderInfoLog(fragment, sizeof(err_log), NULL, err_log);
         fprintf(stderr, "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED (%s)\n%s\n",
                 fragment_shader_path, err_log);
-        ry->err = RY_ERR_SHADER_COULD_NOT_COMPILE;
-        RY_RETURN_DEALLOC;
+        RY_CHECK(1 == 1,
+                RY_ERR_SHADER_COULD_NOT_COMPILE,
+                RY_RETURN_DEALLOC);
     }
 
     // program
@@ -1008,8 +1015,9 @@ RY_ShaderProgram ry_shader_create_program(
     if(!success) {
         glGetProgramInfoLog(program, sizeof(err_log), NULL, err_log);
         fprintf(stderr, "ERROR::SHADER::PROGRAM::LINKING_FAILED %s\n", err_log);
-        ry->err = RY_ERR_SHADER_COULD_NOT_LINK;
-        RY_RETURN_DEALLOC;
+        RY_CHECK(1 == 1,
+                RY_ERR_SHADER_COULD_NOT_LINK,
+                RY_RETURN_DEALLOC);
     }
 
     ry->err = RY_ERR_NONE;
@@ -1147,10 +1155,9 @@ void ry__insert_draw_command(
         commands->elements = realloc(
                 commands->elements,
                 commands->size * sizeof(RY_DrawCommand));
-        if (!commands->elements) {
-            ry->err = RY_ERR_MEMORY_ALLOCATION;
-            return;
-        }
+        RY_CHECK(!commands->elements,
+                RY_ERR_MEMORY_ALLOCATION,
+                return);
     }
 
     // Inserting in order
@@ -1186,10 +1193,9 @@ void *ry__push_vertex_data_to_buffer(
 
     void *result = NULL;
     // The vertex buffer has the size of the target buffer
-    if (vb->vertices_bytes + vertices_bytes > vb->buffer_bytes) {
-        ry->err = RY_ERR_OUT_OF_BUFFER_MEMORY;
-        return result;
-    }
+    RY_CHECK(vb->vertices_bytes + vertices_bytes > vb->buffer_bytes,
+            RY_ERR_OUT_OF_BUFFER_MEMORY,
+            return result);
 
     result = vb->vertices_data + vb->vertices_bytes;
     memcpy(vb->vertices_data + vb->vertices_bytes, vertices, vertices_bytes);
@@ -1207,10 +1213,9 @@ void *ry__push_index_data_to_buffer(
 
     void *result = NULL;
     // The index buffer has the size of the target buffer
-    if (ib->indices_bytes + indices_bytes > ib->buffer_bytes) {
-        ry->err = RY_ERR_OUT_OF_BUFFER_MEMORY;
-        return result;
-    }
+    RY_CHECK(ib->indices_bytes + indices_bytes > ib->buffer_bytes,
+            RY_ERR_OUT_OF_BUFFER_MEMORY,
+            return result);
 
     result = ib->indices_data + ib->indices_bytes;
     memcpy(ib->indices_data + ib->indices_bytes, indices, indices_bytes);
