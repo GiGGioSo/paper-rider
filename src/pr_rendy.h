@@ -432,6 +432,8 @@ RY_Target ry_create_target(
     }
 
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     ry->err = RY_ERR_NONE;
     return target;
@@ -699,52 +701,6 @@ void ry_push_polygon(
     // offset indices based on already present vertices
     uint32 index_offset =
         layer->vertex_buffer.vertices_bytes / target->vertex_size;
-    for(uint32 index_index = 0;
-        index_index < indices_number;
-        ++index_index) {
-
-        uint8 *index_start =
-            ((uint8 *)indices) + (index_index * target->index_size);
-        uint64 result = 0;
-
-        // transfer bytes into the result,
-        //  because it can surely contain the data
-        for(int32 byte_index = target->index_size - 1;
-            byte_index >= 0;
-            byte_index--) {
-
-            result = (result << 8) + index_start[byte_index];
-        }
-
-        // check for 64bit overflow
-        RY_CHECK(result > result + index_offset,
-                RY_ERR_OUT_OF_INDICES,
-                return);
-
-        // increment it
-        result += index_offset;
-
-        // check for index_size overflow if index_size != 8.
-        //  If index_size == 8, then we already check before and
-        //  there is no 64bit (8byte) overflow
-        if (target->index_size != 8) {
-            // this could not be correctly calculated if index_size was 8
-            uint64 overflow_limit = (1l << (target->index_size * 8)) - 1l;
-            RY_CHECK(result > overflow_limit,
-                    RY_ERR_OUT_OF_INDICES,
-                    return);
-        }
-
-        // transfer bytes from result to the original array
-        //   this starts from the front, cause shit happens
-        for(uint32 byte_index = 0;
-            byte_index < target->index_size;
-            byte_index--) {
-
-            index_start[byte_index] =
-                (result & (0xff << byte_index)) >> byte_index;
-        }
-    }
 
     RY_DrawCommand cmd = {};
 
@@ -768,6 +724,56 @@ void ry_push_polygon(
                 cmd.indices_data_bytes);
     if (ry->err) return;
 
+    if (target->index_size == 1) {
+        // this should be a safe cast
+        uint8 casted_offset = (uint8) index_offset;
+
+        for(uint32 index_index = 0;
+            index_index < indices_number;
+            ++index_index) {
+
+            uint8 *index = ((uint8 *)cmd.indices_data_start) + index_index;
+
+            // check for overflow
+            RY_CHECK(*index + casted_offset < *index,
+                     RY_ERR_OUT_OF_INDICES,
+                     return);
+
+            *index += casted_offset;
+        }
+    } else if (target->index_size == 2) {
+        // this should be a safe cast
+        uint16 casted_offset = (uint16) index_offset;
+
+        for(uint32 index_index = 0;
+            index_index < indices_number;
+            ++index_index) {
+
+            uint16 *index = ((uint16 *)cmd.indices_data_start) + index_index;
+
+            // check for overflow
+            RY_CHECK(*index + casted_offset < *index,
+                     RY_ERR_OUT_OF_INDICES,
+                     return);
+
+            *index += casted_offset;
+        }
+    } else if (target->index_size == 4) {
+        for(uint32 index_index = 0;
+            index_index < indices_number;
+            ++index_index) {
+
+            uint32 *index = ((uint32 *)cmd.indices_data_start) + index_index;
+
+            // check for overflow
+            RY_CHECK(*index + index_offset < *index,
+                     RY_ERR_OUT_OF_INDICES,
+                     return);
+
+            *index += index_offset;
+        }
+    }
+
     ry__insert_draw_command(ry, &layer->draw_commands, cmd);
     if (ry->err) return;
 
@@ -788,6 +794,7 @@ void ry_draw_layer(
     RY_Target *target = &layer->target;
 
     glBindVertexArray(target->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, target->vbo);
 
     // Setting the vertices data into the VBO
     // TODO(gio): the vertex buffer is copied AS IS inside of
@@ -800,6 +807,7 @@ void ry_draw_layer(
             layer->vertex_buffer.vertices_data);
     target->vbo_bytes = layer->vertex_buffer.vertices_bytes;
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, target->ebo);
     for(uint32 cmd_index = 0;
         cmd_index < layer->draw_commands.count;
         ++cmd_index) {
@@ -840,6 +848,8 @@ void ry_draw_layer(
     }
 
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     ry->err = RY_ERR_NONE;
     return;

@@ -59,7 +59,7 @@ int main(void) {
         ry_create_target(
                 ry,
                 vertex_info, 6,
-                sizeof(uint16),
+                sizeof(uint32),
                 max_vertex_number);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
@@ -105,12 +105,12 @@ int main(void) {
         0.5f, 0.f, 0.f, 0.f, 0.f, 1.f
     };
 
-    uint16 indices[] = {
+    uint32 indices[] = {
         0, 1, 2,
         0, 2, 3
     };
 
-#if 1
+#if 0
     ry_push_polygon(
             ry,
             layer_index, 1,
@@ -151,7 +151,7 @@ int main(void) {
         ry_gl_clear_color(make_vec4f(0.5f, 0.2f, 0.2f, 1.0f));
         ry_gl_clear(GL_COLOR_BUFFER_BIT);
 
-#if 0
+#if 1
         ry_push_polygon(
                 ry,
                 layer_index, 1,
@@ -177,7 +177,8 @@ int main(void) {
 #endif
 
         ry_draw_layer(ry, layer_index);
-        // ry_reset_layer(ry, layer_index);
+        ry_reset_layer(ry, layer_index);
+
         if (ry_error(ry)) {
             fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
             glfwTerminate();

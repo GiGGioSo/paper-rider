@@ -16,6 +16,22 @@
 #define MIN(a, b) (((a) > (b)) ? (b) : (a))
 #endif
 
+#ifndef UINT8_MAX
+#define UINT8_MAX 0xff
+#endif
+
+#ifndef UINT16_MAX
+#define UINT16_MAX 0xffff
+#endif
+
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffff
+#endif
+
+#ifndef UINT64_MAX
+#define UINT64_MAX 0xffffffffffffffff
+#endif
+
 typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
