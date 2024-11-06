@@ -220,7 +220,7 @@ typedef struct RY_Layer {
     uint32 sort_key;
     uint32 flags;
 
-    RY_ArrayTexture *array_texture;
+    RY_ArrayTexture array_texture;
 
     RY_Target target;
     RY_ShaderProgram program;
@@ -604,7 +604,13 @@ RY_ArrayTexture ry_create_array_texture(
 }
 
 uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags) {
+
     uint32 layer_index = 0;
+
+    // if the layer is textured, then an array texture is NEEDED
+    RY_CHECK((flags & RY_LAYER_TEXTURED) && array_texture == NULL,
+             RY_ERR_INVALID_ARGUMENTS,
+             return layer_index);
 
     // allocate the memory
     RY_Layers *layers = &ry->layers;
@@ -642,7 +648,14 @@ uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program
     layer_index = comparison_index;
 
     layer->sort_key = sort_key;
-    layer->array_texture = array_texture;
+    layer->array_texture.elements = NULL;
+    layer->array_texture.elements_len = 0;
+    layer->array_texture.id = 0;
+    if (array_texture) { // if an array texture is present, copy the contents
+        layer->array_texture.elements = array_texture->elements;
+        layer->array_texture.elements_len = array_texture->elements_len;
+        layer->array_texture.id = array_texture->id;
+    }
     layer->program = program;
     layer->target = target;
     layer->flags = flags;
@@ -691,11 +704,37 @@ void ry_push_polygon(
     RY_Target *target = &layer->target;
 
     if (indices == NULL) {
-        // TODO(gio): Default triangulation/indicization, which assumes:
-        //              - the polygon is convex
-        //              - the vertices are in counter clock-wise order
-        ry->err = RY_ERR_NOT_IMPLEMENTED;
-        return;
+        indices_number = vertices_number;
+        indices = malloc(target->index_size * vertices_number);
+        RY_CHECK(indices == NULL,
+                 RY_ERR_MEMORY_ALLOCATION,
+                 return);
+
+        if (target->index_size == 1) {
+            uint8 *casted_indices = (uint8 *) indices;
+            for(uint32 index_index = 0;
+                index_index < indices_number;
+                ++index_index) {
+
+                casted_indices[index_index] = index_index;
+            }
+        } else if (target->index_size == 2) {
+            uint16 *casted_indices = (uint16 *) indices;
+            for(uint32 index_index = 0;
+                index_index < indices_number;
+                ++index_index) {
+
+                casted_indices[index_index] = index_index;
+            }
+        } else if (target->index_size == 4) {
+            uint32 *casted_indices = (uint32 *) indices;
+            for(uint32 index_index = 0;
+                index_index < indices_number;
+                ++index_index) {
+
+                casted_indices[index_index] = index_index;
+            }
+        }
     }
 
     // offset indices based on already present vertices
@@ -827,14 +866,12 @@ void ry_draw_layer(
     glUseProgram(layer->program);
 
     uint32 number_of_indices = target->ebo_bytes / target->index_size;
-    // RY_PRINT(target->ebo_bytes, "%d");
-    // RY_PRINT(number_of_indices, "%d");
 
     if (layer->flags & RY_LAYER_TEXTURED) {
         // TODO(gio): Could this be anything other than 0?
-        ry_shader_set_int32(layer->program, "tex", 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D_ARRAY, layer->array_texture->id);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, layer->array_texture.id);
+        ry_shader_set_int32(layer->program, "tex_array", 0);
     }
 
     glDrawElements(

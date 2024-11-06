@@ -8,6 +8,9 @@
 #define RENDY_IMPLEMENTATION
 #include "../src/pr_rendy.h"
 
+int create_uni_layer(RY_Rendy *ry);
+int create_textured_layer(RY_Rendy *ry);
+
 GLFWwindow *glfw_win;
 float delta_time;
 uint64 fps_counter;
@@ -48,93 +51,55 @@ int main(void) {
         return 1;
     }
 
-    uint32 vertex_info[] = {
-        GL_FLOAT, sizeof(float), 2, // position
-        GL_FLOAT, sizeof(float), 4, // color
-    };
-    uint32 max_vertex_number = 30;
-
-    // Create a target VAO
-    RY_Target target =
-        ry_create_target(
-                ry,
-                vertex_info, 6,
-                sizeof(uint32),
-                max_vertex_number);
+    // uni rendering initialization
+    int uni_layer = create_uni_layer(ry);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
         glfwTerminate();
         return ry_error(ry);
     }
-
-    // Create a shader program
-    RY_ShaderProgram program =
-        ry_shader_create_program(
-                ry,
-                "shaders/default.vs",
-                "shaders/default.fs");
-    if (ry_error(ry)) {
-        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
-        glfwTerminate();
-        return ry_error(ry);
-    }
-
-    // Create rendering layer
-    uint32 layer_index = ry_register_layer(ry, 1, program, NULL, target, 0);
-    if (ry_error(ry)) {
-        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
-        glfwTerminate();
-        return ry_error(ry);
-    }
-
-    float this_frame = 0.f;
-    float last_frame = 0.f;
-    float time_from_last_fps_update = 0.f;
-
-    float vertices1[] = {
+    float uni_quad[] = {
         -0.5f, -0.5f, 1.f, 0.f, 0.f, 1.f,
         -0.5f, 0.f, 0.f, 1.f, 0.f, 1.f,
         0.f, 0.f, 0.f, 0.f, 1.f, 1.f,
         0.f, -0.5f, 0.f, 0.f, 0.f, 1.f
     };
-
-    float vertices2[] = {
-        0.f, 0.f, 1.f, 0.f, 0.f, 1.f,
+    float uni_triangle[] = {
+        0.25f, 0.f, 1.f, 0.f, 0.f, 1.f,
         0.f, 0.5f, 0.f, 1.f, 0.f, 1.f,
         0.5f, 0.5f, 0.f, 0.f, 1.f, 1.f,
-        0.5f, 0.f, 0.f, 0.f, 0.f, 1.f
     };
 
-    uint32 indices[] = {
+    // textured rendering initialization
+    int textured_layer = create_textured_layer(ry);
+    if (ry_error(ry)) {
+        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+        glfwTerminate();
+        return ry_error(ry);
+    }
+    int freccia_layer = 0;
+    float textured_freccia[] = {
+        -0.5f, 0.5f, 0.f, 1.f, freccia_layer,
+        -0.5f, 0.f, 0.f, 0.f,  freccia_layer,
+        0.f, 0.f, 1.f, 0.f,    freccia_layer,
+        0.f, 0.5f, 1.f, 1.f,   freccia_layer
+    };
+    int plane_layer = 1;
+    float textured_plane[] = {
+        0.f, 0.f, 0.f, 1.f,    plane_layer,
+        0.f, -0.5f, 0.f, 0.f,  plane_layer,
+        0.5f, -0.5f, 1.f, 0.f, plane_layer,
+        0.5f, 0.f, 1.f, 1.f,   plane_layer
+    };
+
+    uint32 quad_indices[] = {
         0, 1, 2,
         0, 2, 3
     };
 
-#if 0
-    ry_push_polygon(
-            ry,
-            layer_index, 1,
-            (void *) vertices1, 4,
-            indices, 6
-            );
-    if (ry_error(ry)) {
-        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
-        glfwTerminate();
-        return ry_error(ry);
-    }
-    ry_push_polygon(
-            ry,
-            layer_index, 2,
-            (void *) vertices2, 4,
-            indices, 6
-            );
-    if (ry_error(ry)) {
-        fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
-        glfwTerminate();
-        return ry_error(ry);
-    }
-#endif
-
+    float this_frame = 0.f;
+    float last_frame = 0.f;
+    float time_from_last_fps_update = 0.f;
     while (!glfwWindowShouldClose(glfw_win)) {
         this_frame = (float)glfwGetTime();
         delta_time = this_frame - last_frame;
@@ -151,13 +116,12 @@ int main(void) {
         ry_gl_clear_color(make_vec4f(0.5f, 0.2f, 0.2f, 1.0f));
         ry_gl_clear(GL_COLOR_BUFFER_BIT);
 
-#if 1
+        // push uni polygons
         ry_push_polygon(
                 ry,
-                layer_index, 1,
-                (void *) vertices1, 4,
-                indices, 6
-                );
+                uni_layer, 1,
+                (void *) uni_quad, 4,
+                quad_indices, 6);
         if (ry_error(ry)) {
             fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
             glfwTerminate();
@@ -165,19 +129,40 @@ int main(void) {
         }
         ry_push_polygon(
                 ry,
-                layer_index, 2,
-                (void *) vertices2, 4,
-                indices, 6
-                );
+                uni_layer, 2,
+                (void *) uni_triangle, 3,
+                NULL, 0);
         if (ry_error(ry)) {
             fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
             glfwTerminate();
             return ry_error(ry);
         }
-#endif
 
-        ry_draw_layer(ry, layer_index);
-        ry_reset_layer(ry, layer_index);
+        // push textured polygons
+        ry_push_polygon(
+                ry,
+                textured_layer, 1,
+                (void *) textured_freccia, 4,
+                quad_indices, 6);
+        if (ry_error(ry)) {
+            fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+            glfwTerminate();
+            return ry_error(ry);
+        }
+        ry_push_polygon(
+                ry,
+                textured_layer, 2,
+                (void *) textured_plane, 4,
+                quad_indices, 6);
+        if (ry_error(ry)) {
+            fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
+            glfwTerminate();
+            return ry_error(ry);
+        }
+
+        // draw & reset both layers
+        ry_draw_all_layers(ry);
+        ry_reset_all_layers(ry);
 
         if (ry_error(ry)) {
             fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
@@ -191,4 +176,76 @@ int main(void) {
 
     glfwTerminate();
     return 0;
+}
+
+int create_uni_layer(RY_Rendy *ry) {
+    uint32 vertex_info[] = {
+        GL_FLOAT, sizeof(float), 2, // position
+        GL_FLOAT, sizeof(float), 4, // color
+    };
+    uint32 max_vertex_number = 30;
+
+    // Create a target VAO
+    RY_Target target =
+        ry_create_target(
+                ry,
+                vertex_info, 6,
+                sizeof(uint32),
+                max_vertex_number);
+    if (ry_error(ry)) return ry_error(ry);
+
+    // Create a shader program
+    RY_ShaderProgram program =
+        ry_shader_create_program(
+                ry,
+                "shaders/uni_default.vs",
+                "shaders/uni_default.fs");
+    if (ry_error(ry)) return ry_error(ry);
+
+    // Create rendering layer
+    uint32 layer_index = ry_register_layer(ry, 1, program, NULL, target, 0);
+    if (ry_error(ry)) return ry_error(ry);
+
+    return layer_index;
+}
+
+int create_textured_layer(RY_Rendy *ry) {
+    uint32 vertex_info[] = {
+        GL_FLOAT, sizeof(float), 2,        // position
+        GL_FLOAT, sizeof(float), 2,        // tex coordinates
+        GL_UNSIGNED_INT, sizeof(uint32), 1 // layer index
+    };
+    uint32 max_vertex_number = 30;
+
+    // Create a target VAO
+    RY_Target target =
+        ry_create_target(
+                ry,
+                vertex_info, 9,
+                sizeof(uint32),
+                max_vertex_number);
+    if (ry_error(ry)) return ry_error(ry);
+
+    // Create a shader program
+    RY_ShaderProgram program =
+        ry_shader_create_program(
+                ry,
+                "shaders/tex_array.vs",
+                "shaders/tex_array.fs");
+    if (ry_error(ry)) return ry_error(ry);
+
+    // Create array texture
+    const char *texture_paths[] = {
+        "textures/freccia.png",
+        "textures/plane.png"
+    };
+    RY_ArrayTexture array_texture = ry_create_array_texture(ry, texture_paths, 2);
+    if (ry_error(ry)) return ry_error(ry);
+
+    // Create rendering layer
+    uint32 layer_index = ry_register_layer(
+            ry, 2, program, &array_texture, target, 0);
+    if (ry_error(ry)) return ry_error(ry);
+
+    return layer_index;
 }
