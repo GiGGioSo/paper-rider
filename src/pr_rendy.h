@@ -550,10 +550,13 @@ RY_ArrayTexture ry_create_array_texture(
             RY_TextureElement *t_element = &(at.elements[image_index]);
             t_element->width = image->width;
             t_element->height = image->height;
+
             t_element->tex_coords.tx = 0;
             t_element->tex_coords.ty = 0;
-            t_element->tex_coords.tw = (float) t_element->width / max_width;
-            t_element->tex_coords.th = (float) t_element->height / max_height;
+            t_element->tex_coords.tw =
+                (float) t_element->width / (float) max_width;
+            t_element->tex_coords.th =
+                (float) t_element->height / (float) max_height;
 
             printf("Loading image (%s) data into the texture\n", image->path);
 
@@ -587,7 +590,6 @@ RY_ArrayTexture ry_create_array_texture(
 
     defer_dealloc:
     {
-        if (at.elements) free(at.elements);
         for(int32 image_index = 0;
             image_index < images.count;
             ++image_index) {
@@ -639,7 +641,7 @@ uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program
     if (comparison_index < layers->count) { // move the data afterwards
         memmove(layers->elements + comparison_index+1,
                 layers->elements + comparison_index,
-                layers->count - comparison_index);
+                (layers->count - comparison_index) * sizeof(RY_Layer));
     }
     layers->count++;
 
@@ -1222,7 +1224,7 @@ void ry__insert_draw_command(
     if (comparison_index < commands->count) { // move the data afterwards
         memmove(commands->elements + comparison_index+1,
                 commands->elements + comparison_index,
-                commands->count - comparison_index);
+                (commands->count - comparison_index) * sizeof(RY_DrawCommand));
     }
 
     commands->elements[comparison_index] = cmd;
