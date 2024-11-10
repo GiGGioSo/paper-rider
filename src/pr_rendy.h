@@ -13,24 +13,26 @@
 #include "../include/stb_image.h"
 
 // TODO(gio):
-// [ ] customizable error management
-//     [ ] returns and sets error
-//     [ ] asserts every check
-//     [ ] ignores every check
 // 
 // FIXME(gio):
-// [ ] rendering flickers when pushing polygon/resetting the layer each frame
 //
 // XXX(gio):
 // [ ] At this point, vertex buffer will be copied as is
 //      inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
 //      (we actually just need to sort the indices, not the vertices)
-// [ ] maybe this can be hardcoded to use uint8, uint16 or uint32
+//
+// DONE(gio):
+// [x] layer indices get fucked when you insert a new layer at the start
+//      solve this by using an index array which is the one getting sorted
+// [x] maybe this can be hardcoded to use uint8, uint16 or uint32
 //      depending on index_size.
 //     No reason to support an arbitrary index_size if then OpenGL
 //      forces you to only use on of them
-//
-// DONE(gio):
+// [x] rendering flickers when pushing polygon/resetting the layer each frame
+// [x] customizable error management
+//     [x] returns and sets error
+//     [x] asserts every check
+//     [x] ignores every check
 // [x] Single function call to draw all the layers
 // [x] Single function call to reset all the layers
 // [x] Layer registration (creation)
@@ -232,8 +234,9 @@ typedef struct RY_Layer {
 
 typedef struct RY_Layers {
     RY_Layer *elements;
-    uint32 count; // number of elements present
-    uint32 size;  // buffer capacity in number of elements
+    uint32 *sorted; // sorted indices of the elements
+    uint32 count;   // number of elements present
+    uint32 size;    // buffer capacity in number of elements
 } RY_Layers;
 
 typedef struct RY_Rendy {
@@ -249,6 +252,8 @@ typedef struct RY_Rendy {
  */
 
 // ### API functions ###
+//  - check for the context error after each usage
+//  - context error is set to RY_ERR_NONE at the end of each one of them
 
 RY_Rendy *
 ry_init();
@@ -269,8 +274,6 @@ ry_create_array_texture(RY_Rendy *ry, const char **paths, uint32 paths_length);
 uint32
 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags);
 
-//  - check for the context error after each usage
-//  - context error is set to RY_ERR_NONE at the end of each one of them
 
 /*
  * vertices -> If NULL the context error is set to RY_ERR_INVALID_ARGUMENTS.
@@ -605,8 +608,13 @@ RY_ArrayTexture ry_create_array_texture(
     }
 }
 
-uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags) {
-
+uint32 ry_register_layer(
+        RY_Rendy *ry,
+        uint32 sort_key,
+        RY_ShaderProgram program,
+        RY_ArrayTexture *array_texture,
+        RY_Target target,
+        uint32 flags) {
     uint32 layer_index = 0;
 
     // if the layer is textured, then an array texture is NEEDED
@@ -624,6 +632,12 @@ uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program
         RY_CHECK(layers->elements == NULL,
                 RY_ERR_MEMORY_ALLOCATION,
                 return layer_index);
+        layers->sorted = realloc(
+                layers->sorted,
+                layers->size * sizeof(uint32));
+        RY_CHECK(layers->sorted == NULL,
+                RY_ERR_MEMORY_ALLOCATION,
+                return layer_index);
     }
 
     // find in order position
@@ -639,15 +653,17 @@ uint32 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program
     }
 
     if (comparison_index < layers->count) { // move the data afterwards
-        memmove(layers->elements + comparison_index+1,
-                layers->elements + comparison_index,
-                (layers->count - comparison_index) * sizeof(RY_Layer));
+        memmove(layers->sorted + comparison_index+1,
+                layers->sorted + comparison_index,
+                (layers->count - comparison_index) * sizeof(uint32));
     }
     layers->count++;
 
+    // insert the layer index in its sorted position
+    layers->sorted[comparison_index] = layers->count - 1;
     // fill in the layer
-    RY_Layer *layer = &layers->elements[comparison_index];
-    layer_index = comparison_index;
+    layer_index = layers->count - 1;
+    RY_Layer *layer = &layers->elements[layer_index];
 
     layer->sort_key = sort_key;
     layer->array_texture.elements = NULL;
@@ -917,9 +933,11 @@ void ry_reset_layer(
 }
 
 void ry_draw_all_layers(RY_Rendy *ry) {
-    for(uint32 layer_index = 0;
-        layer_index < ry->layers.count;
-        ++layer_index) {
+    for(uint32 index_index = 0;
+        index_index < ry->layers.count;
+        ++index_index) {
+
+        uint32 layer_index = ry->layers.sorted[index_index];
 
         ry_draw_layer(ry, layer_index);
         if (ry->err) return;

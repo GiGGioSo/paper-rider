@@ -8,8 +8,8 @@
 #define RENDY_IMPLEMENTATION
 #include "../src/pr_rendy.h"
 
-int create_uni_layer(RY_Rendy *ry);
-int create_textured_layer(RY_Rendy *ry);
+int create_uni_layer(RY_Rendy *ry, uint32 sort_index);
+int create_textured_layer(RY_Rendy *ry, uint32 sort_index);
 void push_figure(RY_Rendy *ry, uint32 layer_index, uint32 texture_layer, float x, float y, float w, float h);
 
 GLFWwindow *glfw_win;
@@ -55,7 +55,7 @@ int main(void) {
     ry_gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     // uni rendering initialization
-    int uni_layer = create_uni_layer(ry);
+    int uni_layer = create_uni_layer(ry, 3);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
         glfwTerminate();
@@ -74,7 +74,7 @@ int main(void) {
     };
 
     // textured rendering initialization
-    int textured_layer = create_textured_layer(ry);
+    int textured_layer = create_textured_layer(ry, 2);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
         glfwTerminate();
@@ -165,7 +165,7 @@ int main(void) {
     return 0;
 }
 
-int create_uni_layer(RY_Rendy *ry) {
+int create_uni_layer(RY_Rendy *ry, uint32 sort_index) {
     uint32 vertex_info[] = {
         GL_FLOAT, sizeof(float), 2, // position
         GL_FLOAT, sizeof(float), 4, // color
@@ -190,13 +190,13 @@ int create_uni_layer(RY_Rendy *ry) {
     if (ry_error(ry)) return ry_error(ry);
 
     // Create rendering layer
-    uint32 layer_index = ry_register_layer(ry, 2, program, NULL, target, 0);
+    uint32 layer_index = ry_register_layer(ry, sort_index, program, NULL, target, 0);
     if (ry_error(ry)) return ry_error(ry);
 
     return layer_index;
 }
 
-int create_textured_layer(RY_Rendy *ry) {
+int create_textured_layer(RY_Rendy *ry, uint32 sort_index) {
     uint32 vertex_info[] = {
         GL_FLOAT, sizeof(float), 2,        // position
         GL_FLOAT, sizeof(float), 2,        // tex coordinates
@@ -231,7 +231,7 @@ int create_textured_layer(RY_Rendy *ry) {
 
     // Create rendering layer
     uint32 layer_index = ry_register_layer(
-            ry, 1, program, &array_texture, target, RY_LAYER_TEXTURED);
+            ry, sort_index, program, &array_texture, target, RY_LAYER_TEXTURED);
     if (ry_error(ry)) return ry_error(ry);
 
     return layer_index;
