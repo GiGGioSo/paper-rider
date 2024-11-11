@@ -158,6 +158,7 @@ typedef enum RY_Err {
     RY_ERR_OUT_OF_INDICES,
     RY_ERR_TEXTURE_SIZE,
     RY_ERR_TEXTURE_LAYER,
+    RY_ERR_TEXTURE_LAYER_OUT_OF_BOUNDS,
     RY_ERR_IO_COULD_NOT_OPEN,
     RY_ERR_IO_COULD_NOT_SEEK,
     RY_ERR_IO_COULD_NOT_READ,
@@ -271,9 +272,24 @@ ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length, u
 RY_ArrayTexture
 ry_create_array_texture(RY_Rendy *ry, const char **paths, uint32 paths_length);
 
+RY_TextureElement *
+ry_get_texture_element(RY_Rendy *ry, uint32 layer_index, uint32 texture_layer);
+
 uint32
 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags);
 
+// # drawing
+void
+ry_draw_layer(RY_Rendy *ry, uint32 layer_index);
+
+void
+ry_reset_layer(RY_Rendy *ry, uint32 layer_index);
+
+void
+ry_draw_all_layers(RY_Rendy *ry);
+
+void
+ry_reset_all_layers(RY_Rendy *ry);
 
 /*
  * vertices -> If NULL the context error is set to RY_ERR_INVALID_ARGUMENTS.
@@ -299,6 +315,7 @@ ry_shader_set_vec3f(RY_ShaderProgram s, const char* name, vec3f value);
 void
 ry_shader_set_mat4f(RY_ShaderProgram s, const char* name, mat4f value);
 
+// # OpenGL stuff
 void
 ry_gl_enable(GLenum capability);
 void
@@ -321,18 +338,6 @@ int
 ry_error(RY_Rendy *ry);
 
 // ### Internal functions ###
-
-void
-ry_draw_layer(RY_Rendy *ry, uint32 layer_index);
-
-void
-ry_reset_layer(RY_Rendy *ry, uint32 layer_index);
-
-void
-ry_draw_all_layers(RY_Rendy *ry);
-
-void
-ry_reset_all_layers(RY_Rendy *ry);
 
 void
 ry__insert_draw_command(RY_Rendy *ry, RY_DrawCommands *commands, RY_DrawCommand cmd);
@@ -606,6 +611,27 @@ RY_ArrayTexture ry_create_array_texture(
         if (images.items) free(images.items);
         return at;
     }
+}
+
+RY_TextureElement *ry_get_texture_element(
+        RY_Rendy *ry,
+        uint32 layer_index,
+        uint32 texture_layer) {
+    RY_TextureElement *texture_element = NULL;
+
+    RY_CHECK(layer_index >= ry->layers.count,
+             RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS,
+             return texture_element);
+
+    RY_Layer *layer = &ry->layers.elements[layer_index];
+
+    RY_CHECK(texture_layer >= layer->array_texture.elements_len,
+             RY_ERR_TEXTURE_LAYER_OUT_OF_BOUNDS,
+             return texture_element);
+
+    texture_element = &(layer->array_texture.elements[texture_layer]);
+
+    return texture_element;
 }
 
 uint32 ry_register_layer(
@@ -1191,6 +1217,8 @@ char *ry_err_string(RY_Rendy *ry) {
         return "TextureArray component size is greater than hardware limit";
     } else if (ry->err == RY_ERR_TEXTURE_LAYER) {
         return "TextureArray layers number is greater than hardware limit";
+    } else if (ry->err == RY_ERR_TEXTURE_LAYER_OUT_OF_BOUNDS) {
+        return "Texture layer index out of bounds";
     } else if (ry->err == RY_ERR_IO_COULD_NOT_OPEN) {
         return "Failed to open file";
     } else if (ry->err == RY_ERR_IO_COULD_NOT_SEEK) {

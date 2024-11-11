@@ -55,7 +55,7 @@ int main(void) {
     ry_gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     // uni rendering initialization
-    int uni_layer = create_uni_layer(ry, 3);
+    int uni_layer = create_uni_layer(ry, 1);
     if (ry_error(ry)) {
         fprintf(stderr, "[ERROR] Rendy: %s\n", ry_err_string(ry));
         glfwTerminate();
@@ -241,7 +241,10 @@ void push_figure(
         RY_Rendy *ry,
         uint32 layer_index, uint32 texture_layer,
         float x, float y, float w, float h) {
-    RY_TexCoords t = ry->layers.elements[layer_index].array_texture.elements[texture_layer].tex_coords;
+
+    RY_TextureElement *te =
+        ry_get_texture_element(ry, layer_index, texture_layer);
+    RY_TexCoords t = te->tex_coords;
 
     struct figure_vertex {
         float x, y, tx, ty;
