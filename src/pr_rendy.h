@@ -13,10 +13,16 @@
 #include "../include/stb_image.h"
 
 // TODO(gio):
+// [ ] freeing stuff: make sure whatever the user has to free only what
+//                      he explicitly created
+// [ ] unregister layer:
+//      - this is shit, because it makes other layers indices invalid
+//      - maybe the user just has to erase everything and restart if he wants to change stuff
 // 
 // FIXME(gio):
 //
 // XXX(gio):
+// [ ] interchangable plug n play layers sets
 // [ ] At this point, vertex buffer will be copied as is
 //      inside of the VBO, DO WE NEED TO USE THE VERTEX BUFFER?
 //      (we actually just need to sort the indices, not the vertices)
@@ -336,6 +342,7 @@ ry_err_string(RY_Rendy *ry);
 
 int
 ry_error(RY_Rendy *ry);
+
 
 // ### Internal functions ###
 

@@ -244,6 +244,7 @@ void push_figure(
 
     RY_TextureElement *te =
         ry_get_texture_element(ry, layer_index, texture_layer);
+    if (ry_error(ry)) return;
     RY_TexCoords t = te->tex_coords;
 
     struct figure_vertex {
