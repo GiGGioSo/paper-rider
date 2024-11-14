@@ -13,8 +13,7 @@
 #include "../include/stb_image.h"
 
 // TODO(gio):
-// [ ] freeing stuff: make sure whatever the user has to free only what
-//                      he explicitly created
+// [ ] freeing stuff: make sure the user has to free only what he created
 // [ ] unregister layer:
 //      - this is shit, because it makes other layers indices invalid
 //      - maybe the user just has to erase everything and restart if he wants to change stuff
@@ -265,6 +264,9 @@ typedef struct RY_Rendy {
 RY_Rendy *
 ry_init();
 
+void
+ry_free(RY_Rendy *ry);
+
 /*
  * The vertex_info array must be a flattened list of triples
  *  where each value in the triple represents:
@@ -274,15 +276,21 @@ ry_init();
  */
 RY_Target
 ry_create_target(RY_Rendy *ry, uint32 *vertex_info, uint32 vertex_info_length, uint32 index_size, uint32 max_vertices_number);
+void
+ry_delete_target(RY_Target *target);
 
 RY_ArrayTexture
 ry_create_array_texture(RY_Rendy *ry, const char **paths, uint32 paths_length);
+void
+ry_delete_array_texture(RY_ArrayTexture *at);
 
 RY_TextureElement *
 ry_get_texture_element(RY_Rendy *ry, uint32 layer_index, uint32 texture_layer);
 
 uint32
 ry_register_layer(RY_Rendy *ry, uint32 sort_key, RY_ShaderProgram program, RY_ArrayTexture *array_texture, RY_Target target, uint32 flags);
+void
+ry_reset_layers(RY_Rendy *ry);
 
 // # drawing
 void
@@ -312,6 +320,8 @@ ry_push_polygon(RY_Rendy *ry, uint32 layer_index, uint64 in_layer_sort, void *ve
 // # shaders
 RY_ShaderProgram
 ry_shader_create_program(RY_Rendy *ry, const char* vertexPath, const char* fragmentPath);
+void
+ry_shader_delete_program(RY_ShaderProgram program);
 void
 ry_shader_set_int32(RY_ShaderProgram s, const char* name, int32 value);
 void
@@ -348,12 +358,18 @@ ry_error(RY_Rendy *ry);
 
 void
 ry__insert_draw_command(RY_Rendy *ry, RY_DrawCommands *commands, RY_DrawCommand cmd);
+void
+ry__delete_draw_commands(RY_DrawCommands *cmds);
 
 void *
 ry__push_vertex_data_to_buffer(RY_Rendy *ry, RY_VertexBuffer *vb, void *vertices, uint32 vertices_bytes);
+void
+ry__delete_vertex_buffer(RY_VertexBuffer *vb);
 
 void *
 ry__push_index_data_to_buffer(RY_Rendy *ry, RY_IndexBuffer *ib, void *indices, uint32 indices_bytes);
+void
+ry__delete_index_buffer(RY_IndexBuffer *ib);
 
 GLenum
 ry__gl_type_from_index_size(uint32 index_size);
@@ -373,6 +389,10 @@ RY_Rendy *ry_init() {
 
     ry->err = RY_ERR_NONE;
     return ry;
+}
+
+void ry_free(RY_Rendy *ry) {
+    // TODO(gio): implement
 }
 
 RY_Target ry_create_target(
@@ -452,6 +472,12 @@ RY_Target ry_create_target(
 
     ry->err = RY_ERR_NONE;
     return target;
+}
+
+void ry_delete_target(RY_Target *target) {
+    glDeleteBuffers(1, &target->vbo);
+    glDeleteBuffers(1, &target->ebo);
+    glDeleteVertexArrays(1, &target->vao);
 }
 
 RY_ArrayTexture ry_create_array_texture(
@@ -620,6 +646,13 @@ RY_ArrayTexture ry_create_array_texture(
     }
 }
 
+void ry_delete_array_texture(RY_ArrayTexture *at) {
+    glDeleteTextures(1, &(at->id));
+    free(at->elements);
+    at->elements = NULL;
+    at->elements_len = 0;
+}
+
 RY_TextureElement *ry_get_texture_element(
         RY_Rendy *ry,
         uint32 layer_index,
@@ -732,6 +765,32 @@ uint32 ry_register_layer(
 
     ry->err = RY_ERR_NONE;
     return layer_index;
+}
+
+void ry_reset_layers(RY_Rendy *ry) {
+    for(uint32 layer_index = 0;
+        layer_index < ry->layers.count;
+        ++layer_index) {
+
+        RY_Layer *layer = &(ry->layers.elements[layer_index]);
+
+        ry_delete_array_texture(&layer->array_texture);
+        ry_delete_target(&layer->target);
+        ry_shader_delete_program(layer->program);
+
+        ry__delete_draw_commands(&layer->draw_commands);
+        ry__delete_vertex_buffer(&layer->vertex_buffer);
+        ry__delete_index_buffer(&layer->index_buffer);
+    }
+
+    free(ry->layers.elements);
+    ry->layers.elements = 0;
+
+    free(ry->layers.sorted);
+    ry->layers.sorted = 0;
+
+    ry->layers.count = 0;
+    ry->layers.size = 0;
 }
 
 void ry_push_polygon(
@@ -1073,7 +1132,7 @@ RY_ShaderProgram ry_shader_create_program(
 
     // creating the program
     int32 success;
-    char err_log[512];
+    int8 err_log[512];
 
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -1082,7 +1141,7 @@ RY_ShaderProgram ry_shader_create_program(
     // print compile errors if any
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if(!success) {
-        glGetShaderInfoLog(vertex, 512, NULL, err_log);
+        glGetShaderInfoLog(vertex, 512, NULL, (GLchar *) err_log);
         fprintf(stderr, "ERROR::SHADER::VERTEX::COMPILATION_FAILED (%s)\n%s\n",
                 vertex_shader_path, err_log);
         RY_CHECK(1 == 1,
@@ -1097,7 +1156,7 @@ RY_ShaderProgram ry_shader_create_program(
     //print compile errors if any
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if(!success) {
-        glGetShaderInfoLog(fragment, sizeof(err_log), NULL, err_log);
+        glGetShaderInfoLog(fragment, sizeof(err_log), NULL, (GLchar *) err_log);
         fprintf(stderr, "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED (%s)\n%s\n",
                 fragment_shader_path, err_log);
         RY_CHECK(1 == 1,
@@ -1113,7 +1172,7 @@ RY_ShaderProgram ry_shader_create_program(
     // print linking errors if any
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if(!success) {
-        glGetProgramInfoLog(program, sizeof(err_log), NULL, err_log);
+        glGetProgramInfoLog(program, sizeof(err_log), NULL, (GLchar *) err_log);
         fprintf(stderr, "ERROR::SHADER::PROGRAM::LINKING_FAILED %s\n", err_log);
         RY_CHECK(1 == 1,
                 RY_ERR_SHADER_COULD_NOT_LINK,
@@ -1133,6 +1192,10 @@ RY_ShaderProgram ry_shader_create_program(
         if (fragment) glDeleteShader(fragment);
         return program;
     }
+}
+
+void ry_shader_delete_program(RY_ShaderProgram program) {
+    glDeleteProgram(program);
 }
 
 void ry_shader_set_int32(
@@ -1286,6 +1349,12 @@ void ry__insert_draw_command(
     ry->err = RY_ERR_NONE;
     return;
 }
+void ry__delete_draw_commands(RY_DrawCommands *cmds) {
+    free(cmds->elements);
+    cmds->elements = NULL;
+    cmds->count = 0;
+    cmds->size = 0;
+}
 
 void *ry__push_vertex_data_to_buffer(
         RY_Rendy *ry,
@@ -1307,6 +1376,13 @@ void *ry__push_vertex_data_to_buffer(
     return result;
 }
 
+void ry__delete_vertex_buffer(RY_VertexBuffer *vb) {
+    free(vb->vertices_data);
+    vb->vertices_data = NULL;
+    vb->vertices_bytes = 0;
+    vb->buffer_bytes = 0;
+}
+
 void *ry__push_index_data_to_buffer(
         RY_Rendy *ry,
         RY_IndexBuffer *ib,
@@ -1325,6 +1401,13 @@ void *ry__push_index_data_to_buffer(
 
     ry->err = RY_ERR_NONE;
     return result;
+}
+
+void ry__delete_index_buffer(RY_IndexBuffer *ib) {
+    free(ib->indices_data);
+    ib->indices_data = NULL;
+    ib->indices_bytes = 0;
+    ib->buffer_bytes = 0;
 }
 
 GLenum ry__gl_type_from_index_size(uint32 index_size) {
