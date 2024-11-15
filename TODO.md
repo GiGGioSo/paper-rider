@@ -15,6 +15,9 @@
     [ ] update rendering (use rendy)
         [ ] figure out how to apply textures (maybe each triangle of the object is a "glued piece of paper", that together actually make up the object)
 
+[ ] New UI
+    [ ] create UI library :)
+
 [ ] New plane
     [ ] More complete hitbox
 
