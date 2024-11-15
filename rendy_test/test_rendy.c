@@ -92,6 +92,7 @@ int main(void) {
     float last_frame = 0.f;
     float time_from_last_fps_update = 0.f;
     while (!glfwWindowShouldClose(glfw_win)) {
+        // fps stuff
         this_frame = (float)glfwGetTime();
         delta_time = this_frame - last_frame;
         last_frame = this_frame;
@@ -104,6 +105,12 @@ int main(void) {
             time_from_last_fps_update -= 1.f;
         }
 
+        // keyboard input stuff
+        if (glfwGetKey(glfw_win, GLFW_KEY_Q) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(glfw_win, GLFW_TRUE);
+        }
+
+        // rendering stuff
         ry_gl_clear_color(make_vec4f(0.5f, 0.2f, 0.2f, 1.0f));
         ry_gl_clear(GL_COLOR_BUFFER_BIT);
 
@@ -160,6 +167,8 @@ int main(void) {
         glfwSwapBuffers(glfw_win);
         glfwPollEvents();
     }
+
+    ry_free(ry);
 
     glfwTerminate();
     return 0;

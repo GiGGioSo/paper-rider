@@ -391,8 +391,8 @@ RY_Rendy *ry_init() {
     return ry;
 }
 
-void ry_free(RY_Rendy *ry) {
-    // TODO(gio): implement
+void ry_free(RY_Rendy *ry) { // TODO(gio): useless?
+    ry_reset_layers(ry);
 }
 
 RY_Target ry_create_target(
@@ -802,23 +802,26 @@ void ry_push_polygon(
         void *indices,
         uint32 indices_number) {
 
+    uint8 indices_allocated_here = 0;
     RY_CHECK(vertices == NULL,
             RY_ERR_INVALID_ARGUMENTS,
-            return);
+            RY_RETURN_DEALLOC);
 
     RY_CHECK(layer_index >= ry->layers.count,
             ry->err = RY_ERR_LAYER_INDEX_OUT_OF_BOUNDS,
-            return);
+            RY_RETURN_DEALLOC);
 
     RY_Layer *layer = &ry->layers.elements[layer_index];
     RY_Target *target = &layer->target;
 
+
     if (indices == NULL) {
+        indices_allocated_here = 1;
         indices_number = vertices_number;
         indices = malloc(target->index_size * vertices_number);
         RY_CHECK(indices == NULL,
                  RY_ERR_MEMORY_ALLOCATION,
-                 return);
+                 RY_RETURN_DEALLOC);
 
         if (target->index_size == 1) {
             uint8 *casted_indices = (uint8 *) indices;
@@ -862,7 +865,7 @@ void ry_push_polygon(
                 &layer->vertex_buffer,
                 vertices,
                 cmd.vertices_data_bytes);
-    if (ry->err) return;
+    if (ry->err) RY_RETURN_DEALLOC;
 
     cmd.indices_data_bytes = indices_number * target->index_size;
     cmd.indices_data_start =
@@ -871,7 +874,7 @@ void ry_push_polygon(
                 &layer->index_buffer,
                 indices,
                 cmd.indices_data_bytes);
-    if (ry->err) return;
+    if (ry->err) RY_RETURN_DEALLOC;
 
     if (target->index_size == 1) {
         // this should be a safe cast
@@ -886,7 +889,7 @@ void ry_push_polygon(
             // check for overflow
             RY_CHECK(*index + casted_offset < *index,
                      RY_ERR_OUT_OF_INDICES,
-                     return);
+                     RY_RETURN_DEALLOC);
 
             *index += casted_offset;
         }
@@ -903,7 +906,7 @@ void ry_push_polygon(
             // check for overflow
             RY_CHECK(*index + casted_offset < *index,
                      RY_ERR_OUT_OF_INDICES,
-                     return);
+                     RY_RETURN_DEALLOC);
 
             *index += casted_offset;
         }
@@ -917,17 +920,21 @@ void ry_push_polygon(
             // check for overflow
             RY_CHECK(*index + index_offset < *index,
                      RY_ERR_OUT_OF_INDICES,
-                     return);
+                     RY_RETURN_DEALLOC);
 
             *index += index_offset;
         }
     }
 
     ry__insert_draw_command(ry, &layer->draw_commands, cmd);
-    if (ry->err) return;
+    if (ry->err) RY_RETURN_DEALLOC;
 
     ry->err = RY_ERR_NONE;
-    return;
+
+    defer_dealloc:
+    {
+        if (indices_allocated_here == 1 && indices) free(indices);
+    }
 }
 
 void ry_draw_layer(
