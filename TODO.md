@@ -1,6 +1,9 @@
 
 # TODO
 
+[ ] New UI: try to implement this in a different project first
+    [ ] create UI library :)
+
 [ ] Port from C++ to C: this will be done during the overall rewrite, meaning that only at the end of it the build script will be actually update to use only C
     [ ] substitute glm with mathy
     [ ] typedef declarations
@@ -14,9 +17,6 @@
         [ ] port the gjk from the test implementation of gjk2D
     [ ] update rendering (use rendy)
         [ ] figure out how to apply textures (maybe each triangle of the object is a "glued piece of paper", that together actually make up the object)
-
-[ ] New UI
-    [ ] create UI library :)
 
 [ ] New plane
     [ ] More complete hitbox
