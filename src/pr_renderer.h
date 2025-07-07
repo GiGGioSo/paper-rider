@@ -20,28 +20,28 @@
 
 #define PR_MAX_TEXT_VERTICES (1000 * 6)
 
-struct TexCoords {
+typedef struct PR_TexCoords {
     // Lower left corner is (0, 0)
     float tx;
     float ty;
     float tw;
     float th;
-};
+} PR_TexCoords;
 
-struct TextureElement {
+typedef struct PR_TextureElement {
     char filename[256];
     int width;
     int height;
-    TexCoords tex_coords;
-};
+    PR_TexCoords tex_coords;
+} PR_TextureElement;
 
-struct ArrayTexture {
-    TextureElement *elements;
+typedef struct PR_ArrayTexture {
+    PR_TextureElement *elements;
     int elements_len;
     unsigned int id;
-};
+} PR_ArrayTexture;
 
-struct Font {
+typedef struct PR_Font {
     const char* filename;
     unsigned int texture;
     stbtt_bakedchar* char_data;
@@ -50,30 +50,30 @@ struct Font {
     int font_height;
     int bitmap_width;
     int bitmap_height;
-};
+} PR_Font;
 
-struct Texture {
+typedef struct PR_Texture {
     unsigned int id;
     int width;
     int height;
     int nr_channels;
-};
+} PR_Texture;
 
-struct DataImage {
+typedef struct PR_DataImage {
     uint8_t *data;
     int width;
     int height;
     int nr_channels;
     const char *path;
-};
+} PR_DataImage;
 
-struct DataImages {
-    DataImage *items;
+typedef struct PR_DataImages {
+    PR_DataImage *items;
     size_t count;
     size_t capacity;
-};
+} PR_DataImages;
 
-struct Renderer {
+typedef struct PR_Renderer {
     unsigned int uni_vao;
     unsigned int uni_vbo;
     unsigned int uni_bytes_offset;
@@ -93,39 +93,39 @@ struct Renderer {
     unsigned int text_vbo;
     unsigned int text_bytes_offset;
     unsigned int text_vertex_count;
-};
+} PR_Renderer;
 
-TexCoords
-texcoords_in_texture_space(size_t x, size_t y, size_t w, size_t h, Texture tex, bool inverse);
+PR_TexCoords
+texcoords_in_texture_space(size_t x, size_t y, size_t w, size_t h, PR_Texture tex, bool inverse);
 
 void
-renderer_init(Renderer* renderer);
+renderer_init(PR_Renderer *renderer);
 
 // NOTE: Unicolor rendering
 void
 renderer_add_queue_uni(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered);
 
 inline void
-renderer_add_queue_uni(Rect rec, glm::vec4 c, bool centered) {
+renderer_add_queue_uni(PR_Rect rec, glm::vec4 c, bool centered) {
     renderer_add_queue_uni(rec.pos.x, rec.pos.y,
                           rec.dim.x, rec.dim.y, rec.angle,
                           c, rec.triangle, centered);
 }
 
 void
-renderer_draw_uni(Shader s);
+renderer_draw_uni(PR_Shader s);
 
 
 // NOTE: Textured rendering
 // This is intended to be used with a single texture containing everything
 void
-renderer_create_texture(Texture* t, const char* filename);
+renderer_create_texture(PR_Texture* t, const char* filename);
 
 void
 renderer_add_queue_tex(float x, float y, float w, float h, float r, bool centered, float tx, float ty, float tw, float th);
 
 inline void
-renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
+renderer_add_queue_tex(PR_Rect rec, PR_TexCoords t, bool centered) {
     renderer_add_queue_tex(rec.pos.x, rec.pos.y,
                            rec.dim.x, rec.dim.y,
                            rec.angle, centered,
@@ -134,28 +134,28 @@ renderer_add_queue_tex(Rect rec, TexCoords t, bool centered) {
 }
 
 void
-renderer_draw_tex(Shader s, Texture* t);
+renderer_draw_tex(PR_Shader s, PR_Texture *t);
 
 // NOTE: Texture rendering with array textures
 
 // The ArrayTexture already needs to have elements allocated and elements_len set
 //   each element needs to have its filename set aswell
 void
-renderer_create_array_texture(ArrayTexture *at);
+renderer_create_array_texture(PR_ArrayTexture *at);
 
 void
-renderer_add_queue_array_tex(ArrayTexture at, float x, float y, float w, float h, float r, bool centered, int layer);
+renderer_add_queue_array_tex(PR_ArrayTexture at, float x, float y, float w, float h, float r, bool centered, int layer);
 void
-renderer_draw_array_tex(Shader s, ArrayTexture at);
+renderer_draw_array_tex(PR_Shader s, PR_ArrayTexture at);
 
 // NOTE: Text rendering
 int
-renderer_create_font_atlas(Font *font);
+renderer_create_font_atlas(PR_Font *font);
 
 void
-renderer_add_queue_text(float x, float y, const char* text, glm::vec4 c, Font* font, bool centered);
+renderer_add_queue_text(float x, float y, const char* text, glm::vec4 c, PR_Font *font, bool centered);
 
 void
-renderer_draw_text(Font* font, Shader s);
+renderer_draw_text(PR_Font* font, PR_Shader s);
 
 #endif // PR_RENDERER_H

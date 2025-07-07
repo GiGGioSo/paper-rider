@@ -1,6 +1,6 @@
 #include "pr_rect.h"
 
-#include "../include/glm/glm.hpp"
+#include "glm/glm.hpp"
 
 #include <math.h>
 #include <iostream>
@@ -45,7 +45,7 @@ bool lines_are_colliding(float x1, float y1,
     return false; // No collision
 }
 
-bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
+bool rect_contains_point(const PR_Rect rec, float px, float py, bool centered) {
     // NOTE: Check if rec contains the point
     float center_x, center_y;
     float x, y, w, h;
@@ -92,7 +92,7 @@ bool rect_contains_point(const Rect rec, float px, float py, bool centered) {
     return false;
 }
 
-bool rect_are_colliding(const Rect r1, const Rect r2, float *cx, float *cy) {
+bool rect_are_colliding(const PR_Rect r1, const PR_Rect r2, float *cx, float *cy) {
     // NOTE: check if the objects are very distant,
     //       in that case don't check the collision
     if (glm::abs(r1.pos.x - r2.pos.x) >

@@ -1,6 +1,6 @@
 #include "pr_parallax.h"
 
-void parallax_init(PR::Parallax *px, float fc, TexCoords tc,
+void parallax_init(PR_Parallax *px, float fc, PR_TexCoords tc,
                    float p_start_x, float p_start_y,
                    float p_w, float p_h) {
 
@@ -13,7 +13,7 @@ void parallax_init(PR::Parallax *px, float fc, TexCoords tc,
         piece_index < ARRAY_LENGTH(px->pieces);
         ++piece_index) {
 
-        PR::ParallaxPiece *piece = px->pieces + piece_index;
+        PR_ParallaxPiece *piece = px->pieces + piece_index;
 
         *piece = {
             .base_pos_x = p_start_x + (p_w * piece_index),
@@ -27,12 +27,12 @@ void parallax_init(PR::Parallax *px, float fc, TexCoords tc,
     }
 }
 
-void parallax_update_n_queue_render(PR::Parallax *px, float current_x) {
+void parallax_update_n_queue_render(PR_Parallax *px, float current_x) {
     for(size_t piece_index = 0;
         piece_index < ARRAY_LENGTH(px->pieces);
         ++piece_index) {
 
-        PR::ParallaxPiece *piece = px->pieces + piece_index;
+        PR_ParallaxPiece *piece = px->pieces + piece_index;
         piece->body.pos.x = piece->base_pos_x +
                             (px->reference_point - current_x) *
                             (1.f - px->follow_coeff);

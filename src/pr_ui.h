@@ -6,6 +6,6 @@
 #include "pr_input.h"
 
 bool
-button_clicked(InputController *input, PR::Button button);
+button_clicked(PR_InputController *input, PR_Button button);
 
 #endif//PR_UI_H

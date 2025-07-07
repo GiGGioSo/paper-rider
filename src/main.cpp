@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../include/glad/glad.h"
-#include "../include/glfw3.h"
-#include "../include/glm/ext.hpp"
+#include "glad/glad.h"
+#include "glfw3.h"
+#include "glm/ext.hpp"
 
 #include "pr_globals.h"
 #include "pr_renderer.h"
@@ -34,9 +34,9 @@ int main() {
 
     glob = (PR *) std::malloc(sizeof(PR));
     glob->window.title = "Paper Rider";
-    glob->window.display_mode = PR::WINDOWED;
-    // These values are used only if display_mode == PR::WINDOWED
-    glob->window.windowed_resolution = PR::R1200x900;
+    glob->window.display_mode = PR_WINDOWED;
+    // These values are used only if display_mode == PR_WINDOWED
+    glob->window.windowed_resolution = PR_R1200x900;
     glob->window.width = window_resolution_width(glob->window.windowed_resolution);
     glob->window.height = window_resolution_height(glob->window.windowed_resolution);
 
@@ -49,14 +49,14 @@ int main() {
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    if (glob->window.display_mode == PR::FULLSCREEN) {
+    if (glob->window.display_mode == PR_FULLSCREEN) {
         GLFWmonitor *main_monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode *mode = glfwGetVideoMode(main_monitor);
 
         glob->window.glfw_win =
             glfwCreateWindow(mode->width, mode->height, glob->window.title,
                              glfwGetPrimaryMonitor(), NULL);
-    } else if (glob->window.display_mode == PR::BORDERLESS) {
+    } else if (glob->window.display_mode == PR_BORDERLESS) {
         glfwWindowHint(GLFW_DECORATED, 0);
 
         GLFWmonitor *main_monitor = glfwGetPrimaryMonitor();
@@ -67,7 +67,7 @@ int main() {
         glob->window.glfw_win =
             glfwCreateWindow(glob->window.width, glob->window.height,
                              glob->window.title, NULL, NULL);
-    } else if (glob->window.display_mode == PR::WINDOWED) {
+    } else if (glob->window.display_mode == PR_WINDOWED) {
         glob->window.glfw_win =
             glfwCreateWindow(glob->window.width, glob->window.height,
                              glob->window.title, NULL, NULL);
@@ -139,7 +139,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         // NOTE: Update input
-        InputController *input = &glob->input;
+        PR_InputController *input = &glob->input;
         input_controller_update(glob->window.glfw_win, input,
                                 glob->window.vertical_bar,
                                 glob->window.horizontal_bar,
@@ -151,22 +151,22 @@ int main() {
 
 
         switch (glob->state.current_case) {
-            case PR::START_MENU:
+            case PR_START_MENU:
             {
                 start_menu_update();
                 break;
             }
-            case PR::PLAY_MENU:
+            case PR_PLAY_MENU:
             {
                 play_menu_update();
                 break;
             }
-            case PR::OPTIONS_MENU:
+            case PR_OPTIONS_MENU:
             {
                 options_menu_update();
                 break;
             }
-            case PR::LEVEL:
+            case PR_LEVEL:
             {
                 level_update();
                 break;
@@ -218,35 +218,35 @@ int glob_init(void) {
     glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)GAME_WIDTH,
                                        (float)GAME_HEIGHT, 0.0f);
 
-    InputController *in = &glob->input;
+    PR_InputController *in = &glob->input;
     input_controller_init(in);
 
     // NOTE: Initializing of the shaders
-    Shader *s1 = &glob->rend_res.shaders[0];
+    PR_Shader *s1 = &glob->rend_res.shaders[0];
     shaderer_create_program(s1, "./res/shaders/quad_default.vs",
                             "./res/shaders/quad_default.fs");
     shaderer_set_mat4(*s1, "projection",
                       glob->rend_res.ortho_proj);
 
-    Shader *s2 = &glob->rend_res.shaders[1];
+    PR_Shader *s2 = &glob->rend_res.shaders[1];
     shaderer_create_program(s2, "./res/shaders/tex_default.vs",
                             "./res/shaders/tex_default.fs");
     shaderer_set_mat4(*s2, "projection",
                       glob->rend_res.ortho_proj);
 
-    Shader *s3 = &glob->rend_res.shaders[2];
+    PR_Shader *s3 = &glob->rend_res.shaders[2];
     shaderer_create_program(s3, "./res/shaders/text_default.vs",
                             "./res/shaders/text_default.fs");
     shaderer_set_mat4(*s3, "projection",
                       glob->rend_res.ortho_proj);
 
-    Shader *s4 = &glob->rend_res.shaders[3];
+    PR_Shader *s4 = &glob->rend_res.shaders[3];
     shaderer_create_program(s4, "./res/shaders/text_wave.vs",
                             "./res/shaders/text_default.fs");
     shaderer_set_mat4(*s4, "projection",
                       glob->rend_res.ortho_proj);
 
-    Shader *s5 = &glob->rend_res.shaders[4];
+    PR_Shader *s5 = &glob->rend_res.shaders[4];
     shaderer_create_program(s5, "./res/shaders/tex_array.vs",
                             "./res/shaders/tex_array.fs");
     shaderer_set_mat4(*s5, "projection",
@@ -263,9 +263,9 @@ int glob_init(void) {
               << std::endl;
 
 
-    // # Font initialization
+    // # PR_Font initialization
     int error = 0;
-    Font *f1 = &glob->rend_res.fonts[DEFAULT_FONT];
+    PR_Font *f1 = &glob->rend_res.fonts[DEFAULT_FONT];
     f1->filename = "./arial.ttf";
     f1->first_char = 32;
     f1->num_chars = 96;
@@ -281,7 +281,7 @@ int glob_init(void) {
         return 1;
     }
 
-    Font *f2 = &glob->rend_res.fonts[OBJECT_INFO_FONT];
+    PR_Font *f2 = &glob->rend_res.fonts[OBJECT_INFO_FONT];
     f2->filename = "./arial.ttf";
     f2->first_char = 32;
     f2->num_chars = 96;
@@ -297,7 +297,7 @@ int glob_init(void) {
         return 1;
     }
 
-    Font *f3 = &glob->rend_res.fonts[ACTION_NAME_FONT];
+    PR_Font *f3 = &glob->rend_res.fonts[ACTION_NAME_FONT];
     f3->filename = "./arial.ttf";
     f3->first_char = 32;
     f3->num_chars = 96;
@@ -314,16 +314,16 @@ int glob_init(void) {
     }
     
     // # Array textures initialization
-    ArrayTexture *at1 = &glob->rend_res.array_textures[0];
+    PR_ArrayTexture *at1 = &glob->rend_res.array_textures[0];
     at1->elements_len = PR_LAST_TEX1 + 1;
-    at1->elements = (TextureElement *) std::malloc(sizeof(TextureElement) * at1->elements_len);
+    at1->elements = (PR_TextureElement *) std::malloc(sizeof(PR_TextureElement) * at1->elements_len);
     // Elements initialization
     at1->elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at1);
 
-    ArrayTexture *at2 = &glob->rend_res.array_textures[1];
+    PR_ArrayTexture *at2 = &glob->rend_res.array_textures[1];
     at2->elements_len = PR_LAST_TEX2 + 1;
-    at2->elements = (TextureElement *) std::malloc(sizeof(TextureElement) * at2->elements_len);
+    at2->elements = (PR_TextureElement *) std::malloc(sizeof(PR_TextureElement) * at2->elements_len);
     // Elements initialization
     at2->elements[PR_TEX2_PLANE] = { .filename = "res/test_images/plane.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at2);
@@ -338,7 +338,7 @@ int glob_init(void) {
     glob->colors[3] = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
     // ### Sound initialization ###
-    PR::Sound *sound = &glob->sound;
+    PR_Sound *sound = &glob->sound;
     sound->master_volume = 1.f;
     sound->sfx_volume = 1.f;
     sound->music_volume = 1.f;
@@ -493,14 +493,14 @@ int glob_init(void) {
     options_menu_set_to_null(&glob->current_options_menu);
     level_set_to_null(&glob->current_level);
 
-    glob->current_start_menu.selection = PR::START_BUTTON_PLAY;
+    glob->current_start_menu.selection = PR_START_BUTTON_PLAY;
     CHANGE_CASE_TO_START_MENU(0);
 
     return 0;
 }
 
 void glob_free(void) {
-    PR::Sound *s = &glob->sound;
+    PR_Sound *s = &glob->sound;
     ma_sound_uninit(&s->menu_music);
     ma_sound_uninit(&s->playing_music);
     ma_sound_uninit(&s->gameover_music);
@@ -529,7 +529,7 @@ void glob_free(void) {
 }
 
 void callback_gamepad(int gamepad_id, int event) {
-    InputController *in = &glob->input;
+    PR_InputController *in = &glob->input;
 
     if (event == GLFW_CONNECTED) {
         if (in->current_gamepad == -1 && glfwJoystickIsGamepad(gamepad_id)) {
@@ -557,7 +557,7 @@ void callback_framebuffer_size(GLFWwindow *window,
                                int width, int height) {
     UNUSED(window);
 
-    PR::WinInfo *win = &glob->window;
+    PR_WinInfo *win = &glob->window;
 
     int height_from_width = width * 3 / 4;
     int width_from_height = height * 4 / 3;

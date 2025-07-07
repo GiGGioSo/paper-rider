@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "pr_mathy.h"
-#include "../include/stb_image.h"
+#include "stb_image.h"
 
 // TODO(gio):
 // [ ] freeing stuff: make sure the user has to free only what he created

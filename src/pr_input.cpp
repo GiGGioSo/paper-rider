@@ -8,7 +8,7 @@
 #define GP_NO_BINDING { GLFW_KEY_UNKNOWN, PR_BUTTON }
 #define KB_NO_BINDING { GLFW_KEY_UNKNOWN }
 
-void input_controller_init(InputController *input) {
+void input_controller_init(PR_InputController *input) {
     // Detect already connected controllers at startup
     input->current_gamepad = -1;
     input->gamepad_name = NULL;
@@ -38,8 +38,8 @@ void input_controller_init(InputController *input) {
     }
 }
 
-void input_controller_set_default_keybindings(InputController *input) {
-    InputAction *actions = input->actions;
+void input_controller_set_default_keybindings(PR_InputController *input) {
+    PR_InputAction *actions = input->actions;
 
     // Global actions
     actions[PR_EXIT_GAME] = {
@@ -324,7 +324,7 @@ void input_controller_set_default_keybindings(InputController *input) {
     // TODO: Complete
 }
 
-int input_controller_keybindings_reset(InputController *input,
+int input_controller_keybindings_reset(PR_InputController *input,
                                        const char *filepath) {
     if (std::remove(filepath)) {
         std::cout << "[ERROR]: Could not delete the keybindings file: "
@@ -338,7 +338,7 @@ int input_controller_keybindings_reset(InputController *input,
     return 0;
 }
 
-void input_controller_update(GLFWwindow *window, InputController *input,
+void input_controller_update(GLFWwindow *window, PR_InputController *input,
                              const int vertical_bar,
                              const int horizontal_bar,
                              const int screen_w,
@@ -352,7 +352,7 @@ void input_controller_update(GLFWwindow *window, InputController *input,
         action_index < ARRAY_LENGTH(input->actions);
         ++action_index) {
 
-        InputAction *action = &input->actions[action_index];
+        PR_InputAction *action = &input->actions[action_index];
 
         key_reset(&action->key);
         action->value = 0.f;
@@ -450,7 +450,7 @@ void input_controller_update(GLFWwindow *window, InputController *input,
             action_index < ARRAY_LENGTH(input->actions);
             ++action_index) {
 
-        InputAction *action = &input->actions[action_index];
+        PR_InputAction *action = &input->actions[action_index];
 
         // NOTE: Update actions based on keyboard only
         //          if there's no change of keybinding going on
@@ -493,7 +493,7 @@ void input_controller_update(GLFWwindow *window, InputController *input,
                 if (action->gp_binds[gp_bind_index].bind_index ==
                         GLFW_KEY_UNKNOWN) continue;
 
-                GamepadBindingType type = action->gp_binds[gp_bind_index].type;
+                PR_GamepadBindingType type = action->gp_binds[gp_bind_index].type;
                 int bind_index = action->gp_binds[gp_bind_index].bind_index;
 
                 bool disable_press = false;
@@ -545,7 +545,7 @@ void kb_change_binding_callback(GLFWwindow *window,
     UNUSED(scancode);
     UNUSED(mods);
 
-    InputController *input = &glob->input;
+    PR_InputController *input = &glob->input;
 
     if (!input->kb_binding) return;
 
@@ -567,7 +567,7 @@ void kb_change_binding_callback(GLFWwindow *window,
     }
 }
 
-const char *get_gamepad_button_name(int key, GamepadBindingType type) {
+const char *get_gamepad_button_name(int key, PR_GamepadBindingType type) {
     if (type == PR_BUTTON) {
         switch (key) {
             case GLFW_GAMEPAD_BUTTON_A: return "A";
@@ -676,7 +676,7 @@ const char *get_action_name(int action) {
 
 // Save and load keybindings from memory
 int keybindings_save_to_file(const char *file_path,
-        InputAction *actions,
+        PR_InputAction *actions,
         int actions_len) {
     int result = 0;
     FILE *key_file = NULL;
@@ -689,7 +689,7 @@ int keybindings_save_to_file(const char *file_path,
         if (std::ferror(key_file)) return_defer(2);
 
         for(int bind_index = 0; bind_index < actions_len; ++bind_index) {
-            InputAction action = actions[bind_index];
+            PR_InputAction action = actions[bind_index];
 
             std::fprintf(key_file,
                          "%i:%i,%i:%i_%i,%i_%i\n",
@@ -710,7 +710,7 @@ int keybindings_save_to_file(const char *file_path,
 }
 
 int keybindings_load_from_file(const char *file_path,
-        InputAction *actions,
+        PR_InputAction *actions,
         int actions_len) {
     int result = 0;
     int ret = 0;
@@ -738,7 +738,7 @@ int keybindings_load_from_file(const char *file_path,
 
             if (bind_index < 0 || bind_index >= actions_len) return_defer(6);
 
-            InputAction *action = &actions[bind_index];
+            PR_InputAction *action = &actions[bind_index];
 
             ret = std::fscanf(key_file,
                               "%d,%d:%d_%d,%d_%d",

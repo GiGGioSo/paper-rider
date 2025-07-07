@@ -1,12 +1,12 @@
 #include "pr_shaderer.h"
 
-#include "../include/glad/glad.h"
+#include "glad/glad.h"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
-void shaderer_create_program(Shader* s, const char* vertexPath, const char* fragmentPath) {
+void shaderer_create_program(PR_Shader *s, const char* vertexPath, const char* fragmentPath) {
         // ----- get shaders from their path -----
     std::string vertexCode;
     std::string fragmentCode;
@@ -86,22 +86,22 @@ void shaderer_create_program(Shader* s, const char* vertexPath, const char* frag
     glDeleteShader(fragment);
 }
 
-void shaderer_set_int(Shader s, const char* name, int value) {
+void shaderer_set_int(PR_Shader s, const char* name, int value) {
     glUseProgram(s);
     glUniform1i(glGetUniformLocation(s, name), value);
 }
 
-void shaderer_set_float(Shader s, const char* name, float value) {
+void shaderer_set_float(PR_Shader s, const char* name, float value) {
     glUseProgram(s);
     glUniform1f(glGetUniformLocation(s, name), value);
 }
 
-void shaderer_set_vec3(Shader s, const char* name, glm::vec3 value) {
+void shaderer_set_vec3(PR_Shader s, const char* name, glm::vec3 value) {
     glUseProgram(s);
     glUniform3f(glGetUniformLocation(s, name), value.x, value.y, value.z);
 }
 
-void shaderer_set_mat4(Shader s, const char* name, glm::mat4 value) {
+void shaderer_set_mat4(PR_Shader s, const char* name, glm::mat4 value) {
     glUseProgram(s);
     glUniformMatrix4fv(glGetUniformLocation(s, name), 1, GL_FALSE, &value[0].x);
 }

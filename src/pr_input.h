@@ -1,8 +1,8 @@
 #ifndef PP_INPUT_H
 #define PP_INPUT_H
 
-#include "../include/glfw3.h"
-#include "../include/glm/vec2.hpp"
+#include "glfw3.h"
+#include "glm/vec2.hpp"
 
 #define ACTION_PRESSED(action) (input->actions[(action)].key.pressed)
 #define ACTION_CLICKED(action) (input->actions[(action)].key.clicked)
@@ -64,75 +64,75 @@
 
 #define PR_LAST_ACTION PR_EDIT_OBJ_DESELECT
 
-struct Key {
+typedef struct PR_Key {
     bool old;
     bool clicked;
     bool pressed;
-};
+} PR_Key;
 
-enum GamepadBindingType {
+enum PR_GamepadBindingType {
     PR_BUTTON = 0,
     PR_AXIS_POSITIVE = 1,
     PR_AXIS_NEGATIVE = 2,
 };
-struct GamepadBinding {
+typedef struct PR_GamepadBinding {
     int bind_index;
-    GamepadBindingType type;
-};
+    PR_GamepadBindingType type;
+} PR_GamepadBinding;
 
-struct KeyboardBinding {
+typedef struct PR_KeyboardBinding {
     int bind_index;
-};
+} PR_KeyboardBinding;
 
-struct InputAction {
-    KeyboardBinding kb_binds[2];
-    GamepadBinding gp_binds[2];
+typedef struct PR_InputAction {
+    PR_KeyboardBinding kb_binds[2];
+    PR_GamepadBinding gp_binds[2];
 
-    Key key;
+    PR_Key key;
     // Analog value of the action, always between 0 and 1
     float value;
-};
+} PR_InputAction;
 
-struct InputController {
+typedef struct PR_InputController {
     // Check if the bindings were modified, and put to false when the change
     // has been noticed
     bool modified;
 
-    InputAction actions[PR_LAST_ACTION+1];
+    PR_InputAction actions[PR_LAST_ACTION+1];
 
     // Binding we are modifying
-    KeyboardBinding *kb_binding;
-    GamepadBinding *gp_binding;
+    PR_KeyboardBinding *kb_binding;
+    PR_GamepadBinding *gp_binding;
 
     // Binding we just modified,
     // so they are disabled until they are not pressed anymore
-    KeyboardBinding kb_disabled_until_released;
-    GamepadBinding gp_disabled_until_released;
+    PR_KeyboardBinding kb_disabled_until_released;
+    PR_GamepadBinding gp_disabled_until_released;
 
     // Gameplay
     int8_t current_gamepad;
     char *gamepad_name;
 
     // NOTE: Mouse
-    Key mouse_left;
-    Key mouse_right;
-    Key mouse_middle;
+    PR_Key mouse_left;
+    PR_Key mouse_right;
+    PR_Key mouse_middle;
     double mouseX;
     double mouseY;
     double old_mouseX;
     double old_mouseY;
     bool was_mouse_moved;
-};
+} PR_InputController;
 
 inline
-void key_reset(Key *key) {
+void key_reset(PR_Key *key) {
     key->old = key->pressed;
     key->pressed = false;
     key->clicked = false;
 }
 
 inline
-void key_pressed(Key *key) {
+void key_pressed(PR_Key *key) {
     key->pressed = true;
     if (key->old == false) {
         key->clicked = true;
@@ -142,30 +142,30 @@ void key_pressed(Key *key) {
 }
 
 void
-input_controller_init(InputController *input);
+input_controller_init(PR_InputController *input);
 
 void
-input_controller_set_default_keybindings(InputController *input);
+input_controller_set_default_keybindings(PR_InputController *input);
 
 int
-input_controller_keybindings_reset(InputController *input, const char *filepath);
+input_controller_keybindings_reset(PR_InputController *input, const char *filepath);
 
 /* Updates the InputController global struct */
 void
-input_controller_update(GLFWwindow *window, InputController *input, const int vertical_bar, const int horizontal_bar, const int screen_w, const int screen_h);
+input_controller_update(GLFWwindow *window, PR_InputController *input, const int vertical_bar, const int horizontal_bar, const int screen_w, const int screen_h);
 
 void
 kb_change_binding_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
-const char *get_gamepad_button_name(int key, GamepadBindingType type);
+const char *get_gamepad_button_name(int key, PR_GamepadBindingType type);
 const char *get_key_name(int key);
 const char *get_action_name(int action);
 
 // Save and load keybindings from memory
 int
-keybindings_save_to_file(const char *file_path, InputAction *actions, int actions_len);
+keybindings_save_to_file(const char *file_path, PR_InputAction *actions, int actions_len);
 int
-keybindings_load_from_file(const char *file_path, InputAction *actions, int actions_len);
+keybindings_load_from_file(const char *file_path, PR_InputAction *actions, int actions_len);
 
 
 #endif

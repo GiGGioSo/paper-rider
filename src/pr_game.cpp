@@ -72,106 +72,106 @@
 
 // Utilities functions for code reuse
 inline void
-portal_render(PR::Portal *portal);
+portal_render(PR_Portal *portal);
 inline void
-boostpad_render(PR::BoostPad *pad);
+boostpad_render(PR_BoostPad *pad);
 inline void
-obstacle_render(PR::Obstacle *obs);
+obstacle_render(PR_Obstacle *obs);
 inline void
-button_render(PR::Button but, glm::vec4 col, Font *font);
+button_render(PR_Button but, glm::vec4 col, PR_Font *font);
 inline void
-button_render_in_menu_camera(PR::Button but, glm::vec4 col, Font *font, PR::MenuCamera *cam);
+button_render_in_menu_camera(PR_Button but, glm::vec4 col, PR_Font *font, PR_MenuCamera *cam);
 inline void
-portal_render_info(PR::Portal *portal, float tx, float ty);
+portal_render_info(PR_Portal *portal, float tx, float ty);
 inline void
-boostpad_render_info(PR::BoostPad *boost, float tx, float ty);
+boostpad_render_info(PR_BoostPad *boost, float tx, float ty);
 inline void
-obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty);
+obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty);
 inline void
-goal_line_render_info(Rect *rect, float tx, float ty);
+goal_line_render_info(PR_Rect *rect, float tx, float ty);
 inline void
-start_pos_render_info(Rect *rect, glm::vec2 vel, float tx, float ty);
+start_pos_render_info(PR_Rect *rect, glm::vec2 vel, float tx, float ty);
 inline void
-plane_update_animation(PR::Plane *p);
+plane_update_animation(PR_Plane *p);
 inline void
-plane_activate_crash_animation(PR::Plane *p);
+plane_activate_crash_animation(PR_Plane *p);
 inline void
-level_reset_colors(PR::Level *);
+level_reset_colors(PR_Level *);
 inline void
-level_shuffle_colors(PR::Level *level);
-inline Rect
-*get_selected_body(void *selected, PR::ObjectType selected_type);
+level_shuffle_colors(PR_Level *level);
+inline PR_Rect
+*get_selected_body(void *selected, PR_ObjectType selected_type);
 void
-button_set_position(PR::Button *button, size_t index);
+button_set_position(PR_Button *button, size_t index);
 void
-button_edit_del_to_lb(PR::Button *reference, PR::Button *edit, PR::Button *del);
+button_edit_del_to_lb(PR_Button *reference, PR_Button *edit, PR_Button *del);
 void
-set_portal_option_buttons(PR::Button *buttons);
+set_portal_option_buttons(PR_Button *buttons);
 void
-set_boost_option_buttons(PR::Button *buttons);
+set_boost_option_buttons(PR_Button *buttons);
 void
-set_obstacle_option_buttons(PR::Button *buttons);
+set_obstacle_option_buttons(PR_Button *buttons);
 void
-set_start_pos_option_buttons(PR::Button *buttons);
-inline Rect
-rect_in_camera_space(Rect r, PR::Camera *cam);
-inline Rect
-rect_in_menu_camera_space(Rect r, PR::MenuCamera *cam);
+set_start_pos_option_buttons(PR_Button *buttons);
+inline PR_Rect
+rect_in_camera_space(PR_Rect r, PR_Camera *cam);
+inline PR_Rect
+rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam);
 void
-level_deactivate_edit_mode(PR::Level *level);
+level_deactivate_edit_mode(PR_Level *level);
 void
-level_activate_edit_mode(PR::Level *level);
+level_activate_edit_mode(PR_Level *level);
 void
-update_plane_physics_n_boost_collisions(PR::Level *level);
+update_plane_physics_n_boost_collisions(PR_Level *level);
 
 inline void
-apply_air_resistances(PR::Plane* p);
+apply_air_resistances(PR_Plane* p);
 inline void
-lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center);
+lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center);
 inline void
-move_rider_to_plane(PR::Rider *rid, PR::Plane *p);
+move_rider_to_plane(PR_Rider *rid, PR_Plane *p);
 inline void
-rider_jump_from_plane(PR::Rider *rid, PR::Plane *p);
+rider_jump_from_plane(PR_Rider *rid, PR_Plane *p);
 
 // Particle system functions
 void
-create_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
+create_particle_plane_boost(PR_ParticleSystem *ps, PR_Particle *particle);
 void
-update_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
+update_particle_plane_boost(PR_ParticleSystem *ps, PR_Particle *particle);
 void
-draw_particle_plane_boost(PR::ParticleSystem *ps, PR::Particle *particle);
+draw_particle_plane_boost(PR_ParticleSystem *ps, PR_Particle *particle);
 
 void
-create_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+create_particle_plane_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 void
-update_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+update_particle_plane_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 void
-draw_particle_plane_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+draw_particle_plane_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 
 void
-create_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+create_particle_rider_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 void
-update_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+update_particle_rider_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 void
-draw_particle_rider_crash(PR::ParticleSystem *ps, PR::Particle *particle);
+draw_particle_rider_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 
 // UI OptionSlider funcionts
 void
-option_slider_init_selection(PR::OptionSlider *slider, float pad);
+option_slider_init_selection(PR_OptionSlider *slider, float pad);
 void
-option_slider_update_value(PR::OptionSlider *slider, float value);
+option_slider_update_value(PR_OptionSlider *slider, float value);
 void
-option_slider_render(PR::OptionSlider *slider, glm::vec4 color);
+option_slider_render(PR_OptionSlider *slider, glm::vec4 color);
 void
-option_slider_handle_mouse(PR::OptionSlider *slider, float mouseX, float mouseY, Key mouse_button);
+option_slider_handle_mouse(PR_OptionSlider *slider, float mouseX, float mouseY, PR_Key mouse_button);
 void
-options_menu_selection_handle_mouse(PR::OptionsMenu *opt, float mouseX, float mouseY, bool showing_general_pane);
+options_menu_selection_handle_mouse(PR_OptionsMenu *opt, float mouseX, float mouseY, bool showing_general_pane);
 void
-options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions);
+options_menu_update_bindings(PR_OptionsMenu *opt, PR_InputAction *actions);
 
 
-void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
-                    PR::StartMenu *start, PR::OptionsMenu *opt) {
+void free_all_cases(PR_PlayMenu *menu, PR_Level *level,
+                    PR_StartMenu *start, PR_OptionsMenu *opt) {
     // Menu freeing
     da_clear(&menu->custom_buttons);
 
@@ -197,11 +197,11 @@ void free_all_cases(PR::PlayMenu *menu, PR::Level *level,
     UNUSED(opt);
 }
 
-void play_menu_set_to_null(PR::PlayMenu *menu) {
+void play_menu_set_to_null(PR_PlayMenu *menu) {
     menu->custom_buttons = {NULL, 0, 0};
 }
 
-void level_set_to_null(PR::Level *level) {
+void level_set_to_null(PR_Level *level) {
     level->portals = {NULL, 0, 0};
     level->obstacles = {NULL, 0, 0};
     level->boosts = {NULL, 0, 0};
@@ -213,12 +213,12 @@ void level_set_to_null(PR::Level *level) {
     }
 }
 
-void start_menu_set_to_null(PR::StartMenu *start) {
+void start_menu_set_to_null(PR_StartMenu *start) {
     // Nothing to set to null
     UNUSED(start);
 }
 
-void options_menu_set_to_null(PR::OptionsMenu *opt) {
+void options_menu_set_to_null(PR_OptionsMenu *opt) {
     // Nothing to set to null
     UNUSED(opt);
     glob->input.kb_binding = NULL;
@@ -226,9 +226,9 @@ void options_menu_set_to_null(PR::OptionsMenu *opt) {
 }
 
 int load_map_from_file(const char *file_path,
-                       PR::Obstacles *obstacles,
-                       PR::BoostPads *boosts,
-                       PR::Portals *portals,
+                       PR_Obstacles *obstacles,
+                       PR_BoostPads *boosts,
+                       PR_Portals *portals,
                        float *start_x, float *start_y,
                        float *start_vel_x, float *start_vel_y,
                        float *start_angle,
@@ -257,7 +257,7 @@ int load_map_from_file(const char *file_path,
                   << " obstacles from the file " << file_path
                   << std::endl;
 
-        // *obstacles = (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
+        // *obstacles = (PR_Obstacle *) std::malloc(sizeof(PR_Obstacle) *
         //                                           *number_of_obstacles);
         // if (*obstacles == NULL) {
         //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
@@ -285,7 +285,7 @@ int load_map_from_file(const char *file_path,
                 return_defer(1);
             }
 
-            PR::Obstacle obs;
+            PR_Obstacle obs;
             obs.body.pos.x = x;
             obs.body.pos.y = y;
             obs.body.dim.x = w;
@@ -296,7 +296,7 @@ int load_map_from_file(const char *file_path,
             obs.collide_plane = collide_plane;
             obs.collide_rider = collide_rider;
 
-            da_append(obstacles, obs, PR::Obstacle);
+            da_append(obstacles, obs, PR_Obstacle);
 
             std::cout << "x: " << x
                       << " y: " << y
@@ -319,7 +319,7 @@ int load_map_from_file(const char *file_path,
                   << " boost pads from file " << file_path
                   << std::endl;
 
-        // *boosts = (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
+        // *boosts = (PR_BoostPad *) std::malloc(sizeof(PR_BoostPad) *
         //                            *number_of_boosts);
         // if (*boosts == NULL) {
         //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
@@ -344,7 +344,7 @@ int load_map_from_file(const char *file_path,
                 break;
             }
 
-            PR::BoostPad pad;
+            PR_BoostPad pad;
             pad.body.pos.x = x;
             pad.body.pos.y = y;
             pad.body.dim.x = w;
@@ -354,7 +354,7 @@ int load_map_from_file(const char *file_path,
             pad.boost_angle = ba;
             pad.boost_power = bp;
 
-            da_append(boosts, pad, PR::BoostPad);
+            da_append(boosts, pad, PR_BoostPad);
 
             std::cout << "x: " << x
                       << " y: " << y
@@ -378,7 +378,7 @@ int load_map_from_file(const char *file_path,
                   << " portals from file " << file_path
                   << std::endl;
 
-        // *portals = (PR::Portal *) std::malloc(sizeof(PR::Portal) *
+        // *portals = (PR_Portal *) std::malloc(sizeof(PR_Portal) *
         //                            *number_of_portals);
         // if (*portals == NULL) {
         //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
@@ -403,16 +403,16 @@ int load_map_from_file(const char *file_path,
                 break;
             }
 
-            PR::Portal portal;
+            PR_Portal portal;
             switch(type) {
-                case PR::INVERSE:
+                case PR_INVERSE:
                 {
-                    portal.type = PR::INVERSE;
+                    portal.type = PR_INVERSE;
                     break;
                 }
-                case PR::SHUFFLE_COLORS:
+                case PR_SHUFFLE_COLORS:
                 {
-                    portal.type = PR::SHUFFLE_COLORS;
+                    portal.type = PR_SHUFFLE_COLORS;
                     break;
                 }
                 default:
@@ -434,7 +434,7 @@ int load_map_from_file(const char *file_path,
             portal.body.angle = 0.f;
             portal.body.triangle = false;
 
-            da_append(portals, portal, PR::Portal);
+            da_append(portals, portal, PR_Portal);
 
             std::cout << "x: " << x
                       << " y: " << y
@@ -475,7 +475,7 @@ int load_map_from_file(const char *file_path,
 }
 
 int save_map_to_file(const char *file_path,
-                     PR::Level *level) {
+                     PR_Level *level) {
     int result = 0;
     FILE *map_file = NULL;
 
@@ -493,8 +493,8 @@ int save_map_to_file(const char *file_path,
             obs_index < level->obstacles.count;
             ++obs_index) {
 
-            PR::Obstacle obs = level->obstacles.items[obs_index];
-            Rect b = obs.body;
+            PR_Obstacle obs = level->obstacles.items[obs_index];
+            PR_Rect b = obs.body;
             std::fprintf(map_file,
                          "%i %i %i %f %f %f %f %f\n",
                          obs.collide_plane, obs.collide_rider,
@@ -511,8 +511,8 @@ int save_map_to_file(const char *file_path,
             boost_index < level->boosts.count;
             ++boost_index) {
 
-            PR::BoostPad pad = level->boosts.items[boost_index];
-            Rect b = pad.body;
+            PR_BoostPad pad = level->boosts.items[boost_index];
+            PR_Rect b = pad.body;
             std::fprintf(map_file,
                          "%i %f %f %f %f %f %f %f\n",
                          b.triangle, b.pos.x, b.pos.y,
@@ -528,8 +528,8 @@ int save_map_to_file(const char *file_path,
             portal_index < level->portals.count;
             ++portal_index) {
 
-            PR::Portal portal = level->portals.items[portal_index];
-            Rect b = portal.body;
+            PR_Portal portal = level->portals.items[portal_index];
+            PR_Rect b = portal.body;
             std::fprintf(map_file,
                         "%i %i %f %f %f %f\n",
                         portal.type, portal.enable_effect,
@@ -559,9 +559,9 @@ int save_map_to_file(const char *file_path,
 }
 
 int load_custom_buttons_from_dir(const char *dir_path,
-                                 PR::CustomLevelButtons *buttons) {
+                                 PR_CustomLevelButtons *buttons) {
 
-    // PR::WinInfo *win = &glob->window;
+    // PR_WinInfo *win = &glob->window;
 
     int result = 0;
     DIR *dir = NULL;
@@ -608,7 +608,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           << map_name << " length: " << std::strlen(map_name)
                           << std::endl;
 
-                PR::CustomLevelButton lb;
+                PR_CustomLevelButton lb;
                 lb.is_new_level = false;
 
                 assert((std::strlen(map_name)+1 <=
@@ -624,7 +624,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
                               "%s", map_path);
 
 
-                da_append(buttons, lb, PR::CustomLevelButton);
+                da_append(buttons, lb, PR_CustomLevelButton);
 
                 size_t current_index = buttons->count-1;
 
@@ -634,7 +634,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
                           buttons->items[current_index].button.text) > 0) {
                     da_swap(buttons,
                             current_index-1, current_index,
-                            PR::CustomLevelButton);
+                            PR_CustomLevelButton);
                     current_index--;
                 }
                 button_set_position(&buttons->items[current_index].button,
@@ -665,7 +665,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     return result;
 }
 
-glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
+glm::vec4 get_obstacle_color(PR_Obstacle *obs) {
     if (obs->collide_rider && obs->collide_plane) {
         return glob->colors[glob->current_level.current_red];
     } else
@@ -679,14 +679,14 @@ glm::vec4 get_obstacle_color(PR::Obstacle *obs) {
     }
 }
 
-glm::vec4 get_portal_color(PR::Portal *portal) {
+glm::vec4 get_portal_color(PR_Portal *portal) {
     switch(portal->type) {
-        case PR::INVERSE:
+        case PR_INVERSE:
         {
             return glm::vec4(0.f, 0.f, 0.f, 1.f);
             break;
         }
-        case PR::SHUFFLE_COLORS:
+        case PR_SHUFFLE_COLORS:
         {
             return glm::vec4(1.f);
             break;
@@ -699,7 +699,7 @@ const char *campaign_levels_filepath[2] = {
     "./campaign_maps/level2.prmap"
 };
 
-int start_menu_prepare(PR::StartMenu *start) {
+int start_menu_prepare(PR_StartMenu *start) {
     start->play = {
         .from_center = true,
         .body = {
@@ -739,7 +739,7 @@ int start_menu_prepare(PR::StartMenu *start) {
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    PR::Sound *sound = &glob->sound;
+    PR_Sound *sound = &glob->sound;
     if (!ma_sound_is_playing(&sound->menu_music)) {
         ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
         ma_sound_start(&sound->menu_music);
@@ -748,60 +748,60 @@ int start_menu_prepare(PR::StartMenu *start) {
     return 0;
 }
 void start_menu_update() {
-    PR::StartMenu *start = &glob->current_start_menu;
-    InputController *input = &glob->input;
-    PR::Sound *sound = &glob->sound;
+    PR_StartMenu *start = &glob->current_start_menu;
+    PR_InputController *input = &glob->input;
+    PR_Sound *sound = &glob->sound;
 
     // ### CHANGING SELECTION ###
-    PR::StartMenuSelection before_selection = start->selection;
+    PR_StartMenuSelection before_selection = start->selection;
     // # Changing selection with keybindings #
     if (ACTION_CLICKED(PR_MENU_UP)) {
-        if (start->selection == PR::START_BUTTON_QUIT) {
-            start->selection = PR::START_BUTTON_OPTIONS;
-        } else if (start->selection == PR::START_BUTTON_OPTIONS) {
-            start->selection = PR::START_BUTTON_PLAY;
+        if (start->selection == PR_START_BUTTON_QUIT) {
+            start->selection = PR_START_BUTTON_OPTIONS;
+        } else if (start->selection == PR_START_BUTTON_OPTIONS) {
+            start->selection = PR_START_BUTTON_PLAY;
         }
     }
     if (ACTION_CLICKED(PR_MENU_DOWN)) {
-        if (start->selection == PR::START_BUTTON_PLAY) {
-            start->selection = PR::START_BUTTON_OPTIONS;
-        } else if (start->selection == PR::START_BUTTON_OPTIONS) {
-            start->selection = PR::START_BUTTON_QUIT;
+        if (start->selection == PR_START_BUTTON_PLAY) {
+            start->selection = PR_START_BUTTON_OPTIONS;
+        } else if (start->selection == PR_START_BUTTON_OPTIONS) {
+            start->selection = PR_START_BUTTON_QUIT;
         }
     }
     // # Changing selection with the mouse #
-    if (start->selection != PR::START_BUTTON_PLAY &&
+    if (start->selection != PR_START_BUTTON_PLAY &&
         input->was_mouse_moved &&
         rect_contains_point(start->play.body,
                             input->mouseX, input->mouseY,
                             start->play.from_center)) {
-        start->selection = PR::START_BUTTON_PLAY;
+        start->selection = PR_START_BUTTON_PLAY;
     }
-    if (start->selection != PR::START_BUTTON_OPTIONS &&
+    if (start->selection != PR_START_BUTTON_OPTIONS &&
         input->was_mouse_moved &&
         rect_contains_point(start->options.body,
                             input->mouseX, input->mouseY,
                             start->options.from_center)) {
-        start->selection = PR::START_BUTTON_OPTIONS;
+        start->selection = PR_START_BUTTON_OPTIONS;
     }
-    if (start->selection != PR::START_BUTTON_QUIT &&
+    if (start->selection != PR_START_BUTTON_QUIT &&
         input->was_mouse_moved &&
         rect_contains_point(start->quit.body,
                             input->mouseX, input->mouseY,
                             start->quit.from_center)) {
-        start->selection = PR::START_BUTTON_QUIT;
+        start->selection = PR_START_BUTTON_QUIT;
     }
 
     // # Change button color based on selection #
-    if (start->selection == PR::START_BUTTON_PLAY) {
+    if (start->selection == PR_START_BUTTON_PLAY) {
         start->play.col = START_BUTTON_SELECTED_COLOR;
         start->options.col = START_BUTTON_DEFAULT_COLOR;
         start->quit.col = START_BUTTON_DEFAULT_COLOR;
-    } else if (start->selection == PR::START_BUTTON_OPTIONS) {
+    } else if (start->selection == PR_START_BUTTON_OPTIONS) {
         start->options.col = START_BUTTON_SELECTED_COLOR;
         start->play.col = START_BUTTON_DEFAULT_COLOR;
         start->quit.col = START_BUTTON_DEFAULT_COLOR;
-    } else if (start->selection == PR::START_BUTTON_QUIT) {
+    } else if (start->selection == PR_START_BUTTON_QUIT) {
         start->quit.col = START_BUTTON_SELECTED_COLOR;
         start->play.col = START_BUTTON_DEFAULT_COLOR;
         start->options.col = START_BUTTON_DEFAULT_COLOR;
@@ -810,7 +810,7 @@ void start_menu_update() {
     // ### CLICKING THE SELECTION ###
     // # PLAY #
     if ((ACTION_CLICKED(PR_MENU_CLICK) &&
-            start->selection == PR::START_BUTTON_PLAY) ||
+            start->selection == PR_START_BUTTON_PLAY) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->play.body,
                                 input->mouseX, input->mouseY,
@@ -822,7 +822,7 @@ void start_menu_update() {
     }
     // # OPTIONS #
     if ((ACTION_CLICKED(PR_MENU_CLICK) &&
-            start->selection == PR::START_BUTTON_OPTIONS) ||
+            start->selection == PR_START_BUTTON_OPTIONS) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->options.body,
                                 input->mouseX, input->mouseY,
@@ -833,7 +833,7 @@ void start_menu_update() {
     }
     // # QUIT #
     if ((ACTION_CLICKED(PR_MENU_CLICK) &&
-            start->selection == PR::START_BUTTON_QUIT) ||
+            start->selection == PR_START_BUTTON_QUIT) ||
         (input->mouse_left.clicked &&
             rect_contains_point(start->quit.body,
                                 input->mouseX, input->mouseY,
@@ -850,7 +850,7 @@ void start_menu_update() {
     }
 
     // ### RENDERING ###
-    Rect full_screen = {
+    PR_Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
         .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
@@ -876,10 +876,10 @@ void start_menu_update() {
     }
 }
 
-int options_menu_prepare(PR::OptionsMenu *opt) {
-    InputController *input = &glob->input;
-    PR::MenuCamera *cam = &opt->camera;
-    PR::WinInfo *win = &glob->window;
+int options_menu_prepare(PR_OptionsMenu *opt) {
+    PR_InputController *input = &glob->input;
+    PR_MenuCamera *cam = &opt->camera;
+    PR_WinInfo *win = &glob->window;
 
     opt->to_start_menu = {
         .from_center = true,
@@ -981,7 +981,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .angle = 0.f,
             .triangle = false,
         },
-        .col = (win->display_mode == PR::FULLSCREEN) ?
+        .col = (win->display_mode == PR_FULLSCREEN) ?
                 OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "FULLSCREEN\0",
     };
@@ -994,7 +994,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .angle = 0.f,
             .triangle = false,
         },
-        .col = (win->display_mode == PR::BORDERLESS) ?
+        .col = (win->display_mode == PR_BORDERLESS) ?
                 OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "BORDERLESS\0",
     };
@@ -1007,7 +1007,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
             .angle = 0.f,
             .triangle = false,
         },
-        .col = (win->display_mode == PR::WINDOWED) ?
+        .col = (win->display_mode == PR_WINDOWED) ?
                 OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "WINDOWED\0",
     };
@@ -1051,12 +1051,12 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
         bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
         ++bind_index) {
 
-        InputAction *action = &input->actions[bind_index];
+        PR_InputAction *action = &input->actions[bind_index];
 
-        PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
-        PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
-        PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
-        PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+        PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
+        PR_Button *kb2 = &opt->change_kb_binds2[bind_index];
+        PR_Button *gp1 = &opt->change_gp_binds1[bind_index];
+        PR_Button *gp2 = &opt->change_gp_binds2[bind_index];
 
         int y = (bind_index + 1) * ((float)GAME_HEIGHT / 6) +
                     ((float)GAME_HEIGHT / 12);
@@ -1138,7 +1138,7 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    PR::Sound *sound = &glob->sound;
+    PR_Sound *sound = &glob->sound;
     if (!ma_sound_is_playing(&sound->menu_music)) {
         ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
         ma_sound_start(&sound->menu_music);
@@ -1147,11 +1147,11 @@ int options_menu_prepare(PR::OptionsMenu *opt) {
     return 0;
 }
 void options_menu_update() {
-    PR::OptionsMenu *opt = &glob->current_options_menu;
-    PR::Sound *sound = &glob->sound;
-    PR::MenuCamera *cam = &opt->camera;
-    InputController *input = &glob->input;
-    PR::WinInfo *win = &glob->window;
+    PR_OptionsMenu *opt = &glob->current_options_menu;
+    PR_Sound *sound = &glob->sound;
+    PR_MenuCamera *cam = &opt->camera;
+    PR_InputController *input = &glob->input;
+    PR_WinInfo *win = &glob->window;
     //float dt = glob->state.delta_time;
 
     // # Check if going back to the start menu #
@@ -1194,7 +1194,7 @@ void options_menu_update() {
     }
 
     // Will need it later when chaging the resolution
-    PR::Button unsaved_resolution_background = {
+    PR_Button unsaved_resolution_background = {
         .from_center = true,
         .body = {
             .pos = glm::vec2(GAME_WIDTH * 0.75f,
@@ -1211,46 +1211,46 @@ void options_menu_update() {
         // NOTE: Change selection with keybindings
         if (ACTION_CLICKED(PR_MENU_DOWN)) {
             switch (opt->current_selection) {
-                case PR::OPTION_NONE:
-                    opt->current_selection = PR::OPTION_MASTER_VOLUME; break;
-                case PR::OPTION_MASTER_VOLUME:
-                    opt->current_selection = PR::OPTION_SFX_VOLUME; break;
-                case PR::OPTION_SFX_VOLUME:
-                    opt->current_selection = PR::OPTION_MUSIC_VOLUME; break;
-                case PR::OPTION_MUSIC_VOLUME:
-                    opt->current_selection = PR::OPTION_DISPLAY_MODE; break;
-                case PR::OPTION_DISPLAY_MODE:
-                    if (win->display_mode != PR::WINDOWED) break;
-                    opt->current_selection = PR::OPTION_RESOLUTION; break;
-                case PR::OPTION_RESOLUTION: break;
+                case PR_OPTION_NONE:
+                    opt->current_selection = PR_OPTION_MASTER_VOLUME; break;
+                case PR_OPTION_MASTER_VOLUME:
+                    opt->current_selection = PR_OPTION_SFX_VOLUME; break;
+                case PR_OPTION_SFX_VOLUME:
+                    opt->current_selection = PR_OPTION_MUSIC_VOLUME; break;
+                case PR_OPTION_MUSIC_VOLUME:
+                    opt->current_selection = PR_OPTION_DISPLAY_MODE; break;
+                case PR_OPTION_DISPLAY_MODE:
+                    if (win->display_mode != PR_WINDOWED) break;
+                    opt->current_selection = PR_OPTION_RESOLUTION; break;
+                case PR_OPTION_RESOLUTION: break;
                 default: break;
             }
         }
         if (ACTION_CLICKED(PR_MENU_UP)) {
             switch (opt->current_selection) {
-                case PR::OPTION_NONE: break;
-                case PR::OPTION_MASTER_VOLUME:
-                    opt->current_selection = PR::OPTION_NONE; break;
-                case PR::OPTION_SFX_VOLUME:
-                    opt->current_selection = PR::OPTION_MASTER_VOLUME; break;
-                case PR::OPTION_MUSIC_VOLUME:
-                    opt->current_selection = PR::OPTION_SFX_VOLUME; break;
-                case PR::OPTION_DISPLAY_MODE:
-                    opt->current_selection = PR::OPTION_MUSIC_VOLUME; break;
-                case PR::OPTION_RESOLUTION:
-                    opt->current_selection = PR::OPTION_DISPLAY_MODE; break;
+                case PR_OPTION_NONE: break;
+                case PR_OPTION_MASTER_VOLUME:
+                    opt->current_selection = PR_OPTION_NONE; break;
+                case PR_OPTION_SFX_VOLUME:
+                    opt->current_selection = PR_OPTION_MASTER_VOLUME; break;
+                case PR_OPTION_MUSIC_VOLUME:
+                    opt->current_selection = PR_OPTION_SFX_VOLUME; break;
+                case PR_OPTION_DISPLAY_MODE:
+                    opt->current_selection = PR_OPTION_MUSIC_VOLUME; break;
+                case PR_OPTION_RESOLUTION:
+                    opt->current_selection = PR_OPTION_DISPLAY_MODE; break;
                 default: break;
             }
         }
 
         // NOTE: Act on the selection
         // If the display option is no more selected, reset the selection (?)
-        if (opt->current_selection != PR::OPTION_DISPLAY_MODE) {
+        if (opt->current_selection != PR_OPTION_DISPLAY_MODE) {
             opt->display_mode_selection = win->display_mode;
         }
 
         // Change the selection and respective volume of the selected slider
-        if (opt->current_selection == PR::OPTION_MASTER_VOLUME) {
+        if (opt->current_selection == PR_OPTION_MASTER_VOLUME) {
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->master_volume,
                                            opt->master_volume.value - 0.05f);
@@ -1264,7 +1264,7 @@ void options_menu_update() {
                                        input->mouse_left);
             ma_engine_set_volume(&sound->engine, opt->master_volume.value);
             sound->master_volume = opt->master_volume.value;
-        } else if (opt->current_selection == PR::OPTION_SFX_VOLUME) {
+        } else if (opt->current_selection == PR_OPTION_SFX_VOLUME) {
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->sfx_volume,
                                            opt->sfx_volume.value - 0.05f);
@@ -1279,7 +1279,7 @@ void options_menu_update() {
             ma_sound_group_set_volume(&sound->sfx_group,
                                       opt->sfx_volume.value);
             sound->sfx_volume = opt->sfx_volume.value;
-        } else if (opt->current_selection == PR::OPTION_MUSIC_VOLUME) {
+        } else if (opt->current_selection == PR_OPTION_MUSIC_VOLUME) {
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 option_slider_update_value(&opt->music_volume,
                                            opt->music_volume.value - 0.05f);
@@ -1294,27 +1294,27 @@ void options_menu_update() {
             ma_sound_group_set_volume(&sound->music_group,
                                       opt->music_volume.value);
             sound->music_volume = opt->music_volume.value;
-        } else if (opt->current_selection == PR::OPTION_DISPLAY_MODE) {
-            PR::DisplayMode old_display_mode = win->display_mode;
+        } else if (opt->current_selection == PR_OPTION_DISPLAY_MODE) {
+            PR_DisplayMode old_display_mode = win->display_mode;
 
             // Changing display mode selection with keybindings
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 switch (opt->display_mode_selection) {
-                    case PR::FULLSCREEN: break;
-                    case PR::BORDERLESS:
-                        opt->display_mode_selection = PR::FULLSCREEN; break;
-                    case PR::WINDOWED:
-                        opt->display_mode_selection = PR::BORDERLESS; break;
+                    case PR_FULLSCREEN: break;
+                    case PR_BORDERLESS:
+                        opt->display_mode_selection = PR_FULLSCREEN; break;
+                    case PR_WINDOWED:
+                        opt->display_mode_selection = PR_BORDERLESS; break;
                     default: break;
                 }
             }
             if (ACTION_CLICKED(PR_MENU_RIGHT)) {
                 switch (opt->display_mode_selection) {
-                    case PR::FULLSCREEN:
-                        opt->display_mode_selection = PR::BORDERLESS; break;
-                    case PR::BORDERLESS:
-                        opt->display_mode_selection = PR::WINDOWED; break;
-                    case PR::WINDOWED: break;
+                    case PR_FULLSCREEN:
+                        opt->display_mode_selection = PR_BORDERLESS; break;
+                    case PR_BORDERLESS:
+                        opt->display_mode_selection = PR_WINDOWED; break;
+                    case PR_WINDOWED: break;
                     default: break;
                 }
             }
@@ -1327,36 +1327,36 @@ void options_menu_update() {
             if (input->was_mouse_moved || input->mouse_left.clicked) {
                 if (rect_contains_point(opt->display_mode_fullscreen.body,
                             input->mouseX, input->mouseY, true)) {
-                    opt->display_mode_selection = PR::FULLSCREEN;
+                    opt->display_mode_selection = PR_FULLSCREEN;
                     if (input->mouse_left.clicked) {
-                        win->display_mode = PR::FULLSCREEN;
+                        win->display_mode = PR_FULLSCREEN;
                     }
                 } else if(rect_contains_point(opt->display_mode_borderless.body,
                             input->mouseX, input->mouseY, true)) {
-                    opt->display_mode_selection = PR::BORDERLESS;
+                    opt->display_mode_selection = PR_BORDERLESS;
                     if (input->mouse_left.clicked) {
-                        win->display_mode = PR::BORDERLESS;
+                        win->display_mode = PR_BORDERLESS;
                     }
                 } else if (rect_contains_point(opt->display_mode_windowed.body,
                             input->mouseX, input->mouseY, true)) {
-                    opt->display_mode_selection = PR::WINDOWED;
+                    opt->display_mode_selection = PR_WINDOWED;
                     if (input->mouse_left.clicked) {
-                        win->display_mode = PR::WINDOWED;
+                        win->display_mode = PR_WINDOWED;
                     }
                 }
             }
             // Change the background color of the display mode buttons
             // based on which display mode is now in use
             opt->display_mode_fullscreen.col =
-                (win->display_mode == PR::FULLSCREEN) ?
+                (win->display_mode == PR_FULLSCREEN) ?
                 OPTION_BUTTON_SELECTED_COLOR :
                 OPTION_BUTTON_DEFAULT_COLOR;
             opt->display_mode_borderless.col =
-                (win->display_mode == PR::BORDERLESS) ?
+                (win->display_mode == PR_BORDERLESS) ?
                 OPTION_BUTTON_SELECTED_COLOR :
                 OPTION_BUTTON_DEFAULT_COLOR;
             opt->display_mode_windowed.col =
-                (win->display_mode == PR::WINDOWED) ?
+                (win->display_mode == PR_WINDOWED) ?
                 OPTION_BUTTON_SELECTED_COLOR :
                 OPTION_BUTTON_DEFAULT_COLOR;
 
@@ -1366,7 +1366,7 @@ void options_menu_update() {
                 ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
                 ma_sound_start(&sound->click_selected);
             }
-        } else if (opt->current_selection == PR::OPTION_RESOLUTION) {
+        } else if (opt->current_selection == PR_OPTION_RESOLUTION) {
             // Changing window resolution with the keybindings
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
                 opt->resolution_selection =
@@ -1393,7 +1393,7 @@ void options_menu_update() {
                  window_resolution_from_dim(win->width, win->height))) {
                 window_resolution_set(win, opt->resolution_selection);
             }
-        } else if (opt->current_selection == PR::OPTION_NONE) {
+        } else if (opt->current_selection == PR_OPTION_NONE) {
             // do nothing
         }
     } else { // Update camera position
@@ -1452,12 +1452,12 @@ void options_menu_update() {
             // NOTE: No need to check them all if we are already selected
             if (input->kb_binding || input->gp_binding) break;
 
-            PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
-            PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
-            PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
-            PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+            PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
+            PR_Button *kb2 = &opt->change_kb_binds2[bind_index];
+            PR_Button *gp1 = &opt->change_gp_binds1[bind_index];
+            PR_Button *gp2 = &opt->change_gp_binds2[bind_index];
 
-            InputAction *action = &input->actions[bind_index];
+            PR_InputAction *action = &input->actions[bind_index];
 
             // Select/Click the various keybinding slots
             if (rect_contains_point(
@@ -1634,7 +1634,7 @@ void options_menu_update() {
     }
 
     // Rendering the background
-    Rect full_screen = {
+    PR_Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
         .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
@@ -1661,7 +1661,7 @@ void options_menu_update() {
     if (opt->showing_general_pane) {
         glm::vec4 color = glm::vec4(1.f);
         // Master volume rendering
-        color = (opt->current_selection == PR::OPTION_MASTER_VOLUME) ?
+        color = (opt->current_selection == PR_OPTION_MASTER_VOLUME) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                 opt->master_volume.background.pos.y,
@@ -1669,7 +1669,7 @@ void options_menu_update() {
                                 &glob->rend_res.fonts[0], true);
         option_slider_render(&opt->master_volume, color);
         // Sfx volume rendering
-        color = (opt->current_selection == PR::OPTION_SFX_VOLUME) ?
+        color = (opt->current_selection == PR_OPTION_SFX_VOLUME) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                 opt->sfx_volume.background.pos.y,
@@ -1677,7 +1677,7 @@ void options_menu_update() {
                                 &glob->rend_res.fonts[0], true);
         option_slider_render(&opt->sfx_volume, color);
         // Music volume rendering
-        color = (opt->current_selection == PR::OPTION_MUSIC_VOLUME) ?
+        color = (opt->current_selection == PR_OPTION_MUSIC_VOLUME) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                 opt->music_volume.background.pos.y,
@@ -1686,7 +1686,7 @@ void options_menu_update() {
         option_slider_render(&opt->music_volume, color);
 
         // Resolution changing rendering
-        color = (opt->current_selection == PR::OPTION_RESOLUTION) ?
+        color = (opt->current_selection == PR_OPTION_RESOLUTION) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                 opt->resolution_up.body.pos.y,
@@ -1710,7 +1710,7 @@ void options_menu_update() {
                       color, &glob->rend_res.fonts[0]);
 
         // Display mode rendering
-        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE) ?
+        color = (opt->current_selection == PR_OPTION_DISPLAY_MODE) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                 opt->display_mode_fullscreen.body.pos.y,
@@ -1720,18 +1720,18 @@ void options_menu_update() {
         renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
-        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE &&
-                 opt->display_mode_selection == PR::FULLSCREEN) ?
+        color = (opt->current_selection == PR_OPTION_DISPLAY_MODE &&
+                 opt->display_mode_selection == PR_FULLSCREEN) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         button_render(opt->display_mode_fullscreen,
                       color, &glob->rend_res.fonts[1]);
-        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE &&
-                 opt->display_mode_selection == PR::BORDERLESS) ?
+        color = (opt->current_selection == PR_OPTION_DISPLAY_MODE &&
+                 opt->display_mode_selection == PR_BORDERLESS) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         button_render(opt->display_mode_borderless,
                       color, &glob->rend_res.fonts[1]);
-        color = (opt->current_selection == PR::OPTION_DISPLAY_MODE &&
-                 opt->display_mode_selection == PR::WINDOWED) ?
+        color = (opt->current_selection == PR_OPTION_DISPLAY_MODE &&
+                 opt->display_mode_selection == PR_WINDOWED) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
         button_render(opt->display_mode_windowed,
                       color, &glob->rend_res.fonts[1]);
@@ -1747,8 +1747,8 @@ void options_menu_update() {
             bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
             ++bind_index) {
 
-            PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
-            Rect in_cam_rect = rect_in_menu_camera_space(kb1->body, cam);
+            PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
+            PR_Rect in_cam_rect = rect_in_menu_camera_space(kb1->body, cam);
 
             renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                     in_cam_rect.pos.y,
@@ -1765,10 +1765,10 @@ void options_menu_update() {
             bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
             ++bind_index) {
 
-            PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
-            PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
-            PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
-            PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+            PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
+            PR_Button *kb2 = &opt->change_kb_binds2[bind_index];
+            PR_Button *gp1 = &opt->change_gp_binds1[bind_index];
+            PR_Button *gp2 = &opt->change_gp_binds2[bind_index];
 
             button_render_in_menu_camera(*kb1, glm::vec4(1.f),
                                          &glob->rend_res.fonts[1], cam);
@@ -1785,7 +1785,7 @@ void options_menu_update() {
     }
 }
 
-int play_menu_prepare(PR::PlayMenu *menu) {
+int play_menu_prepare(PR_PlayMenu *menu) {
     // NOTE: By not setting this, it will remain the same as before
     //          starting the level
     //menu->showing_campaign_buttons = true;
@@ -1806,7 +1806,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
     menu->selected_custom_button = 0;
 
     // NOTE: Button to select which buttons to show
-    PR::Button *campaign = &menu->show_campaign_button;
+    PR_Button *campaign = &menu->show_campaign_button;
     campaign->body.pos.x = (GAME_WIDTH * 3.f) / 10.f;
     campaign->body.pos.y = GAME_HEIGHT / 10.f;
     campaign->body.dim.x = GAME_WIDTH / 3.f;
@@ -1819,7 +1819,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
     campaign->from_center = true;
     std::snprintf(campaign->text, strlen("CAMPAIGN")+1, "CAMPAIGN");
 
-    PR::Button *custom = &menu->show_custom_button;
+    PR_Button *custom = &menu->show_custom_button;
     custom->body.pos.x = (GAME_WIDTH * 7.f) / 10.f;
     custom->body.pos.y = GAME_HEIGHT / 10.f;
     custom->body.dim.x = GAME_WIDTH / 3.f;
@@ -1838,7 +1838,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
         levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
         ++levelbutton_index) {
 
-        PR::LevelButton *lb =
+        PR_LevelButton *lb =
             &menu->campaign_buttons[levelbutton_index];
 
         button_set_position(&lb->button, levelbutton_index);
@@ -1877,14 +1877,14 @@ int play_menu_prepare(PR::PlayMenu *menu) {
 
             return result;
         }
-        PR::Button *add_level = &menu->add_custom_button;
+        PR_Button *add_level = &menu->add_custom_button;
         button_set_position(add_level, menu->custom_buttons.count);
         assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
                 && "Text bigger than button text buffer!");
         std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
     }
 
-    PR::MenuCamera *cam = &menu->camera;
+    PR_MenuCamera *cam = &menu->camera;
     cam->pos.x = GAME_WIDTH * 0.5f;
     cam->pos.y = GAME_HEIGHT * 0.5f;
     cam->speed_multiplier = 6.f;
@@ -1897,7 +1897,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
         .triangle = false,
     };
 
-    PR::Button *yes = &menu->delete_yes;
+    PR_Button *yes = &menu->delete_yes;
     *yes = {
         .from_center = true,
         .body = {
@@ -1911,7 +1911,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
     };
     std::snprintf(yes->text, std::strlen("YES")+1, "%s", "YES");
 
-    PR::Button *no = &menu->delete_no;
+    PR_Button *no = &menu->delete_no;
     *no = {
         .from_center = true,
         .body = {
@@ -1928,7 +1928,7 @@ int play_menu_prepare(PR::PlayMenu *menu) {
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    PR::Sound *sound = &glob->sound;
+    PR_Sound *sound = &glob->sound;
     if (!ma_sound_is_playing(&sound->menu_music)) {
         ma_sound_seek_to_pcm_frame(&sound->menu_music, 0);
         ma_sound_start(&sound->menu_music);
@@ -1936,10 +1936,10 @@ int play_menu_prepare(PR::PlayMenu *menu) {
     return 0;
 }
 void play_menu_update(void) {
-    InputController *input = &glob->input;
-    PR::PlayMenu *menu = &glob->current_play_menu;
-    PR::MenuCamera *cam = &menu->camera;
-    PR::Sound *sound = &glob->sound;
+    PR_InputController *input = &glob->input;
+    PR_PlayMenu *menu = &glob->current_play_menu;
+    PR_MenuCamera *cam = &menu->camera;
+    PR_Sound *sound = &glob->sound;
 
     if (!menu->showing_campaign_buttons &&
          (ACTION_CLICKED(PR_MENU_PANE_LEFT) ||
@@ -1963,7 +1963,7 @@ void play_menu_update(void) {
              input->mouseX, input->mouseY,
              menu->show_custom_button.from_center))) {
         int result = 0;
-        PR::CustomLevelButtons temp_custom_buttons = {NULL, 0, 0};
+        PR_CustomLevelButtons temp_custom_buttons = {NULL, 0, 0};
         result =
             load_custom_buttons_from_dir("./custom_maps/",
                                          &temp_custom_buttons);
@@ -1982,7 +1982,7 @@ void play_menu_update(void) {
                 menu->selected_custom_button = menu->custom_buttons.count;
             }
 
-            PR::Button *add_level = &menu->add_custom_button;
+            PR_Button *add_level = &menu->add_custom_button;
             button_set_position(add_level, menu->custom_buttons.count);
             assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
                     && "Text bigger than button text buffer!");
@@ -2005,7 +2005,7 @@ void play_menu_update(void) {
         //       the mouse has the priority if it was moved
 
         int previous_campaign_selection = menu->selected_campaign_button;
-        // Keybinding
+        // PR_Keybinding
         if (ACTION_CLICKED(PR_MENU_UP)) {
             if (menu->selected_campaign_button-3 >= 0) {
                 menu->selected_campaign_button -= 3;
@@ -2036,7 +2036,7 @@ void play_menu_update(void) {
             levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
             ++levelbutton_index) {
 
-            PR::LevelButton *lb =
+            PR_LevelButton *lb =
                 &menu->campaign_buttons[levelbutton_index];
 
             // Mouse
@@ -2054,7 +2054,7 @@ void play_menu_update(void) {
                     // menu->selected_campaign_button = -1;
                 }
             }
-            // Keybinding, with selection
+            // PR_Keybinding, with selection
             if (menu->selected_campaign_button >= 0 &&
                 menu->selected_campaign_button == levelbutton_index) {
 
@@ -2082,32 +2082,32 @@ void play_menu_update(void) {
         }
     } else {
         if (menu->deleting_level) {
-            PR::CustomLevelButton deleted_lb =
+            PR_CustomLevelButton deleted_lb =
                 menu->custom_buttons.items[menu->deleting_index];
 
             // mouse selection
             if (rect_contains_point(menu->delete_yes.body,
                                     input->mouseX, input->mouseY,
                                     menu->delete_yes.from_center)) {
-                menu->delete_selection = PR::BUTTON_YES;
+                menu->delete_selection = PR_BUTTON_YES;
             }
             if (input->was_mouse_moved &&
                 rect_contains_point(menu->delete_no.body,
                                     input->mouseX, input->mouseY,
                                     menu->delete_no.from_center)) {
-                menu->delete_selection = PR::BUTTON_NO;
+                menu->delete_selection = PR_BUTTON_NO;
             }
 
             // keybinding selection
             if (ACTION_CLICKED(PR_MENU_LEFT)) {
-                menu->delete_selection = PR::BUTTON_YES;
+                menu->delete_selection = PR_BUTTON_YES;
             }
             if (ACTION_CLICKED(PR_MENU_RIGHT)) {
-                menu->delete_selection = PR::BUTTON_NO;
+                menu->delete_selection = PR_BUTTON_NO;
             }
 
             // acting on the selection
-            if (menu->delete_selection == PR::BUTTON_YES) {
+            if (menu->delete_selection == PR_BUTTON_YES) {
                 menu->delete_yes.col = LEVEL_BUTTON_SELECTED_COLOR;
                 menu->delete_no.col = LEVEL_BUTTON_DEFAULT_COLOR;
                 if (ACTION_CLICKED(PR_MENU_CLICK) ||
@@ -2131,7 +2131,7 @@ void play_menu_update(void) {
                         repos_index < menu->custom_buttons.count;
                         ++repos_index) {
 
-                        PR::CustomLevelButton *but =
+                        PR_CustomLevelButton *but =
                             &menu->custom_buttons.items[repos_index];
 
                         button_set_position(&but->button, repos_index);
@@ -2139,7 +2139,7 @@ void play_menu_update(void) {
                                               &but->edit, &but->del);
                     }
 
-                    PR::Button *add_level = &menu->add_custom_button;
+                    PR_Button *add_level = &menu->add_custom_button;
                     button_set_position(add_level, menu->custom_buttons.count);
 
                     menu->deleting_level = false;
@@ -2153,7 +2153,7 @@ void play_menu_update(void) {
                     ma_sound_seek_to_pcm_frame(&sound->delete_level, 0);
                     ma_sound_start(&sound->delete_level);
                 }
-            } else if (menu->delete_selection == PR::BUTTON_NO) {
+            } else if (menu->delete_selection == PR_BUTTON_NO) {
                 menu->delete_no.col = LEVEL_BUTTON_SELECTED_COLOR;
                 menu->delete_yes.col = LEVEL_BUTTON_DEFAULT_COLOR;
                 if (ACTION_CLICKED(PR_MENU_CLICK) ||
@@ -2166,7 +2166,7 @@ void play_menu_update(void) {
             }
         } else {
             int previous_custom_selection = menu->selected_custom_button;
-            // Keybinding
+            // PR_Keybinding
             if (ACTION_CLICKED(PR_MENU_UP)) {
                 if (menu->selected_custom_button-3 >= 0) {
                     menu->selected_custom_button -= 3;
@@ -2197,11 +2197,11 @@ void play_menu_update(void) {
                 custombutton_index < menu->custom_buttons.count;
                 ++custombutton_index) {
 
-                PR::Button *edit_lb =
+                PR_Button *edit_lb =
                     &menu->custom_buttons.items[custombutton_index].edit;
-                PR::Button *del_lb =
+                PR_Button *del_lb =
                     &menu->custom_buttons.items[custombutton_index].del;
-                PR::CustomLevelButton *lb =
+                PR_CustomLevelButton *lb =
                     &menu->custom_buttons.items[custombutton_index];
 
                 if (rect_contains_point(
@@ -2217,7 +2217,7 @@ void play_menu_update(void) {
                     if (input->mouse_left.clicked) {
                         menu->deleting_level = true;
                         menu->deleting_index = custombutton_index;
-                        menu->delete_selection = PR::BUTTON_NO;
+                        menu->delete_selection = PR_BUTTON_NO;
                     }
                     
                 } else if (rect_contains_point(
@@ -2273,7 +2273,7 @@ void play_menu_update(void) {
                     } else if (ACTION_CLICKED(PR_MENU_LEVEL_DELETE)){
                         menu->deleting_level = true;
                         menu->deleting_index = custombutton_index;
-                        menu->delete_selection = PR::BUTTON_NO;
+                        menu->delete_selection = PR_BUTTON_NO;
                     } else if (ACTION_CLICKED(PR_MENU_LEVEL_EDIT)) {
                         CHANGE_CASE_TO_LEVEL(
                                 lb->mapfile_path, lb->button.text,
@@ -2284,7 +2284,7 @@ void play_menu_update(void) {
                 }
             }
             // NOTE: Checking if the add custom level button is pressed
-            PR::Button *add_level = &menu->add_custom_button;
+            PR_Button *add_level = &menu->add_custom_button;
 
             if (input->was_mouse_moved) {
                 if (rect_contains_point(
@@ -2331,7 +2331,7 @@ void play_menu_update(void) {
                     } while (!found && map_number++ < 1000);
 
                     if (map_number < 1000) {
-                        PR::CustomLevelButton new_lb;
+                        PR_CustomLevelButton new_lb;
                         button_set_position(&new_lb.button,
                                             menu->custom_buttons.count);
                         new_lb.is_new_level = true;
@@ -2358,7 +2358,7 @@ void play_menu_update(void) {
                                               &new_lb.edit, &new_lb.del);
 
                         da_append(&menu->custom_buttons,
-                                  new_lb, PR::CustomLevelButton);
+                                  new_lb, PR_CustomLevelButton);
 
                         button_set_position(add_level,
                                             menu->custom_buttons.count);
@@ -2458,7 +2458,7 @@ void play_menu_update(void) {
     }
 
     // ### DRAWING ###
-    Rect full_screen = {
+    PR_Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
         .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
@@ -2484,7 +2484,7 @@ void play_menu_update(void) {
             levelbutton_index < CAMPAIGN_LEVELS_NUMBER;
             ++levelbutton_index) {
 
-            PR::LevelButton *lb =
+            PR_LevelButton *lb =
                 &menu->campaign_buttons[levelbutton_index];
 
             button_render_in_menu_camera(lb->button,
@@ -2497,10 +2497,10 @@ void play_menu_update(void) {
             custombutton_index < menu->custom_buttons.count;
             ++custombutton_index) {
 
-            PR::CustomLevelButton lb =
+            PR_CustomLevelButton lb =
                 menu->custom_buttons.items[custombutton_index];
 
-            Rect button_rend_rect = rect_in_menu_camera_space(lb.button.body, cam);
+            PR_Rect button_rend_rect = rect_in_menu_camera_space(lb.button.body, cam);
 
             renderer_add_queue_uni(button_rend_rect,
                                    lb.button.col,
@@ -2534,8 +2534,8 @@ void play_menu_update(void) {
         }
 
         // NOTE: Drawing the button to add a level
-        PR::Button add_level = menu->add_custom_button;
-        Rect button_rend_rect = rect_in_menu_camera_space(add_level.body, cam);
+        PR_Button add_level = menu->add_custom_button;
+        PR_Rect button_rend_rect = rect_in_menu_camera_space(add_level.body, cam);
         renderer_add_queue_uni(button_rend_rect,
                                add_level.col,
                                add_level.from_center);
@@ -2575,20 +2575,20 @@ void play_menu_update(void) {
     return; 
 }
 
-int level_prepare(PR::Level *level,
+int level_prepare(PR_Level *level,
                   const char *mapfile_path, bool is_new_level) {
 
-    PR::WinInfo *win = &glob->window;
+    PR_WinInfo *win = &glob->window;
 
-    PR::Plane *p = &level->plane;
-    PR::Rider *rid = &level->rider;
+    PR_Plane *p = &level->plane;
+    PR_Rider *rid = &level->rider;
 
-    PR::Camera *cam = &level->camera;
+    PR_Camera *cam = &level->camera;
     // cam->pos.x is set afterwards
     cam->pos.y = GAME_HEIGHT * 0.5f;
     cam->speed_multiplier = 3.8f;
 
-    PR::Atmosphere *air = &level->air;
+    PR_Atmosphere *air = &level->air;
     air->density = 0.015f;
 
     level->is_new = is_new_level;
@@ -2633,7 +2633,7 @@ int level_prepare(PR::Level *level,
     // TODO: The alar surface should be somewhat proportional
     //       to the dimension of the actual rectangle
     p->alar_surface = 0.15f; // m squared
-    p->current_animation = PR::Plane::IDLE_ACC;
+    p->current_animation = PR_PLANE_IDLE_ACC;
     p->animation_countdown = 0.f;
     p->inverse = false;
 
@@ -2727,7 +2727,7 @@ int level_prepare(PR::Level *level,
 
         if (level->portals_number) {
             level->portals =
-                (PR::Portal *) std::malloc(sizeof(PR::Portal) *
+                (PR_Portal *) std::malloc(sizeof(PR_Portal) *
                                            level->portals_number);
             if (level->portals == NULL) {
                 std::cout << "Buy more RAM!" << std::endl;
@@ -2736,30 +2736,30 @@ int level_prepare(PR::Level *level,
         }
 
 
-        PR::Portal *inverse_portal = level->portals;
+        PR_Portal *inverse_portal = level->portals;
         inverse_portal->body.pos.x = 400.f;
         inverse_portal->body.pos.y = 300.f;
         inverse_portal->body.dim.x = 70.f;
         inverse_portal->body.dim.y = 400.f;
         inverse_portal->body.angle = 0.f;
         inverse_portal->body.triangle = false;
-        inverse_portal->type = PR::SHUFFLE_COLORS;
+        inverse_portal->type = PR_SHUFFLE_COLORS;
         inverse_portal->enable_effect = true;
 
-        PR::Portal *reverse_portal = level->portals + 1;
+        PR_Portal *reverse_portal = level->portals + 1;
         reverse_portal->body.pos.x = 4300.f;
         reverse_portal->body.pos.y = 300.f;
         reverse_portal->body.dim.x = 70.f;
         reverse_portal->body.dim.y = 400.f;
         reverse_portal->body.angle = 0.f;
         reverse_portal->body.triangle = false;
-        reverse_portal->type = PR::SHUFFLE_COLORS;
+        reverse_portal->type = PR_SHUFFLE_COLORS;
         reverse_portal->enable_effect = false;
 
         level->obstacles_number = 50;
         if (level->obstacles_number) {
             level->obstacles =
-                (PR::Obstacle *) std::malloc(sizeof(PR::Obstacle) *
+                (PR_Obstacle *) std::malloc(sizeof(PR_Obstacle) *
                                              level->obstacles_number);
             if (level->obstacles == NULL) {
                 std::cout << "Buy more RAM!" << std::endl;
@@ -2770,7 +2770,7 @@ int level_prepare(PR::Level *level,
             obstacle_index < level->obstacles_number;
             ++obstacle_index) {
 
-            PR::Obstacle *obs = level->obstacles + obstacle_index;
+            PR_Obstacle *obs = level->obstacles + obstacle_index;
 
             obs->body.pos.x = win->w * 0.8f * obstacle_index;
             obs->body.pos.y = win->h * 0.4f;
@@ -2788,7 +2788,7 @@ int level_prepare(PR::Level *level,
         level->boosts_number = 2;
         if (level->boosts_number) {
             level->boosts =
-                (PR::BoostPad *) std::malloc(sizeof(PR::BoostPad) *
+                (PR_BoostPad *) std::malloc(sizeof(PR_BoostPad) *
                                         level->boosts_number);
             if (level->boosts == NULL) {
                 std::cout << "Buy more RAM!" << std::endl;
@@ -2798,7 +2798,7 @@ int level_prepare(PR::Level *level,
         for (size_t boost_index = 0;
              boost_index < level->boosts_number;
              ++boost_index) {
-            PR::BoostPad *pad = level->boosts + boost_index;
+            PR_BoostPad *pad = level->boosts + boost_index;
 
             pad->body.pos.x = (boost_index + 1) * 1100.f;
             pad->body.pos.y = 300.f;
@@ -2812,11 +2812,11 @@ int level_prepare(PR::Level *level,
         */
     }
 
-    PR::ParticleSystem *boost_ps = &level->particle_systems[0];
+    PR_ParticleSystem *boost_ps = &level->particle_systems[0];
     boost_ps->particles_number = 200;
     if (boost_ps->particles_number) {
         boost_ps->particles =
-            (PR::Particle *) std::malloc(sizeof(PR::Particle) *
+            (PR_Particle *) std::malloc(sizeof(PR_Particle) *
                                          boost_ps->particles_number);
         if (boost_ps->particles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
@@ -2836,15 +2836,15 @@ int level_prepare(PR::Level *level,
         particle_index < boost_ps->particles_number;
         ++particle_index) {
 
-        PR::Particle *particle = boost_ps->particles + particle_index;
+        PR_Particle *particle = boost_ps->particles + particle_index;
         (boost_ps->create_particle)(boost_ps, particle);
     }
 
-    PR::ParticleSystem *plane_crash_ps = &level->particle_systems[1];
+    PR_ParticleSystem *plane_crash_ps = &level->particle_systems[1];
     plane_crash_ps->particles_number = 100;
     if (plane_crash_ps->particles_number) {
         plane_crash_ps->particles =
-            (PR::Particle *) std::malloc(sizeof(PR::Particle) *
+            (PR_Particle *) std::malloc(sizeof(PR_Particle) *
                                          plane_crash_ps->particles_number);
         if (plane_crash_ps->particles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
@@ -2864,15 +2864,15 @@ int level_prepare(PR::Level *level,
         particle_index < plane_crash_ps->particles_number;
         ++particle_index) {
 
-        PR::Particle *particle = plane_crash_ps->particles + particle_index;
+        PR_Particle *particle = plane_crash_ps->particles + particle_index;
         (plane_crash_ps->create_particle)(plane_crash_ps, particle);
     }
 
-    PR::ParticleSystem *rider_crash_ps = &level->particle_systems[2];
+    PR_ParticleSystem *rider_crash_ps = &level->particle_systems[2];
     rider_crash_ps->particles_number = 100;
     if (rider_crash_ps->particles_number) {
         rider_crash_ps->particles =
-            (PR::Particle *) std::malloc(sizeof(PR::Particle) *
+            (PR_Particle *) std::malloc(sizeof(PR_Particle) *
                                      rider_crash_ps->particles_number);
         if (rider_crash_ps->particles == NULL) {
             std::cout << "Buy more RAM!" << std::endl;
@@ -2892,7 +2892,7 @@ int level_prepare(PR::Level *level,
         particle_index < rider_crash_ps->particles_number;
         ++particle_index) {
 
-        PR::Particle *particle = rider_crash_ps->particles +
+        PR_Particle *particle = rider_crash_ps->particles +
                                  particle_index;
         (rider_crash_ps->create_particle)(rider_crash_ps, particle);
     }
@@ -2928,12 +2928,12 @@ int level_prepare(PR::Level *level,
         level_activate_edit_mode(level);
     }
 
-    PR::Sound *sound = &glob->sound;
+    PR_Sound *sound = &glob->sound;
     ma_sound_stop(&sound->menu_music);
     return 0;
 }
 void level_update(void) {
-    Rect full_screen = {
+    PR_Rect full_screen = {
         .pos = glm::vec2(0.f, 0.f),
         .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
@@ -2946,24 +2946,24 @@ void level_update(void) {
     renderer_draw_uni(glob->rend_res.shaders[0]);
 
     // Level stuff
-    PR::Plane *p = &glob->current_level.plane;
-    PR::Camera *cam = &glob->current_level.camera;
-    PR::Rider *rid = &glob->current_level.rider;
-    PR::Obstacles *obstacles = &glob->current_level.obstacles;
-    PR::BoostPads *boosts = &glob->current_level.boosts;
-    PR::Portals *portals = &glob->current_level.portals;
+    PR_Plane *p = &glob->current_level.plane;
+    PR_Camera *cam = &glob->current_level.camera;
+    PR_Rider *rid = &glob->current_level.rider;
+    PR_Obstacles *obstacles = &glob->current_level.obstacles;
+    PR_BoostPads *boosts = &glob->current_level.boosts;
+    PR_Portals *portals = &glob->current_level.portals;
 
-    PR::Level *level = &glob->current_level;
+    PR_Level *level = &glob->current_level;
 
-    PR::ParticleSystem *boost_ps =
+    PR_ParticleSystem *boost_ps =
         &glob->current_level.particle_systems[0];
-    PR::ParticleSystem *plane_crash_ps =
+    PR_ParticleSystem *plane_crash_ps =
         &glob->current_level.particle_systems[1];
-    PR::ParticleSystem *rider_crash_ps =
+    PR_ParticleSystem *rider_crash_ps =
         &glob->current_level.particle_systems[2];
 
     // Global stuff
-    InputController *input = &glob->input;
+    PR_InputController *input = &glob->input;
     float dt = glob->state.delta_time;
 
     level->old_selected = level->selected;
@@ -3038,10 +3038,10 @@ void level_update(void) {
             float velx = 1000.f;
             float vely = 600.f;
             if (level->selected) {
-                Rect *b = get_selected_body(level->selected,
+                PR_Rect *b = get_selected_body(level->selected,
                                             level->selected_type);
                 if (b) {
-                    if (level->selected_type != PR::GOAL_LINE_TYPE) {
+                    if (level->selected_type != PR_GOAL_LINE_TYPE) {
                         if (ACTION_PRESSED(PR_EDIT_MOVE_UP))
                             b->pos.y -= vely * dt;
                         if (ACTION_PRESSED(PR_EDIT_MOVE_DOWN))
@@ -3105,7 +3105,7 @@ void level_update(void) {
                 }
                 // NOTE: Making the camera move to the plane
                 if (level->selected) { // FOCUS SELECTED OBJECT
-                    Rect *b = get_selected_body(level->selected,
+                    PR_Rect *b = get_selected_body(level->selected,
                                                 level->selected_type);
                     lerp_camera_x_to_rect(cam, b, true);
                 } else {
@@ -3307,7 +3307,7 @@ void level_update(void) {
             level_activate_edit_mode(level);
         } else {
             level->game_over = true;
-            level->gamemenu_selected = PR::BUTTON_RESTART;
+            level->gamemenu_selected = PR_BUTTON_RESTART;
             level->game_won = true;
             rid->attached = false;
             level->text_wave_time = 0.f;
@@ -3362,7 +3362,7 @@ void level_update(void) {
             portal_index < portals->count;
             ++portal_index) {
 
-            PR::Portal *portal = &portals->items[portal_index];
+            PR_Portal *portal = &portals->items[portal_index];
 
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
@@ -3371,7 +3371,7 @@ void level_update(void) {
                                     input->mouseX, input->mouseY, false)) {
 
                 level->selected = (void *) portal;
-                level->selected_type = PR::PORTAL_TYPE;
+                level->selected_type = PR_PORTAL_TYPE;
                 level->adding_now = false;
 
                 set_portal_option_buttons(level->selected_options_buttons);
@@ -3384,7 +3384,7 @@ void level_update(void) {
              boost_index < boosts->count;
              ++boost_index) {
 
-            PR::BoostPad *pad = &boosts->items[boost_index];
+            PR_BoostPad *pad = &boosts->items[boost_index];
 
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
@@ -3393,7 +3393,7 @@ void level_update(void) {
                                     input->mouseX, input->mouseY, false)) {
 
                 level->selected = (void *) pad;
-                level->selected_type = PR::BOOST_TYPE;
+                level->selected_type = PR_BOOST_TYPE;
                 level->adding_now = false;
 
                 set_boost_option_buttons(level->selected_options_buttons);
@@ -3406,7 +3406,7 @@ void level_update(void) {
              obstacle_index < obstacles->count;
              obstacle_index++) {
 
-            PR::Obstacle *obs = &obstacles->items[obstacle_index];
+            PR_Obstacle *obs = &obstacles->items[obstacle_index];
 
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
@@ -3415,7 +3415,7 @@ void level_update(void) {
                                     input->mouseX, input->mouseY, false)) {
 
                 level->selected = (void *) obs;
-                level->selected_type = PR::OBSTACLE_TYPE;
+                level->selected_type = PR_OBSTACLE_TYPE;
                 level->adding_now = false;
 
                 set_obstacle_option_buttons(level->selected_options_buttons);
@@ -3432,7 +3432,7 @@ void level_update(void) {
                                 input->mouseX, input->mouseY, false)) {
 
             level->selected = (void *) &level->goal_line;
-            level->selected_type = PR::GOAL_LINE_TYPE;
+            level->selected_type = PR_GOAL_LINE_TYPE;
             level->adding_now = false;
 
         }
@@ -3444,7 +3444,7 @@ void level_update(void) {
                                 input->mouseX, input->mouseY, false)) {
 
             level->selected = (void *) &level->start_pos;
-            level->selected_type = PR::P_START_POS_TYPE;
+            level->selected_type = PR_P_START_POS_TYPE;
             level->adding_now = false;
 
             set_start_pos_option_buttons(level->selected_options_buttons);
@@ -3459,27 +3459,27 @@ void level_update(void) {
 
         if (ACTION_CLICKED(PR_EDIT_OBJ_DUPLICATE) && level->selected) {
             switch(level->selected_type) {
-                case PR::PORTAL_TYPE:
+                case PR_PORTAL_TYPE:
                 {
-                    PR::Portal *portal = (PR::Portal *) level->selected;
+                    PR_Portal *portal = (PR_Portal *) level->selected;
                     int index = portal - portals->items;
-                    da_append(portals, portals->items[index], PR::Portal);
+                    da_append(portals, portals->items[index], PR_Portal);
                     level->selected = (void *) &da_last(portals);
                     break;
                 }
-                case PR::BOOST_TYPE:
+                case PR_BOOST_TYPE:
                 {
-                    PR::BoostPad *pad = (PR::BoostPad *) level->selected;
+                    PR_BoostPad *pad = (PR_BoostPad *) level->selected;
                     int index = pad - boosts->items;
-                    da_append(boosts, boosts->items[index], PR::BoostPad);
+                    da_append(boosts, boosts->items[index], PR_BoostPad);
                     level->selected = (void *) &da_last(boosts);
                     break;
                 }
-                case PR::OBSTACLE_TYPE:
+                case PR_OBSTACLE_TYPE:
                 {
-                    PR::Obstacle *obs = (PR::Obstacle *) level->selected;
+                    PR_Obstacle *obs = (PR_Obstacle *) level->selected;
                     int index = obs - obstacles->items;
-                    da_append(obstacles, obstacles->items[index], PR::Obstacle);
+                    da_append(obstacles, obstacles->items[index], PR_Obstacle);
                     level->selected = (void *) &da_last(obstacles);
                     break;
                 }
@@ -3515,7 +3515,7 @@ void level_update(void) {
             portal_index < portals->count;
             ++portal_index) {
 
-            PR::Portal *portal = &portals->items[portal_index];
+            PR_Portal *portal = &portals->items[portal_index];
 
             portal_render(portal);
 
@@ -3528,7 +3528,7 @@ void level_update(void) {
                 //           << "\nCollided with portal"
                 //           << std::endl;
                 switch(portal->type) {
-                    case PR::INVERSE:
+                    case PR_INVERSE:
                         // NOTE: Skip if the plane/rider already has the effect
                         // std::cout << "-------------------------"
                         //           << "\np->inv: " << p->inverse
@@ -3546,7 +3546,7 @@ void level_update(void) {
                             rid->body.dim.y = -rid->body.dim.y;
                         }
                         break;
-                    case PR::SHUFFLE_COLORS:
+                    case PR_SHUFFLE_COLORS:
                         if (level->colors_shuffled != portal->enable_effect) {
 
                             level->colors_shuffled = portal->enable_effect;
@@ -3569,7 +3569,7 @@ void level_update(void) {
              boost_index < boosts->count;
              ++boost_index) {
 
-            PR::BoostPad *pad = &boosts->items[boost_index];
+            PR_BoostPad *pad = &boosts->items[boost_index];
             boostpad_render(pad);
         }
 
@@ -3578,7 +3578,7 @@ void level_update(void) {
              obstacle_index < obstacles->count;
              obstacle_index++) {
 
-            PR::Obstacle *obs = &obstacles->items[obstacle_index];
+            PR_Obstacle *obs = &obstacles->items[obstacle_index];
 
             obstacle_render(obs);
 
@@ -3610,7 +3610,7 @@ void level_update(void) {
                     level_activate_edit_mode(level);
                 } else {
                     level->game_over = true;
-                    level->gamemenu_selected = PR::BUTTON_RESTART;
+                    level->gamemenu_selected = PR_BUTTON_RESTART;
                     glfwSetInputMode(glob->window.glfw_win,
                                      GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     rid->crashed = true;
@@ -3626,10 +3626,10 @@ void level_update(void) {
             }
         }
 
-        Rect p_body_camera_space = rect_in_camera_space(p->body, cam);
-        Rect rid_body_camera_space = rect_in_camera_space(rid->body, cam);
+        PR_Rect p_body_camera_space = rect_in_camera_space(p->body, cam);
+        PR_Rect rid_body_camera_space = rect_in_camera_space(rid->body, cam);
         // NOTE: Collide with the ceiling and the floor
-        Rect plane_ceiling;
+        PR_Rect plane_ceiling;
         plane_ceiling.pos.x = p_body_camera_space.pos.x +
                               p_body_camera_space.dim.x * 0.5f -
                               ((float) GAME_WIDTH);
@@ -3638,19 +3638,19 @@ void level_update(void) {
         plane_ceiling.dim.y = GAME_HEIGHT;
         plane_ceiling.angle = 0.f;
         plane_ceiling.triangle = false;
-        Rect rider_ceiling = plane_ceiling;
+        PR_Rect rider_ceiling = plane_ceiling;
         rider_ceiling.pos.x = rid_body_camera_space.pos.x +
                               rid_body_camera_space.dim.x * 0.5f -
                               ((float) GAME_WIDTH);
 
-        Rect plane_floor;
+        PR_Rect plane_floor;
         plane_floor.pos.x = plane_ceiling.pos.x;
         plane_floor.pos.y = (float) GAME_HEIGHT;
         plane_floor.dim.x = GAME_WIDTH*2.f;
         plane_floor.dim.y = GAME_HEIGHT;
         plane_floor.angle = 0.f;
         plane_floor.triangle = false;
-        Rect rider_floor = plane_floor;
+        PR_Rect rider_floor = plane_floor;
         rider_floor.pos.x = rider_ceiling.pos.x;
 
         // NOTE: Collisions with the ceiling
@@ -3688,7 +3688,7 @@ void level_update(void) {
                 rid->crashed = true;
                 rid->attached = false;
                 level->game_over = true;
-                level->gamemenu_selected = PR::BUTTON_RESTART;
+                level->gamemenu_selected = PR_BUTTON_RESTART;
                 glfwSetInputMode(glob->window.glfw_win,
                                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 rid->vel *= 0.f;
@@ -3734,7 +3734,7 @@ void level_update(void) {
                     glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
 
                 level->game_over = true;
-                level->gamemenu_selected = PR::BUTTON_RESTART;
+                level->gamemenu_selected = PR_BUTTON_RESTART;
                 glfwSetInputMode(glob->window.glfw_win,
                                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 rid->crashed = true;
@@ -3767,7 +3767,7 @@ void level_update(void) {
         ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
         ++ps_index) {
 
-        PR::ParticleSystem *ps =
+        PR_ParticleSystem *ps =
             &glob->current_level.particle_systems[ps_index];
 
         if (ps->particles_number == 0) continue;
@@ -3781,7 +3781,7 @@ void level_update(void) {
                 particle_index < ps->particles_number;
                 ++particle_index) {
 
-                PR::Particle *particle = ps->particles +
+                PR_Particle *particle = ps->particles +
                                          particle_index;
 
                 if (particle->active) {
@@ -3800,7 +3800,7 @@ void level_update(void) {
             while(ps->time_elapsed > ps->time_between_particles) {
                 ps->time_elapsed -= ps->time_between_particles;
 
-                PR::Particle *particle = ps->particles +
+                PR_Particle *particle = ps->particles +
                                          ps->current_particle;
                 ps->current_particle = (ps->current_particle + 1) %
                                              ps->particles_number;
@@ -3812,7 +3812,7 @@ void level_update(void) {
              particle_index < ps->particles_number;
              ++particle_index) {
 
-            PR::Particle *particle = ps->particles + particle_index;
+            PR_Particle *particle = ps->particles + particle_index;
 
             if (!ps->frozen) {
                 (ps->update_particle)(ps, particle);
@@ -3849,7 +3849,7 @@ void level_update(void) {
                       &glob->rend_res.global_sprite);
 
     if (level->adding_now) {
-        PR::Button add_portal;
+        PR_Button add_portal;
         add_portal.from_center = true;
         add_portal.body.pos.x = GAME_WIDTH * 0.25f;
         add_portal.body.pos.y = GAME_HEIGHT * 0.5f;
@@ -3862,7 +3862,7 @@ void level_update(void) {
                       std::strlen("ADD PORTAL")+1,
                       "ADD PORTAL");
 
-        PR::Button add_boost;
+        PR_Button add_boost;
         add_boost.from_center = true;
         add_boost.body.pos.x = GAME_WIDTH * 0.5f;
         add_boost.body.pos.y = GAME_HEIGHT * 0.5f;
@@ -3875,7 +3875,7 @@ void level_update(void) {
                       std::strlen("ADD BOOST")+1,
                       "ADD BOOST");
 
-        PR::Button add_obstacle;
+        PR_Button add_obstacle;
         add_obstacle.from_center = true;
         add_obstacle.body.pos.x = GAME_WIDTH * 0.75f;
         add_obstacle.body.pos.y = GAME_HEIGHT * 0.5f;
@@ -3894,19 +3894,19 @@ void level_update(void) {
                                 input->mouseX, input->mouseY,
                                 add_portal.from_center)) {
 
-                PR::Portal portal;
+                PR_Portal portal;
                 portal.body.pos = cam->pos;
                 portal.body.dim.x = GAME_WIDTH * 0.2f;
                 portal.body.dim.y = GAME_HEIGHT * 0.2f;
                 portal.body.triangle = false;
                 portal.body.angle = 0.f;
-                portal.type = PR::SHUFFLE_COLORS;
+                portal.type = PR_SHUFFLE_COLORS;
                 portal.enable_effect = true;
 
-                da_append(portals, portal, PR::Portal);
+                da_append(portals, portal, PR_Portal);
 
                 level->selected = (void *) &da_last(portals);
-                level->selected_type = PR::PORTAL_TYPE;
+                level->selected_type = PR_PORTAL_TYPE;
                 set_portal_option_buttons(level->selected_options_buttons);
 
             } else
@@ -3914,7 +3914,7 @@ void level_update(void) {
                                     input->mouseX, input->mouseY,
                                     add_boost.from_center)) {
 
-                PR::BoostPad pad;
+                PR_BoostPad pad;
                 pad.body.pos = cam->pos;
                 pad.body.dim.x = GAME_WIDTH * 0.2f;
                 pad.body.dim.y = GAME_HEIGHT * 0.2f;
@@ -3923,10 +3923,10 @@ void level_update(void) {
                 pad.boost_angle = 0.f;
                 pad.boost_power = 0.f;
 
-                da_append(boosts, pad, PR::BoostPad);
+                da_append(boosts, pad, PR_BoostPad);
 
                 level->selected = (void *) &da_last(boosts);
-                level->selected_type = PR::BOOST_TYPE;
+                level->selected_type = PR_BOOST_TYPE;
                 set_boost_option_buttons(level->selected_options_buttons);
 
             } else
@@ -3934,7 +3934,7 @@ void level_update(void) {
                                     input->mouseX, input->mouseY,
                                     add_obstacle.from_center)) {
 
-                PR::Obstacle obs;
+                PR_Obstacle obs;
                 obs.body.pos = cam->pos;
                 obs.body.dim.x = GAME_WIDTH * 0.2f;
                 obs.body.dim.y = GAME_HEIGHT * 0.2f;
@@ -3943,10 +3943,10 @@ void level_update(void) {
                 obs.collide_plane = false;
                 obs.collide_rider = false;
 
-                da_append(obstacles, obs, PR::Obstacle);
+                da_append(obstacles, obs, PR_Obstacle);
 
                 level->selected = (void *) &da_last(obstacles);
-                level->selected_type = PR::OBSTACLE_TYPE;
+                level->selected_type = PR_OBSTACLE_TYPE;
                 set_obstacle_option_buttons(level->selected_options_buttons);
 
             }
@@ -3967,9 +3967,9 @@ void level_update(void) {
 
     if (level->selected && ACTION_CLICKED(PR_EDIT_OBJ_DELETE)) {
         switch(level->selected_type) {
-            case PR::PORTAL_TYPE:
+            case PR_PORTAL_TYPE:
             {
-                PR::Portal *portal = (PR::Portal *) level->selected;
+                PR_Portal *portal = (PR_Portal *) level->selected;
 
                 int index = portal - portals->items;
                 da_remove(portals, index);
@@ -3979,9 +3979,9 @@ void level_update(void) {
 
                 break;
             }
-            case PR::BOOST_TYPE:
+            case PR_BOOST_TYPE:
             {
-                PR::BoostPad *pad = (PR::BoostPad *) level->selected;
+                PR_BoostPad *pad = (PR_BoostPad *) level->selected;
 
                 int index = pad - boosts->items;
                 da_remove(boosts, index);
@@ -3991,9 +3991,9 @@ void level_update(void) {
 
                 break;
             }
-            case PR::OBSTACLE_TYPE:
+            case PR_OBSTACLE_TYPE:
             {
-                PR::Obstacle *obs = (PR::Obstacle *) level->selected;
+                PR_Obstacle *obs = (PR_Obstacle *) level->selected;
 
                 int index = obs - obstacles->items;
                 da_remove(obstacles, index);
@@ -4015,9 +4015,9 @@ void level_update(void) {
         level->selected == level->old_selected &&
         !level->adding_now) {
         switch(level->selected_type) {
-            case PR::PORTAL_TYPE:
+            case PR_PORTAL_TYPE:
             {
-                PR::Portal *portal = (PR::Portal *) level->selected;
+                PR_Portal *portal = (PR_Portal *) level->selected;
                 portal_render_info(portal, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
@@ -4030,11 +4030,11 @@ void level_update(void) {
                                 ARRAY_LENGTH(level->selected_options_buttons))
                             && "Selected options out of bound for portals");
 
-                    PR::Button *button =
+                    PR_Button *button =
                         &level->selected_options_buttons[option_button_index];
 
                     if (option_button_index <= 1) {
-                        PR::Button minus1;
+                        PR_Button minus1;
                         minus1.from_center = true;
                         minus1.body.angle = 0.f;
                         minus1.body.triangle = false;
@@ -4049,11 +4049,11 @@ void level_update(void) {
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
-                        PR::Button minus5 = minus1;
+                        PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
                         std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
-                        PR::Button plus1;
+                        PR_Button plus1;
                         plus1.from_center = true;
                         plus1.body.angle = 0.f;
                         plus1.body.triangle = false;
@@ -4067,7 +4067,7 @@ void level_update(void) {
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
-                        PR::Button plus5 = plus1;
+                        PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
                         std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
@@ -4177,10 +4177,10 @@ void level_update(void) {
 
                             switch (option_button_index) {
                                 case 2:
-                                    if (portal->type == PR::INVERSE) {
-                                        portal->type = PR::SHUFFLE_COLORS;
+                                    if (portal->type == PR_INVERSE) {
+                                        portal->type = PR_SHUFFLE_COLORS;
                                     } else {
-                                        portal->type = PR::INVERSE;
+                                        portal->type = PR_INVERSE;
                                     }
                                     break;
                                 case 3:
@@ -4200,9 +4200,9 @@ void level_update(void) {
                 }
                 break;
             }
-            case PR::BOOST_TYPE:
+            case PR_BOOST_TYPE:
             {
-                PR::BoostPad *pad = (PR::BoostPad *) level->selected;
+                PR_BoostPad *pad = (PR_BoostPad *) level->selected;
                 boostpad_render_info(pad, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
@@ -4215,7 +4215,7 @@ void level_update(void) {
                                 ARRAY_LENGTH(level->selected_options_buttons))
                             && "Selected options out of bound for boosts");
 
-                    PR::Button *button =
+                    PR_Button *button =
                         &level->selected_options_buttons[option_button_index];
 
                     if (option_button_index == 3) {
@@ -4244,7 +4244,7 @@ void level_update(void) {
                                                 button->text, glm::vec4(1.0f),
                                                 &glob->rend_res.fonts[1], true);
                     } else {
-                        PR::Button minus1;
+                        PR_Button minus1;
                         minus1.from_center = true;
                         minus1.body.angle = 0.f;
                         minus1.body.triangle = false;
@@ -4259,11 +4259,11 @@ void level_update(void) {
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
-                        PR::Button minus5 = minus1;
+                        PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
                         std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
-                        PR::Button plus1;
+                        PR_Button plus1;
                         plus1.from_center = true;
                         plus1.body.angle = 0.f;
                         plus1.body.triangle = false;
@@ -4277,7 +4277,7 @@ void level_update(void) {
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
-                        PR::Button plus5 = plus1;
+                        PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
                         std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
@@ -4418,9 +4418,9 @@ void level_update(void) {
 
                 break;
             }
-            case PR::OBSTACLE_TYPE:
+            case PR_OBSTACLE_TYPE:
             {
-                PR::Obstacle *obs = (PR::Obstacle *) level->selected;
+                PR_Obstacle *obs = (PR_Obstacle *) level->selected;
                 obstacle_render_info(obs, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
@@ -4432,11 +4432,11 @@ void level_update(void) {
                                 ARRAY_LENGTH(level->selected_options_buttons))
                             && "Selected options out of bound for obstacles");
 
-                    PR::Button *button =
+                    PR_Button *button =
                         &level->selected_options_buttons[option_button_index];
 
                     if (option_button_index <= 2) {
-                        PR::Button minus1;
+                        PR_Button minus1;
                         minus1.from_center = true;
                         minus1.body.angle = 0.f;
                         minus1.body.triangle = false;
@@ -4451,11 +4451,11 @@ void level_update(void) {
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
-                        PR::Button minus5 = minus1;
+                        PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
                         std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
-                        PR::Button plus1;
+                        PR_Button plus1;
                         plus1.from_center = true;
                         plus1.body.angle = 0.f;
                         plus1.body.triangle = false;
@@ -4469,7 +4469,7 @@ void level_update(void) {
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
-                        PR::Button plus5 = plus1;
+                        PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
                         std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
@@ -4615,17 +4615,17 @@ void level_update(void) {
 
                 break;
             }
-            case PR::GOAL_LINE_TYPE:
+            case PR_GOAL_LINE_TYPE:
             {
-                Rect *rect = (Rect *) level->selected;
+                PR_Rect *rect = (PR_Rect *) level->selected;
                 goal_line_render_info(rect, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
                 break;
             }
-            case PR::P_START_POS_TYPE:
+            case PR_P_START_POS_TYPE:
             {
-                Rect *rect = (Rect *) level->selected;
+                PR_Rect *rect = (PR_Rect *) level->selected;
                 start_pos_render_info(rect, level->start_vel, 5.f, 0.f);
                 renderer_draw_text(&glob->rend_res.fonts[OBJECT_INFO_FONT],
                                    glob->rend_res.shaders[2]);
@@ -4637,11 +4637,11 @@ void level_update(void) {
                                 ARRAY_LENGTH(level->selected_options_buttons))
                             && "Selected options out of bound for obstacles");
 
-                    PR::Button *button =
+                    PR_Button *button =
                         &level->selected_options_buttons[option_button_index];
 
                     if (option_button_index <= 2) {
-                        PR::Button minus1;
+                        PR_Button minus1;
                         minus1.from_center = true;
                         minus1.body.angle = 0.f;
                         minus1.body.triangle = false;
@@ -4656,11 +4656,11 @@ void level_update(void) {
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
-                        PR::Button minus5 = minus1;
+                        PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
                         std::snprintf(minus5.text, strlen("-5")+1, "-5");
 
-                        PR::Button plus1;
+                        PR_Button plus1;
                         plus1.from_center = true;
                         plus1.body.angle = 0.f;
                         plus1.body.triangle = false;
@@ -4674,7 +4674,7 @@ void level_update(void) {
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
-                        PR::Button plus5 = plus1;
+                        PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
                         std::snprintf(plus5.text, strlen("+5")+1, "+5");
 
@@ -4810,7 +4810,7 @@ void level_update(void) {
         }
 
         // NOTE: Game is over
-        PR::Button b_restart = {
+        PR_Button b_restart = {
             .from_center = true,
             .body = {
                 .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.4f),
@@ -4821,7 +4821,7 @@ void level_update(void) {
             .col = LEVEL_BUTTON_DEFAULT_COLOR,
             .text = "RESTART",
         };
-        PR::Button b_quit = {
+        PR_Button b_quit = {
             .from_center = true,
             .body = {
                 .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.7f),
@@ -4839,28 +4839,28 @@ void level_update(void) {
             rect_contains_point(b_restart.body,
                                 input->mouseX, input->mouseY,
                                 b_restart.from_center)) {
-            level->gamemenu_selected = PR::BUTTON_RESTART;
+            level->gamemenu_selected = PR_BUTTON_RESTART;
         }
         // ## QUIT
         if (input->was_mouse_moved &&
             rect_contains_point(b_quit.body,
                                 input->mouseX, input->mouseY,
                                 b_quit.from_center)) {
-            level->gamemenu_selected = PR::BUTTON_QUIT;
+            level->gamemenu_selected = PR_BUTTON_QUIT;
         }
-        // ### Keybinding change selection ###
+        // ### PR_Keybinding change selection ###
         if (ACTION_CLICKED(PR_MENU_UP)) {
-            level->gamemenu_selected = PR::BUTTON_RESTART;
+            level->gamemenu_selected = PR_BUTTON_RESTART;
         }
         if (ACTION_CLICKED(PR_MENU_DOWN)) {
-            level->gamemenu_selected = PR::BUTTON_QUIT;
+            level->gamemenu_selected = PR_BUTTON_QUIT;
         }
 
         // ### All ways to click ###
         // ## RESTART
         if (ACTION_CLICKED(PR_PLAY_RESTART) ||
             (ACTION_CLICKED(PR_MENU_CLICK) &&
-                level->gamemenu_selected == PR::BUTTON_RESTART) ||
+                level->gamemenu_selected == PR_BUTTON_RESTART) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_restart.body,
                                     input->mouseX, input->mouseY,
@@ -4872,7 +4872,7 @@ void level_update(void) {
         // ## QUIT
         if (ACTION_CLICKED(PR_PLAY_QUIT) ||
             (ACTION_CLICKED(PR_MENU_CLICK) &&
-                level->gamemenu_selected == PR::BUTTON_QUIT) ||
+                level->gamemenu_selected == PR_BUTTON_QUIT) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_quit.body,
                                     input->mouseX, input->mouseY,
@@ -4881,11 +4881,11 @@ void level_update(void) {
         }
 
         // ### Highlight selection ###
-        if (level->gamemenu_selected == PR::BUTTON_RESTART) {
+        if (level->gamemenu_selected == PR_BUTTON_RESTART) {
             b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
             b_quit.col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
-        if (level->gamemenu_selected == PR::BUTTON_QUIT) {
+        if (level->gamemenu_selected == PR_BUTTON_QUIT) {
             b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
             b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
@@ -4937,7 +4937,7 @@ void level_update(void) {
 
     } else if (level->pause_now) {
         // NOTE: Game in pause mode
-        PR::Button b_resume = {
+        PR_Button b_resume = {
             .from_center = true,
             .body = {
                 .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
@@ -4948,7 +4948,7 @@ void level_update(void) {
             .col = LEVEL_BUTTON_DEFAULT_COLOR,
             .text = "RESUME",
         };
-        PR::Button b_restart = {
+        PR_Button b_restart = {
             .from_center = true,
             .body = {
                 .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
@@ -4959,7 +4959,7 @@ void level_update(void) {
             .col = LEVEL_BUTTON_DEFAULT_COLOR,
             .text = "RESTART",
         };
-        PR::Button b_quit = {
+        PR_Button b_quit = {
             .from_center = true,
             .body = {
                 .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
@@ -4977,36 +4977,36 @@ void level_update(void) {
             rect_contains_point(b_resume.body,
                                 input->mouseX, input->mouseY,
                                 b_resume.from_center)) {
-            level->gamemenu_selected = PR::BUTTON_RESUME;
+            level->gamemenu_selected = PR_BUTTON_RESUME;
         }
         // ## RESTART
         if (input->was_mouse_moved &&
             rect_contains_point(b_restart.body,
                                 input->mouseX, input->mouseY,
                                 b_restart.from_center)) {
-            level->gamemenu_selected = PR::BUTTON_RESTART;
+            level->gamemenu_selected = PR_BUTTON_RESTART;
         }
         // ## QUIT
         if (input->was_mouse_moved &&
             rect_contains_point(b_quit.body,
                                 input->mouseX, input->mouseY,
                                 b_quit.from_center)) {
-            level->gamemenu_selected = PR::BUTTON_QUIT;
+            level->gamemenu_selected = PR_BUTTON_QUIT;
         }
 
-        // ### Keybinding change selection ###
+        // ### PR_Keybinding change selection ###
         if (ACTION_CLICKED(PR_MENU_UP)) {
-            if (level->gamemenu_selected == PR::BUTTON_RESTART) {
-                level->gamemenu_selected = PR::BUTTON_RESUME;
-            } else if (level->gamemenu_selected == PR::BUTTON_QUIT) {
-                level->gamemenu_selected = PR::BUTTON_RESTART;
+            if (level->gamemenu_selected == PR_BUTTON_RESTART) {
+                level->gamemenu_selected = PR_BUTTON_RESUME;
+            } else if (level->gamemenu_selected == PR_BUTTON_QUIT) {
+                level->gamemenu_selected = PR_BUTTON_RESTART;
             }
         }
         if (ACTION_CLICKED(PR_MENU_DOWN)) {
-            if (level->gamemenu_selected == PR::BUTTON_RESUME) {
-                level->gamemenu_selected = PR::BUTTON_RESTART;
-            } else if (level->gamemenu_selected == PR::BUTTON_RESTART) {
-                level->gamemenu_selected = PR::BUTTON_QUIT;
+            if (level->gamemenu_selected == PR_BUTTON_RESUME) {
+                level->gamemenu_selected = PR_BUTTON_RESTART;
+            } else if (level->gamemenu_selected == PR_BUTTON_RESTART) {
+                level->gamemenu_selected = PR_BUTTON_QUIT;
             }
         }
 
@@ -5014,7 +5014,7 @@ void level_update(void) {
         // ## RESUME
         if (ACTION_CLICKED(PR_PLAY_RESUME) ||
             (ACTION_CLICKED(PR_MENU_CLICK) &&
-                level->gamemenu_selected == PR::BUTTON_RESUME) ||
+                level->gamemenu_selected == PR_BUTTON_RESUME) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_resume.body,
                                     input->mouseX, input->mouseY,
@@ -5033,7 +5033,7 @@ void level_update(void) {
         // ## RESTART
         if (ACTION_CLICKED(PR_PLAY_RESTART) ||
             (ACTION_CLICKED(PR_MENU_CLICK) &&
-                level->gamemenu_selected == PR::BUTTON_RESTART) ||
+                level->gamemenu_selected == PR_BUTTON_RESTART) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_restart.body,
                                     input->mouseX, input->mouseY,
@@ -5045,7 +5045,7 @@ void level_update(void) {
         // ## QUIT
         if (ACTION_CLICKED(PR_PLAY_QUIT) ||
             (ACTION_CLICKED(PR_MENU_CLICK) &&
-                level->gamemenu_selected == PR::BUTTON_QUIT) ||
+                level->gamemenu_selected == PR_BUTTON_QUIT) ||
             (input->mouse_left.clicked &&
                 rect_contains_point(b_quit.body,
                                     input->mouseX, input->mouseY,
@@ -5054,17 +5054,17 @@ void level_update(void) {
         }
 
         // ### Highlight selection ###
-        if (level->gamemenu_selected == PR::BUTTON_RESUME) {
+        if (level->gamemenu_selected == PR_BUTTON_RESUME) {
             b_resume.col = LEVEL_BUTTON_SELECTED_COLOR;
             b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
             b_quit.col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
-        if (level->gamemenu_selected == PR::BUTTON_RESTART) {
+        if (level->gamemenu_selected == PR_BUTTON_RESTART) {
             b_restart.col = LEVEL_BUTTON_SELECTED_COLOR;
             b_resume.col = LEVEL_BUTTON_DEFAULT_COLOR;
             b_quit.col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
-        if (level->gamemenu_selected == PR::BUTTON_QUIT) {
+        if (level->gamemenu_selected == PR_BUTTON_QUIT) {
             b_quit.col = LEVEL_BUTTON_SELECTED_COLOR;
             b_resume.col = LEVEL_BUTTON_DEFAULT_COLOR;
             b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -5107,7 +5107,7 @@ void level_update(void) {
                 ++ps_index) {
                 level->particle_systems[ps_index].frozen = true;
             }
-            level->gamemenu_selected = PR::BUTTON_RESUME;
+            level->gamemenu_selected = PR_BUTTON_RESUME;
             glfwSetInputMode(glob->window.glfw_win,
                              GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
@@ -5126,30 +5126,30 @@ void level_update(void) {
 }
 
 // Utilities
-inline void plane_update_animation(PR::Plane *p) {
+inline void plane_update_animation(PR_Plane *p) {
     // NOTE: Animation based on the accelleration
     if (p->animation_countdown < 0) {
         if (glm::abs(p->acc.y) < 20.f) {
-            p->current_animation = PR::Plane::IDLE_ACC;
+            p->current_animation = PR_PLANE_IDLE_ACC;
             p->animation_countdown = 0.25f;
         } else {
-            if (p->current_animation == PR::Plane::UPWARDS_ACC) {
+            if (p->current_animation == PR_PLANE_UPWARDS_ACC) {
                 p->current_animation =
                     (p->acc.y > 0) ?
-                    PR::Plane::IDLE_ACC :
-                    PR::Plane::UPWARDS_ACC;
+                    PR_PLANE_IDLE_ACC :
+                    PR_PLANE_UPWARDS_ACC;
             } else
-            if (p->current_animation == PR::Plane::IDLE_ACC) {
+            if (p->current_animation == PR_PLANE_IDLE_ACC) {
                 p->current_animation =
                     (p->acc.y > 0) ?
-                    PR::Plane::DOWNWARDS_ACC :
-                    PR::Plane::UPWARDS_ACC;
+                    PR_PLANE_DOWNWARDS_ACC :
+                    PR_PLANE_UPWARDS_ACC;
             } else
-            if (p->current_animation == PR::Plane::DOWNWARDS_ACC) {
+            if (p->current_animation == PR_PLANE_DOWNWARDS_ACC) {
                 p->current_animation =
                     (p->acc.y > 0) ?
-                    PR::Plane::DOWNWARDS_ACC :
-                    PR::Plane::IDLE_ACC;
+                    PR_PLANE_DOWNWARDS_ACC :
+                    PR_PLANE_IDLE_ACC;
             }
 
             p->animation_countdown = 0.25f;
@@ -5159,7 +5159,7 @@ inline void plane_update_animation(PR::Plane *p) {
     }
 }
 
-inline void plane_activate_crash_animation(PR::Plane *p) {
+inline void plane_activate_crash_animation(PR_Plane *p) {
     p->anim.active = true;
     p->anim.current = 1;
     float speed = glm::length(p->vel);
@@ -5198,12 +5198,12 @@ inline void plane_activate_crash_animation(PR::Plane *p) {
     }
 }
 
-inline void portal_render(PR::Portal *portal) {
-    PR::Camera *cam = &glob->current_level.camera;
-    if (portal->type == PR::SHUFFLE_COLORS) {
-        Rect b = portal->body;
+inline void portal_render(PR_Portal *portal) {
+    PR_Camera *cam = &glob->current_level.camera;
+    if (portal->type == PR_SHUFFLE_COLORS) {
+        PR_Rect b = portal->body;
 
-        Rect q1;
+        PR_Rect q1;
         q1.angle = 0.f;
         q1.triangle = false;
         q1.pos = b.pos;
@@ -5213,7 +5213,7 @@ inline void portal_render(PR::Portal *portal) {
             glob->colors[glob->current_level.current_gray],
             false);
 
-        Rect q2;
+        PR_Rect q2;
         q2.angle = 0.f;
         q2.triangle = false;
         q2.pos.x = b.pos.x + b.dim.x*0.5f;
@@ -5224,7 +5224,7 @@ inline void portal_render(PR::Portal *portal) {
             glob->colors[glob->current_level.current_white],
             false);
 
-        Rect q3;
+        PR_Rect q3;
         q3.angle = 0.f;
         q3.triangle = false;
         q3.pos.x = b.pos.x;
@@ -5235,7 +5235,7 @@ inline void portal_render(PR::Portal *portal) {
             glob->colors[glob->current_level.current_blue],
             false);
 
-        Rect q4;
+        PR_Rect q4;
         q4.angle = 0.f;
         q4.triangle = false;
         q4.pos.x = b.pos.x + b.dim.x*0.5f;
@@ -5252,10 +5252,10 @@ inline void portal_render(PR::Portal *portal) {
     }
 }
 
-inline void boostpad_render(PR::BoostPad *pad) {
-    PR::Camera *cam = &glob->current_level.camera;
+inline void boostpad_render(PR_BoostPad *pad) {
+    PR_Camera *cam = &glob->current_level.camera;
 
-    Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
+    PR_Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
 
     if (glm::abs(pad_in_cam_pos.pos.x) >
             glm::abs(pad_in_cam_pos.dim.x) + glm::abs(pad_in_cam_pos.dim.y) +
@@ -5285,9 +5285,9 @@ inline void boostpad_render(PR::BoostPad *pad) {
                            true);
 }
 
-inline void obstacle_render(PR::Obstacle *obs) {
-    PR::Camera *cam = &glob->current_level.camera;
-    Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
+inline void obstacle_render(PR_Obstacle *obs) {
+    PR_Camera *cam = &glob->current_level.camera;
+    PR_Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
     if (glm::abs(obs_in_cam_pos.pos.x) >
             glm::abs(obs_in_cam_pos.dim.x) + glm::abs(obs_in_cam_pos.dim.y) +
@@ -5302,21 +5302,21 @@ inline void obstacle_render(PR::Obstacle *obs) {
                           false);
 }
 
-inline void button_render(PR::Button but, glm::vec4 col, Font *font) {
+inline void button_render(PR_Button but, glm::vec4 col, PR_Font *font) {
     renderer_add_queue_uni(but.body, but.col, but.from_center);
     renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
                             but.text, col, font, true);
 }
 
-inline void button_render_in_menu_camera(PR::Button but, glm::vec4 col, Font *font, PR::MenuCamera *cam) {
+inline void button_render_in_menu_camera(PR_Button but, glm::vec4 col, PR_Font *font, PR_MenuCamera *cam) {
 
-    Rect in_cam_rect = rect_in_menu_camera_space(but.body, cam);
+    PR_Rect in_cam_rect = rect_in_menu_camera_space(but.body, cam);
     renderer_add_queue_uni(in_cam_rect, but.col, but.from_center);
     renderer_add_queue_text(in_cam_rect.pos.x, in_cam_rect.pos.y,
                             but.text, col, font, true);
 }
 
-inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
+inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5342,7 +5342,7 @@ inline void portal_render_info(PR::Portal *portal, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty) {
+inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5372,7 +5372,7 @@ inline void boostpad_render_info(PR::BoostPad *boost, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty) {
+inline void obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5402,7 +5402,7 @@ inline void obstacle_render_info(PR::Obstacle *obstacle, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void goal_line_render_info(Rect *rect, float tx, float ty) {
+inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5420,7 +5420,7 @@ inline void goal_line_render_info(Rect *rect, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void start_pos_render_info(Rect *rect, glm::vec2 vel,
+inline void start_pos_render_info(PR_Rect *rect, glm::vec2 vel,
                                   float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
@@ -5447,8 +5447,8 @@ inline void start_pos_render_info(Rect *rect, glm::vec2 vel,
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void apply_air_resistances(PR::Plane* p) {
-    PR::Atmosphere *air = &glob->current_level.air;
+inline void apply_air_resistances(PR_Plane* p) {
+    PR_Atmosphere *air = &glob->current_level.air;
 
 
     float vertical_alar_surface = p->alar_surface * cos(glm::radians(p->body.angle));
@@ -5519,9 +5519,9 @@ inline void apply_air_resistances(PR::Plane* p) {
     /*             ",  HD: " << horizontal_drag << std::endl; */
 }
 
-inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
+inline void lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center) {
     // NOTE: Making the camera move to the plane
-    PR::Level *level = &glob->current_level;
+    PR_Level *level = &glob->current_level;
     float dest_x = center ?
                    rec->pos.x + rec->dim.x*0.5f :
                    rec->pos.x;
@@ -5534,7 +5534,7 @@ inline void lerp_camera_x_to_rect(PR::Camera *cam, Rect *rec, bool center) {
     }
 }
 
-inline void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
+inline void move_rider_to_plane(PR_Rider *rid, PR_Plane *p) {
     // NOTE: Making the rider stick to the plane
     rid->body.angle = p->body.angle;
     rid->body.pos.x =
@@ -5553,7 +5553,7 @@ inline void move_rider_to_plane(PR::Rider *rid, PR::Plane *p) {
             sin(glm::radians(rid->body.angle));
 }
 
-inline void rider_jump_from_plane(PR::Rider *rid, PR::Plane *p) {
+inline void rider_jump_from_plane(PR_Rider *rid, PR_Plane *p) {
     rid->attached = false;
     rid->second_jump = true;
     rid->base_velocity = p->vel.x;
@@ -5563,14 +5563,14 @@ inline void rider_jump_from_plane(PR::Rider *rid, PR::Plane *p) {
     rid->jump_time_elapsed = 0.f;
 }
 
-inline void level_reset_colors(PR::Level *level) {
-    level->current_red = PR::RED;
-    level->current_blue = PR::BLUE;
-    level->current_gray = PR::GRAY;
-    level->current_white = PR::WHITE;
+inline void level_reset_colors(PR_Level *level) {
+    level->current_red = PR_RED;
+    level->current_blue = PR_BLUE;
+    level->current_gray = PR_GRAY;
+    level->current_white = PR_WHITE;
 }
 
-inline void level_shuffle_colors(PR::Level *level) {
+inline void level_shuffle_colors(PR_Level *level) {
     int8_t shuffled_colors[] = {-1, -1, -1, -1};
     for(size_t i = 0;
         i < ARRAY_LENGTH(shuffled_colors);
@@ -5592,33 +5592,33 @@ inline void level_shuffle_colors(PR::Level *level) {
         } while (present);
         shuffled_colors[i] = tmp_r;
     }
-    level->current_red = (PR::ObstacleColorIndex)
+    level->current_red = (PR_ObstacleColorIndex)
         shuffled_colors[0];
-    level->current_white = (PR::ObstacleColorIndex)
+    level->current_white = (PR_ObstacleColorIndex)
         shuffled_colors[1];
-    level->current_blue = (PR::ObstacleColorIndex) 
+    level->current_blue = (PR_ObstacleColorIndex) 
         shuffled_colors[2];
-    level->current_gray = (PR::ObstacleColorIndex)
+    level->current_gray = (PR_ObstacleColorIndex)
         shuffled_colors[3];
 }
 
-inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type) {
-    Rect *b;
+inline PR_Rect *get_selected_body(void *selected, PR_ObjectType selected_type) {
+    PR_Rect *b;
     switch(selected_type) {
-        case PR::PORTAL_TYPE:
-            b = &((PR::Portal *)selected)->body;
+        case PR_PORTAL_TYPE:
+            b = &((PR_Portal *)selected)->body;
             break;
-        case PR::BOOST_TYPE:
-            b = &((PR::BoostPad *)selected)->body;
+        case PR_BOOST_TYPE:
+            b = &((PR_BoostPad *)selected)->body;
             break;
-        case PR::OBSTACLE_TYPE:
-            b = &((PR::Obstacle *)selected)->body;
+        case PR_OBSTACLE_TYPE:
+            b = &((PR_Obstacle *)selected)->body;
             break;
-        case PR::GOAL_LINE_TYPE:
-            b = (Rect *) selected;
+        case PR_GOAL_LINE_TYPE:
+            b = (PR_Rect *) selected;
             break;
-        case PR::P_START_POS_TYPE:
-            b = (Rect *) selected;
+        case PR_P_START_POS_TYPE:
+            b = (PR_Rect *) selected;
             break;
         default:
             b = NULL;
@@ -5627,7 +5627,7 @@ inline Rect *get_selected_body(void *selected, PR::ObjectType selected_type) {
     return b;
 }
 
-void button_set_position(PR::Button *button, size_t index) {
+void button_set_position(PR_Button *button, size_t index) {
     size_t row = index / 3;
     size_t col = index % 3;
 
@@ -5641,8 +5641,8 @@ void button_set_position(PR::Button *button, size_t index) {
     button->from_center = true;
 }
 
-void button_edit_del_to_lb(PR::Button *reference,
-                           PR::Button *edit, PR::Button *del) {
+void button_edit_del_to_lb(PR_Button *reference,
+                           PR_Button *edit, PR_Button *del) {
 
     edit->body.pos.x = reference->body.pos.x +
                        reference->body.dim.x * 0.05f;
@@ -5669,7 +5669,7 @@ void button_edit_del_to_lb(PR::Button *reference,
     std::snprintf(del->text, std::strlen("-")+1, "-");
 }
 
-void set_portal_option_buttons(PR::Button *buttons) {
+void set_portal_option_buttons(PR_Button *buttons) {
     // NOTE: Set up options buttons for the selected portal
     for(size_t option_button_index = 0;
         option_button_index < SELECTED_PORTAL_OPTIONS;
@@ -5678,7 +5678,7 @@ void set_portal_option_buttons(PR::Button *buttons) {
                  SELECTED_MAX_OPTIONS)
                 && "Selected options out of bound for portals");
 
-        PR::Button *button = buttons + option_button_index;
+        PR_Button *button = buttons + option_button_index;
 
         button->from_center = true;
         button->body.triangle = false;
@@ -5722,7 +5722,7 @@ void set_portal_option_buttons(PR::Button *buttons) {
     }
 }
 
-void set_boost_option_buttons(PR::Button *buttons) {
+void set_boost_option_buttons(PR_Button *buttons) {
     // NOTE: Set up options buttons for the selected boost
     for(size_t option_button_index = 0;
         option_button_index < SELECTED_BOOST_OPTIONS;
@@ -5732,7 +5732,7 @@ void set_boost_option_buttons(PR::Button *buttons) {
                     SELECTED_MAX_OPTIONS)
                 && "Selected options out of bounds for boosts");
 
-        PR::Button *button = buttons + option_button_index;
+        PR_Button *button = buttons + option_button_index;
 
         button->from_center = true;
         button->body.triangle = false;
@@ -5784,7 +5784,7 @@ void set_boost_option_buttons(PR::Button *buttons) {
     }
 }
 
-void set_obstacle_option_buttons(PR::Button *buttons) {
+void set_obstacle_option_buttons(PR_Button *buttons) {
     // NOTE: Set up options buttons for the selected obstacle
     for(size_t option_button_index = 0;
         option_button_index < SELECTED_OBSTACLE_OPTIONS;
@@ -5793,7 +5793,7 @@ void set_obstacle_option_buttons(PR::Button *buttons) {
                  SELECTED_MAX_OPTIONS)
                 && "Selected options out of bound for obstacle");
 
-        PR::Button *button = buttons + option_button_index;
+        PR_Button *button = buttons + option_button_index;
 
         button->from_center = true;
         button->body.triangle = false;
@@ -5844,7 +5844,7 @@ void set_obstacle_option_buttons(PR::Button *buttons) {
     }
 }
 
-void set_start_pos_option_buttons(PR::Button *buttons) {
+void set_start_pos_option_buttons(PR_Button *buttons) {
     for(size_t option_button_index = 0;
         option_button_index < SELECTED_START_POS_OPTIONS;
         ++option_button_index) {
@@ -5852,7 +5852,7 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
                  SELECTED_MAX_OPTIONS)
                 && "Selected options out of bound for start_position");
 
-        PR::Button *button = buttons + option_button_index;
+        PR_Button *button = buttons + option_button_index;
 
         button->from_center = true;
         button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
@@ -5887,8 +5887,8 @@ void set_start_pos_option_buttons(PR::Button *buttons) {
     }
 }
 
-inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
-    Rect res;
+inline PR_Rect rect_in_camera_space(PR_Rect r, PR_Camera *cam) {
+    PR_Rect res;
 
     res.pos = r.pos - cam->pos +
         glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
@@ -5899,8 +5899,8 @@ inline Rect rect_in_camera_space(Rect r, PR::Camera *cam) {
     return res;
 }
 
-inline Rect rect_in_menu_camera_space(Rect r, PR::MenuCamera *cam) {
-    Rect res;
+inline PR_Rect rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam) {
+    PR_Rect res;
 
     res.pos = r.pos - cam->pos +
         glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
@@ -5911,7 +5911,7 @@ inline Rect rect_in_menu_camera_space(Rect r, PR::MenuCamera *cam) {
     return res;
 }
 
-void level_activate_edit_mode(PR::Level *level) {
+void level_activate_edit_mode(PR_Level *level) {
     std::cout << "Activating edit mode!" << std::endl;
     level->editing_now = true;
     level->game_over = false;
@@ -5935,7 +5935,7 @@ void level_activate_edit_mode(PR::Level *level) {
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
-void level_deactivate_edit_mode(PR::Level *level) {
+void level_deactivate_edit_mode(PR_Level *level) {
     std::cout << "Deactivating edit mode!" << std::endl;
     level->selected = NULL;
     level->editing_now = false;
@@ -5945,12 +5945,12 @@ void level_deactivate_edit_mode(PR::Level *level) {
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
 
-void update_plane_physics_n_boost_collisions(PR::Level *level) {
-    PR::ParticleSystem *boost_ps =
+void update_plane_physics_n_boost_collisions(PR_Level *level) {
+    PR_ParticleSystem *boost_ps =
         &glob->current_level.particle_systems[0];
 
-    PR::Plane *p = &level->plane;
-    PR::Rider *rid = &level->rider;
+    PR_Plane *p = &level->plane;
+    PR_Rider *rid = &level->rider;
     float dt = glob->state.delta_time;
 
     // NOTE: Reset the accelleration for it to be recalculated
@@ -5961,7 +5961,7 @@ void update_plane_physics_n_boost_collisions(PR::Level *level) {
          boost_index < level->boosts.count;
          ++boost_index) {
 
-        PR::BoostPad pad = level->boosts.items[boost_index];
+        PR_BoostPad pad = level->boosts.items[boost_index];
 
         if (rect_are_colliding(p->body, pad.body, NULL, NULL)) {
 
@@ -6000,10 +6000,10 @@ void update_plane_physics_n_boost_collisions(PR::Level *level) {
 }
 
 // Particle systems
-void create_particle_plane_boost(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void create_particle_plane_boost(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     if (ps->active) {
-        PR::Plane *p = &glob->current_level.plane;
+        PR_Plane *p = &glob->current_level.plane;
         particle->body.pos = p->body.pos + p->body.dim * 0.5f;
         particle->body.dim.x = 10.f;
         particle->body.dim.y = 10.f;
@@ -6037,26 +6037,26 @@ void create_particle_plane_boost(PR::ParticleSystem *ps,
         particle->active = false;
     }
 }
-void update_particle_plane_boost(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void update_particle_plane_boost(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     UNUSED(ps);
     float dt = glob->state.delta_time;
     particle->vel *= (1.f - dt); 
     particle->color.a -= particle->color.a * dt * 3.0f;
     particle->body.pos += particle->vel * dt;
 }
-void draw_particle_plane_boost(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void draw_particle_plane_boost(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     UNUSED(ps);
     renderer_add_queue_uni(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
                             particle->color, true);
 }
 
-void create_particle_plane_crash(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void create_particle_plane_crash(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     if (ps->active) {
-        PR::Plane *p = &glob->current_level.plane;
+        PR_Plane *p = &glob->current_level.plane;
         //particle->body.pos = p->body.pos + p->body.dim*0.5f;
         particle->body.dim.x = 15.f;
         particle->body.dim.y = 15.f;
@@ -6085,8 +6085,8 @@ void create_particle_plane_crash(PR::ParticleSystem *ps,
         particle->active = false;
     }
 }
-void update_particle_plane_crash(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void update_particle_plane_crash(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     UNUSED(ps);
     float dt = glob->state.delta_time;
     particle->color.a -= particle->color.a * dt * 2.0f;
@@ -6097,8 +6097,8 @@ void update_particle_plane_crash(PR::ParticleSystem *ps,
         glm::sign(particle->vel.x) *
         lerp(0.f, 720.f, glm::abs(particle->vel.x)/150.f) * dt;
 }
-void draw_particle_plane_crash(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void draw_particle_plane_crash(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     UNUSED(ps);
     renderer_add_queue_tex(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
@@ -6111,10 +6111,10 @@ void draw_particle_plane_crash(PR::ParticleSystem *ps,
     //                         particle->color, true);
 }
 
-void create_particle_rider_crash(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void create_particle_rider_crash(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     if (ps->active) {
-        PR::Rider *rid = &glob->current_level.rider;
+        PR_Rider *rid = &glob->current_level.rider;
         //particle->body.pos = rid->body.pos + rid->body.dim*0.5f;
         particle->body.dim.x = 15.f;
         particle->body.dim.y = 15.f;
@@ -6144,8 +6144,8 @@ void create_particle_rider_crash(PR::ParticleSystem *ps,
         particle->active = false;
     }
 }
-void update_particle_rider_crash(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void update_particle_rider_crash(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     UNUSED(ps);
     float dt = glob->state.delta_time;
     particle->color.a -= particle->color.a * dt * 2.0f;
@@ -6156,8 +6156,8 @@ void update_particle_rider_crash(PR::ParticleSystem *ps,
         glm::sign(particle->vel.x) *
         lerp(0.f, 720.f, glm::abs(particle->vel.x)/150.f) * dt;
 }
-void draw_particle_rider_crash(PR::ParticleSystem *ps,
-                                 PR::Particle *particle) {
+void draw_particle_rider_crash(PR_ParticleSystem *ps,
+                                 PR_Particle *particle) {
     UNUSED(ps);
     renderer_add_queue_uni(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
@@ -6165,7 +6165,7 @@ void draw_particle_rider_crash(PR::ParticleSystem *ps,
 }
 
 // UI OptionSlider functions
-void option_slider_init_selection(PR::OptionSlider *slider, float pad) {
+void option_slider_init_selection(PR_OptionSlider *slider, float pad) {
     if (pad < 0) {
         pad = 0.2f;
     }
@@ -6185,7 +6185,7 @@ void option_slider_init_selection(PR::OptionSlider *slider, float pad) {
     snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
              "%.2f", slider->value);
 }
-void option_slider_update_value(PR::OptionSlider *slider, float value) {
+void option_slider_update_value(PR_OptionSlider *slider, float value) {
     if (value < 0.01f) value = 0.f;
     else if (value > 0.99f) value = 1.f;
     float pad_dim = glm::abs(slider->selection.pos.x -
@@ -6197,8 +6197,8 @@ void option_slider_update_value(PR::OptionSlider *slider, float value) {
     snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
              "%.2f", slider->value);
 }
-void option_slider_handle_mouse(PR::OptionSlider *slider,
-                                float mouseX, float mouseY, Key mouse_button) {
+void option_slider_handle_mouse(PR_OptionSlider *slider,
+                                float mouseX, float mouseY, PR_Key mouse_button) {
     // Update mouse_hooked
     if (mouse_button.clicked &&
         !slider->mouse_hooked &&
@@ -6219,7 +6219,7 @@ void option_slider_handle_mouse(PR::OptionSlider *slider,
         option_slider_update_value(slider, new_value);
     }
 }
-void option_slider_render(PR::OptionSlider *slider, glm::vec4 color) {
+void option_slider_render(PR_OptionSlider *slider, glm::vec4 color) {
     renderer_add_queue_uni(slider->background,
                            glm::vec4(0.f, 0.f, 0.f, 1.f), true);
     renderer_add_queue_uni(slider->selection,
@@ -6235,7 +6235,7 @@ void option_slider_render(PR::OptionSlider *slider, glm::vec4 color) {
             true);
 }
 
-void options_menu_selection_handle_mouse(PR::OptionsMenu *opt,
+void options_menu_selection_handle_mouse(PR_OptionsMenu *opt,
                                          float mouseX, float mouseY,
                                          bool showing_general_pane) {
 
@@ -6249,36 +6249,36 @@ void options_menu_selection_handle_mouse(PR::OptionsMenu *opt,
         float position = (mouseY - GAME_HEIGHT * 0.2f) / (GAME_HEIGHT * 0.8f);
 
         if (position < 0) {
-            opt->current_selection = PR::OPTION_NONE;
+            opt->current_selection = PR_OPTION_NONE;
         } else if (position <= 0.2f) {
-            opt->current_selection = PR::OPTION_MASTER_VOLUME;
+            opt->current_selection = PR_OPTION_MASTER_VOLUME;
         } else if (position <= 0.4f) {
-            opt->current_selection = PR::OPTION_SFX_VOLUME;
+            opt->current_selection = PR_OPTION_SFX_VOLUME;
         } else if (position <= 0.6f) {
-            opt->current_selection = PR::OPTION_MUSIC_VOLUME;
+            opt->current_selection = PR_OPTION_MUSIC_VOLUME;
         } else if (position <= 0.8f) {
-            opt->current_selection = PR::OPTION_DISPLAY_MODE;
+            opt->current_selection = PR_OPTION_DISPLAY_MODE;
         } else {
-            if (glob->window.display_mode == PR::WINDOWED) {
-                opt->current_selection = PR::OPTION_RESOLUTION;
+            if (glob->window.display_mode == PR_WINDOWED) {
+                opt->current_selection = PR_OPTION_RESOLUTION;
             }
         }
     } else {
-        // TODO: Keybindings pane
+        // TODO: PR_Keybindings pane
     }
 }
 
-void options_menu_update_bindings(PR::OptionsMenu *opt, InputAction *actions) {
+void options_menu_update_bindings(PR_OptionsMenu *opt, PR_InputAction *actions) {
     for(size_t bind_index = 0;
         bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
         ++bind_index) {
 
-        InputAction *action = &actions[bind_index];
+        PR_InputAction *action = &actions[bind_index];
 
-        PR::Button *kb1 = &opt->change_kb_binds1[bind_index];
-        PR::Button *kb2 = &opt->change_kb_binds2[bind_index];
-        PR::Button *gp1 = &opt->change_gp_binds1[bind_index];
-        PR::Button *gp2 = &opt->change_gp_binds2[bind_index];
+        PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
+        PR_Button *kb2 = &opt->change_kb_binds2[bind_index];
+        PR_Button *gp1 = &opt->change_gp_binds1[bind_index];
+        PR_Button *gp2 = &opt->change_gp_binds2[bind_index];
 
         const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
         std::strncpy(kb1->text,

@@ -6,9 +6,9 @@
 
 [ ] Port from C++ to C: this will be done during the overall rewrite, meaning that only at the end of it the build script will be actually update to use only C
     [ ] substitute glm with mathy
-    [ ] typedef declarations
+    [x] typedef declarations
     [ ] MAYBE update opengl bindings
-    [ ] update build script
+    [/] update build script
 
 [ ] New obstacles/portals/boosts
     [ ] update data structure (generic polygon with a limit on the number of vertices)

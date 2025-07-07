@@ -31,6 +31,7 @@ LIBS="-lglfw -ldl -lpthread -lm -lGL"
 EXE="./bin/paper"
 
 SRCS_FILES=$(find ./src/ -name "*.cpp" -or -name "*.c")
+INCLUDES="-I./include"
 
 rm -r bin
 mkdir bin
@@ -38,5 +39,5 @@ mkdir bin
 echo "Compiling the sources..."
 echo $SRCS_FILES
 
-clang++ $CFLAGS $LIBS -o $EXE $SRCS_FILES
+clang++ $SRCS_FILES $CFLAGS -o $EXE $LIBS $INCLUDES
 

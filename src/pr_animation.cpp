@@ -1,6 +1,6 @@
 #include "pr_animation.h"
 
-void animation_init(PR::Animation *a, Texture tex,
+void animation_init(PR_Animation *a, PR_Texture tex,
                     size_t start_x, size_t start_y,
                     size_t dim_x, size_t dim_y,
                     size_t step_x, size_t step_y,
@@ -11,7 +11,7 @@ void animation_init(PR::Animation *a, Texture tex,
     a->frame_duration = frame_duration;
 
     if (a->tc) std::free(a->tc);
-    a->tc = (TexCoords *) std::malloc(sizeof(TexCoords) * frame_number);
+    a->tc = (PR_TexCoords *) std::malloc(sizeof(PR_TexCoords) * frame_number);
 
     for(size_t i = 0; i < frame_number; ++i) {
         a->tc[i] = texcoords_in_texture_space(start_x + (step_x * i),
@@ -26,7 +26,7 @@ void animation_init(PR::Animation *a, Texture tex,
     a->frame_elapsed = 0.f;
 }
 
-void animation_step(PR::Animation *a) {
+void animation_step(PR_Animation *a) {
     float dt = glob->state.delta_time;
 
     if (!a->active) return;
@@ -48,8 +48,8 @@ void animation_step(PR::Animation *a) {
     }
 }
 
-void animation_queue_render(Rect b, PR::Animation *a, bool inverse) {
-    TexCoords tc = a->tc[a->current];
+void animation_queue_render(PR_Rect b, PR_Animation *a, bool inverse) {
+    PR_TexCoords tc = a->tc[a->current];
     if (inverse) {
         tc.ty += tc.th;
         tc.th = -tc.th;
@@ -57,7 +57,7 @@ void animation_queue_render(Rect b, PR::Animation *a, bool inverse) {
     renderer_add_queue_tex(b, tc, false);
 }
 
-void animation_reset(PR::Animation *a) {
+void animation_reset(PR_Animation *a) {
     a->current = 0;
     a->active = false;
     a->finished = false;

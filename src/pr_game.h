@@ -5,7 +5,7 @@
 #include "pr_globals.h"
 
 #define CHANGE_CASE_TO_LEVEL(map_path, level_name, edit, is_new, ret)  do {\
-    PR::Level t_level = glob->current_level;\
+    PR_Level t_level = glob->current_level;\
     level_set_to_null(&t_level);\
     t_level.editing_available = (edit);\
     std::snprintf(t_level.name, std::strlen((level_name))+1,\
@@ -18,7 +18,7 @@
                 &glob->current_start_menu,\
                 &glob->current_options_menu);\
         glob->current_level = t_level;\
-        glob->state.current_case = PR::LEVEL;\
+        glob->state.current_case = PR_LEVEL;\
         return(ret);\
     } else {\
         std::cout << "[ERROR] Could not prepare the level: "\
@@ -28,7 +28,7 @@
 } while(0)
 
 #define CHANGE_CASE_TO_PLAY_MENU(ret) do {\
-    PR::PlayMenu t_menu = glob->current_play_menu;\
+    PR_PlayMenu t_menu = glob->current_play_menu;\
     play_menu_set_to_null(&t_menu);\
     int preparation_result = play_menu_prepare(&t_menu);\
     if (preparation_result == 0) {\
@@ -38,7 +38,7 @@
                 &glob->current_start_menu,\
                 &glob->current_options_menu);\
         glob->current_play_menu = t_menu;\
-        glob->state.current_case = PR::PLAY_MENU;\
+        glob->state.current_case = PR_PLAY_MENU;\
         return(ret);\
     } else {\
         std::cout << "[ERROR] Could not prepare the play menu"\
@@ -47,7 +47,7 @@
 } while(0)
 
 #define CHANGE_CASE_TO_START_MENU(ret) do {\
-    PR::StartMenu t_start = glob->current_start_menu;\
+    PR_StartMenu t_start = glob->current_start_menu;\
     start_menu_set_to_null(&t_start);\
     int preparation_result = start_menu_prepare(&t_start);\
     if (preparation_result == 0) {\
@@ -57,7 +57,7 @@
                 &glob->current_start_menu,\
                 &glob->current_options_menu);\
         glob->current_start_menu = t_start;\
-        glob->state.current_case = PR::START_MENU;\
+        glob->state.current_case = PR_START_MENU;\
         return(ret);\
     } else {\
         std::cout << "[ERROR] Could not prepare the start menu"\
@@ -66,7 +66,7 @@
 } while(0)
 
 #define CHANGE_CASE_TO_OPTIONS_MENU(ret) do {\
-    PR::OptionsMenu t_options = glob->current_options_menu;\
+    PR_OptionsMenu t_options = glob->current_options_menu;\
     options_menu_set_to_null(&t_options);\
     int preparation_result = options_menu_prepare(&t_options);\
     if (preparation_result == 0) {\
@@ -76,7 +76,7 @@
                 &glob->current_start_menu,\
                 &glob->current_options_menu);\
         glob->current_options_menu = t_options;\
-        glob->state.current_case = PR::OPTIONS_MENU;\
+        glob->state.current_case = PR_OPTIONS_MENU;\
         return(ret);\
     } else {\
         std::cout << "[ERROR] Could not prepare the options menu"\
@@ -85,26 +85,26 @@
 } while(0)
 
 void
-free_all_cases(PR::PlayMenu *menu, PR::Level *level, PR::StartMenu *start, PR::OptionsMenu *opt);
+free_all_cases(PR_PlayMenu *menu, PR_Level *level, PR_StartMenu *start, PR_OptionsMenu *opt);
 void
-play_menu_set_to_null(PR::PlayMenu *menu);
+play_menu_set_to_null(PR_PlayMenu *menu);
 void
-start_menu_set_to_null(PR::StartMenu *start);
+start_menu_set_to_null(PR_StartMenu *start);
 void
-options_menu_set_to_null(PR::OptionsMenu *opt);
+options_menu_set_to_null(PR_OptionsMenu *opt);
 void
-level_set_to_null(PR::Level *level);
+level_set_to_null(PR_Level *level);
 
-int play_menu_prepare(PR::PlayMenu *menu);
+int play_menu_prepare(PR_PlayMenu *menu);
 void play_menu_update(void);
 
-int level_prepare(PR::Level *level, const char* mapfile_path, bool is_new);
+int level_prepare(PR_Level *level, const char* mapfile_path, bool is_new);
 void level_update(void);
 
-int start_menu_prepare(PR::StartMenu *start);
+int start_menu_prepare(PR_StartMenu *start);
 void start_menu_update(void);
 
-int options_menu_prepare(PR::OptionsMenu *opt);
+int options_menu_prepare(PR_OptionsMenu *opt);
 void options_menu_update(void);
 
 inline float lerp(float x1, float x2, float t) {
@@ -150,15 +150,15 @@ float horizontal_drag_coefficient(float angle) {
 }
 
 inline
-const char *get_case_name(PR::GameCase c) {
+const char *get_case_name(PR_GameCase c) {
     switch (c) {
-        case PR::START_MENU:
+        case PR_START_MENU:
             return "START_MENU";
-        case PR::PLAY_MENU:
+        case PR_PLAY_MENU:
             return "PLAY_MENU";
-        case PR::OPTIONS_MENU:
+        case PR_OPTIONS_MENU:
             return "OPTIONS_MENU";
-        case PR::LEVEL:
+        case PR_LEVEL:
             return "LEVEL";
         default:
             return "UNKNOWN";
@@ -167,11 +167,11 @@ const char *get_case_name(PR::GameCase c) {
 }
 
 inline
-const char *get_portal_type_name(PR::PortalType t) {
+const char *get_portal_type_name(PR_PortalType t) {
     switch (t) {
-        case PR::INVERSE:
+        case PR_INVERSE:
             return "INVERSE";
-        case PR::SHUFFLE_COLORS:
+        case PR_SHUFFLE_COLORS:
             return "SHUFFLE_COLORS";
         default:
             return "UNKNOWN";

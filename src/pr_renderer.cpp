@@ -1,7 +1,7 @@
 #include "pr_renderer.h"
 
-#include "../include/glad/glad.h"
-#include "../include/stb_image.h"
+#include "glad/glad.h"
+#include "stb_image.h"
 
 #include "pr_globals.h"
 #include "pr_shaderer.h"
@@ -15,10 +15,10 @@
 
 // TODO: Add alpha support for textured quads
 
-TexCoords texcoords_in_texture_space(size_t x, size_t y,
+PR_TexCoords texcoords_in_texture_space(size_t x, size_t y,
                                      size_t w, size_t h,
-                                     Texture tex, bool inverse) {
-    TexCoords res;
+                                     PR_Texture tex, bool inverse) {
+    PR_TexCoords res;
 
     res.tx = (float)x / tex.width;
     res.tw = (float)w / tex.width;
@@ -41,7 +41,7 @@ TexCoords texcoords_in_texture_space(size_t x, size_t y,
 }
 
 // General setup
-void renderer_init(Renderer* renderer) {
+void renderer_init(PR_Renderer* renderer) {
     // NOTE: unicolor rendering initialization
     glGenVertexArrays(1, &renderer->uni_vao);
     glGenBuffers(1, &renderer->uni_vbo);
@@ -153,7 +153,7 @@ void renderer_add_queue_uni(float x, float y,
                            float r, glm::vec4 c,
                            bool triangle, bool centered) {
 
-    Renderer* renderer = &glob->renderer;
+    PR_Renderer* renderer = &glob->renderer;
 
     if (centered) {
         x -= w/2;
@@ -215,8 +215,8 @@ void renderer_add_queue_uni(float x, float y,
     glBindVertexArray(0);
 }
 
-void renderer_draw_uni(Shader s) {
-    Renderer* renderer = &glob->renderer;
+void renderer_draw_uni(PR_Shader s) {
+    PR_Renderer* renderer = &glob->renderer;
 
     glUseProgram(s);
 
@@ -231,11 +231,11 @@ void renderer_draw_uni(Shader s) {
 }
 
 
-void renderer_create_array_texture(ArrayTexture *at) {
+void renderer_create_array_texture(PR_ArrayTexture *at) {
     stbi_set_flip_vertically_on_load(true);
 
-    DataImage empty_data_image = {};
-    DataImages images = {};
+    PR_DataImage empty_data_image = {};
+    PR_DataImages images = {};
 
     int max_width = -1;
     int max_height = -1;
@@ -244,8 +244,8 @@ void renderer_create_array_texture(ArrayTexture *at) {
         image_index < at->elements_len;
         ++image_index) {
 
-        da_append(&images, empty_data_image, DataImage);
-        DataImage *new_image = &da_last(&images);
+        da_append(&images, empty_data_image, PR_DataImage);
+        PR_DataImage *new_image = &da_last(&images);
         new_image->path = at->elements[image_index].filename;
         // NOTE: Need to free this data later
         uint8_t *image_data = stbi_load(new_image->path,
@@ -293,8 +293,8 @@ void renderer_create_array_texture(ArrayTexture *at) {
         return;
     }
 
-    at->elements = (TextureElement *)
-        std::malloc(sizeof(TextureElement) * images.count);
+    at->elements = (PR_TextureElement *)
+        std::malloc(sizeof(PR_TextureElement) * images.count);
 
     glGenTextures(1, &at->id);
     glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
@@ -312,8 +312,8 @@ void renderer_create_array_texture(ArrayTexture *at) {
         image_index < images.count;
         ++image_index) {
 
-        DataImage *image = &(images.items[image_index]);
-        TextureElement *t_element = &(at->elements[image_index]);
+        PR_DataImage *image = &(images.items[image_index]);
+        PR_TextureElement *t_element = &(at->elements[image_index]);
         t_element->width = image->width;
         t_element->height = image->height;
         t_element->tex_coords = {
@@ -353,7 +353,7 @@ void renderer_create_array_texture(ArrayTexture *at) {
 }
 
 // Textured quads
-void renderer_create_texture(Texture* t, const char* filepath) {
+void renderer_create_texture(PR_Texture* t, const char* filepath) {
     stbi_set_flip_vertically_on_load(true);
 
     glGenTextures(1, &t->id);
@@ -389,7 +389,7 @@ void renderer_add_queue_tex(float x, float y,
                                float tx, float ty,
                                float tw, float th) {
 
-    Renderer* renderer = &glob->renderer;
+    PR_Renderer* renderer = &glob->renderer;
 
     if (centered) {
         x -= w/2;
@@ -449,8 +449,8 @@ void renderer_add_queue_tex(float x, float y,
     glBindVertexArray(0);
 }
 
-void renderer_draw_tex(Shader s, Texture* t) {
-    Renderer *renderer = &glob->renderer;
+void renderer_draw_tex(PR_Shader s, PR_Texture* t) {
+    PR_Renderer *renderer = &glob->renderer;
 
     glUseProgram(s);
 
@@ -471,7 +471,7 @@ void renderer_draw_tex(Shader s, Texture* t) {
 }
 
 // Textured quads with array textures
-void renderer_add_queue_array_tex(ArrayTexture at,
+void renderer_add_queue_array_tex(PR_ArrayTexture at,
                                     float x, float y,
                                     float w, float h,
                                     float r, bool centered,
@@ -483,7 +483,7 @@ void renderer_add_queue_array_tex(ArrayTexture at,
         return;
     }
 
-    Renderer* renderer = &glob->renderer;
+    PR_Renderer* renderer = &glob->renderer;
 
     if (centered) {
         x -= w/2;
@@ -497,9 +497,8 @@ void renderer_add_queue_array_tex(ArrayTexture at,
         return;
     }
 
-    // Array tex coords are always 0 and 1 because we display the whole texture layer, always (for now at least
     // REMINDER: tex coords are in the interval [0,1]
-    TexCoords tc = at.elements[layer].tex_coords;
+    PR_TexCoords tc = at.elements[layer].tex_coords;
     float vertices[] = {
         x  , y+h, tc.tx        , tc.ty + tc.th, (float) layer,
         x  , y  , tc.tx        , tc.ty        , (float) layer,
@@ -542,8 +541,8 @@ void renderer_add_queue_array_tex(ArrayTexture at,
     glBindVertexArray(0);
 }
 
-void renderer_draw_array_tex(Shader s, ArrayTexture at) {
-    Renderer *renderer = &glob->renderer;
+void renderer_draw_array_tex(PR_Shader s, PR_ArrayTexture at) {
+    PR_Renderer *renderer = &glob->renderer;
     glUseProgram(s);
 
     shaderer_set_int(s, "tex", 0);
@@ -564,7 +563,7 @@ void renderer_draw_array_tex(Shader s, ArrayTexture at) {
 
 // Text quads
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
-int renderer_create_font_atlas(Font* font) {
+int renderer_create_font_atlas(PR_Font* font) {
     int result = 0;
     FILE *font_file = NULL;
     uint8_t *ttf_buffer;
@@ -610,9 +609,9 @@ int renderer_create_font_atlas(Font* font) {
 
 void renderer_add_queue_text(float x, float y,
                              const char *text, glm::vec4 c,
-                             Font* font, bool centered) {
+                             PR_Font* font, bool centered) {
 
-    Renderer *renderer = &glob->renderer;
+    PR_Renderer *renderer = &glob->renderer;
 
     size_t length = strlen(text);
 
@@ -779,8 +778,8 @@ void renderer_add_queue_text(float x, float y,
     glBindVertexArray(0);
 }
 
-void renderer_draw_text(Font* font, Shader s) {
-    Renderer *renderer = &glob->renderer;
+void renderer_draw_text(PR_Font* font, PR_Shader s) {
+    PR_Renderer *renderer = &glob->renderer;
 
     glUseProgram(s);
 
