@@ -1,5 +1,15 @@
-#ifndef _MATHY_H_
-#define _MATHY_H_
+#ifndef _RC_MATHY_H_
+#define _RC_MATHY_H_
+
+/*
+
+TODO(gio): substitute glm
+glm::ortho
+glm::vec4f(float a) genera un vec4f con tutti elementi uguali
+glm::radians
+
+
+ */
 
 ///
 ////////////////////////////////////
@@ -8,12 +18,32 @@
 ///
 
 #include <stdint.h>
+#include <math.h>
 
+#ifndef ARR_LEN
+#define ARR_LEN(x) (sizeof((x)) / sizeof((x)[0]))
+#endif
+#ifndef DIRECTION
+#define DIRECTION(x) (((x) > 0) ? 1 : -1)
+#endif
+#ifndef ABS
+#define ABS(x) (((x) > 0) ? (x) : (-(x)))
+#endif
+#ifndef SIGN
+#define SIGN(x) (((x) > 0) ? 1 : (((x) < 0) ? -1 : 0))
+#endif
 #ifndef MAX
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 #ifndef MIN
 #define MIN(a, b) (((a) > (b)) ? (b) : (a))
+#endif
+#ifndef CLAMP
+#define CLAMP(x, min, max) MIN(MAX((x), (min)), (max))
+#endif
+
+#ifndef POW2
+#define POW2(x) ((x) * (x))
 #endif
 
 #ifndef UINT8_MAX
@@ -32,6 +62,10 @@
 #define UINT64_MAX 0xffffffffffffffff
 #endif
 
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
+
 typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
@@ -41,6 +75,39 @@ typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
+
+typedef struct vec2i {
+    union {
+        int32 e[2];
+        struct {
+            int32 x, y;
+        };
+    };
+} vec2i;
+
+typedef struct vec3i {
+    union {
+        int32 e[3];
+        struct {
+            int32 x, y, z;
+        };
+        struct {
+            int32 r, g, b;
+        };
+    };
+} vec3i;
+
+typedef struct vec4i {
+    union {
+        int32 e[4];
+        struct {
+            int32 x, y, z, w;
+        };
+        struct {
+            int32 r, g, b, a;
+        };
+    };
+} vec4i;
 
 typedef struct vec2f {
     union {
@@ -82,13 +149,129 @@ typedef struct mat4f {
     };
 } mat4f;
 
-vec4f make_vec4f(float x, float y, float z, float w) {
+vec4f
+_vec4f(float x, float y, float z, float w);
+
+vec4f
+vec4f_divide(vec4f v, float x);
+
+vec4f
+vec4f_mult(vec4f v, float x);
+
+vec4f
+vec4f_sum_vec4f(vec4f v1, vec4f v2);
+
+vec4f
+vec4f_diff_vec4f(vec4f v1, vec4f v2);
+
+vec2f
+vec2f_sum_vec2f(vec2f v1, vec2f v2);
+
+vec2f
+vec2f_from_angle(float rad);
+
+float
+vec2f_len_sq(vec2f v);
+
+vec2f
+vec2f_normalize(vec2f v);
+
+vec4f
+mat4f_x_vec4f(mat4f m, vec4f v);
+
+mat4f
+mat4f_x_mat4f(mat4f m1, mat4f m2);
+
+
+#ifdef RADIANCE_CASCADES_MATHY_IMPLEMENTATION
+
+vec4f _vec4f(float x, float y, float z, float w) {
     vec4f result;
 
     result.x = x;
     result.y = y;
     result.z = z;
     result.w = w;
+
+    return result;
+}
+
+vec4f vec4f_divide(vec4f v, float x) {
+    vec4f result;
+
+    result.x = v.x / x;
+    result.y = v.y / x;
+    result.z = v.z / x;
+    result.w = v.w / x;
+
+    return result;
+}
+
+vec4f vec4f_mult(vec4f v, float x) {
+    vec4f result;
+
+    result.x = v.x * x;
+    result.y = v.y * x;
+    result.z = v.z * x;
+    result.w = v.w * x;
+
+    return result;
+}
+
+vec4f vec4f_sum_vec4f(vec4f v1, vec4f v2) {
+    vec4f result;
+
+    result.x = v1.x + v2.x;
+    result.y = v1.y + v2.y;
+    result.z = v1.z + v2.z;
+    result.w = v1.w + v2.w;
+
+    return result;
+}
+
+vec4f vec4f_diff_vec4f(vec4f v1, vec4f v2) {
+    vec4f result;
+
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+    result.z = v1.z - v2.z;
+    result.w = v1.w - v2.w;
+
+    return result;
+}
+
+vec2f vec2f_sum_vec2f(vec2f v1, vec2f v2) {
+    vec2f result;
+
+    result.x = v1.x + v2.x;
+    result.y = v1.y + v2.y;
+
+    return result;
+}
+
+vec2f vec2f_from_angle(float rad) {
+    vec2f result;
+
+    result.x = cosf(rad);
+    result.y = sinf(rad);
+
+    return result;
+}
+
+int vec4f_equals(vec4f v1, vec4f v2) {
+    return (v1.x == v2.x && v1.y == v2.y && v1.z == v2.z && v1.w == v2.w);
+}
+
+float vec2f_len_sq(vec2f v) {
+    return v.x * v.x + v.y * v.y;
+}
+
+vec2f vec2f_normalize(vec2f v) {
+    vec2f result;
+
+    float magnitude = sqrtf(v.x * v.x + v.y * v.y);
+    result.x = v.x / magnitude;
+    result.y = v.y / magnitude;
 
     return result;
 }
@@ -124,4 +307,6 @@ mat4f mat4f_x_mat4f(mat4f m1, mat4f m2) {
     return result;
 }
 
-#endif //_MATHY_H_
+#endif
+
+#endif //_RC_MATHY_H_

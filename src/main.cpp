@@ -11,6 +11,7 @@
 #include "pr_renderer.h"
 #include "pr_game.h"
 #include "pr_window.h"
+#include "pr_mathy.h"
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow *window, int width, int height);
@@ -332,10 +333,10 @@ int glob_init(void) {
     renderer_init(&glob->renderer);
 
     // ### Obstacle colors initialization
-    glob->colors[0] = glm::vec4(0.8f, 0.3f, 0.3f, 1.0f);
-    glob->colors[1] = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
-    glob->colors[2] = glm::vec4(0.3f, 0.3f, 0.8f, 1.0f);
-    glob->colors[3] = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
+    glob->colors[0] = _vec4f(0.8f, 0.3f, 0.3f, 1.0f);
+    glob->colors[1] = _vec4f(0.8f, 0.8f, 0.8f, 1.0f);
+    glob->colors[2] = _vec4f(0.3f, 0.3f, 0.8f, 1.0f);
+    glob->colors[3] = _vec4f(0.4f, 0.4f, 0.4f, 1.0f);
 
     // ### Sound initialization ###
     PR_Sound *sound = &glob->sound;

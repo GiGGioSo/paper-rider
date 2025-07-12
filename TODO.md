@@ -5,7 +5,7 @@
     [/] create UI library :)
 
 [ ] Port from C++ to C: this will be done during the overall rewrite, meaning that only at the end of it the build script will be actually update to use only C
-    [ ] substitute glm with mathy
+    [/] substitute glm with mathy
     [x] typedef declarations
     [ ] MAYBE update opengl bindings
     [/] update build script
