@@ -27,7 +27,7 @@ void input_controller_init(PR_InputController *input) {
 
     // Load keybindings from file, and overwrite the default ones
     int keybinds_load_ret = keybindings_load_from_file("./my_binds.prkeys",
-                               input->actions, ARRAY_LENGTH(input->actions));
+                               input->actions, ARR_LEN(input->actions));
     if (keybinds_load_ret) {
         std::cout << "Could not load keybindings from file ./my_binds.prkeys: "
                   << keybinds_load_ret
@@ -349,7 +349,7 @@ void input_controller_update(GLFWwindow *window, PR_InputController *input,
 
     // ### NEW RESET ###
     for(size_t action_index = 0;
-        action_index < ARRAY_LENGTH(input->actions);
+        action_index < ARR_LEN(input->actions);
         ++action_index) {
 
         PR_InputAction *action = &input->actions[action_index];
@@ -447,7 +447,7 @@ void input_controller_update(GLFWwindow *window, PR_InputController *input,
 
     // Check if actions are being pressed by either keyboard or gamepad
     for(size_t action_index = 0;
-            action_index < ARRAY_LENGTH(input->actions);
+            action_index < ARR_LEN(input->actions);
             ++action_index) {
 
         PR_InputAction *action = &input->actions[action_index];
@@ -456,7 +456,7 @@ void input_controller_update(GLFWwindow *window, PR_InputController *input,
         //          if there's no change of keybinding going on
         if (input->kb_binding == NULL) {
             for(size_t kb_bind_index = 0;
-                    kb_bind_index < ARRAY_LENGTH(action->kb_binds);
+                    kb_bind_index < ARR_LEN(action->kb_binds);
                     ++kb_bind_index) {
 
                 int bind_index = action->kb_binds[kb_bind_index].bind_index;
@@ -487,7 +487,7 @@ void input_controller_update(GLFWwindow *window, PR_InputController *input,
         if (input->gp_binding == NULL && wasGamepadFound) {
 
             for(size_t gp_bind_index = 0;
-                    gp_bind_index < ARRAY_LENGTH(action->gp_binds);
+                    gp_bind_index < ARR_LEN(action->gp_binds);
                     ++gp_bind_index) {
 
                 if (action->gp_binds[gp_bind_index].bind_index ==

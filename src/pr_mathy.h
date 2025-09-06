@@ -5,8 +5,6 @@
 
 TODO(gio): substitute glm
 glm::ortho
-glm::vec4f(float a) genera un vec4f con tutti elementi uguali
-glm::radians
 
 
  */
@@ -21,7 +19,7 @@ glm::radians
 #include <math.h>
 
 #ifndef ARR_LEN
-#define ARR_LEN(x) (sizeof((x)) / sizeof((x)[0]))
+#define ARR_LEN(x) ((int)(sizeof((x)) / sizeof((x)[0])))
 #endif
 #ifndef DIRECTION
 #define DIRECTION(x) (((x) > 0) ? 1 : -1)
@@ -149,8 +147,17 @@ typedef struct mat4f {
     };
 } mat4f;
 
+double
+radians(double x);
+
+float
+radiansf(float x);
+
 vec4f
 _vec4f(float x, float y, float z, float w);
+
+vec4f
+_diag_vec4f(float x);
 
 vec4f
 vec4f_divide(vec4f v, float x);
@@ -159,19 +166,37 @@ vec4f
 vec4f_mult(vec4f v, float x);
 
 vec4f
-vec4f_sum_vec4f(vec4f v1, vec4f v2);
+vec4f_sum(vec4f v1, vec4f v2);
 
 vec4f
-vec4f_diff_vec4f(vec4f v1, vec4f v2);
+vec4f_diff(vec4f v1, vec4f v2);
 
 vec2f
-vec2f_sum_vec2f(vec2f v1, vec2f v2);
+_vec2f(float x, float y);
+
+vec2f
+_diag_vec2f(float v);
+
+vec2f
+vec2f_divide(vec2f v, float x);
+
+vec2f
+vec2f_mult(vec2f v, float x);
+
+vec2f
+vec2f_sum(vec2f v1, vec2f v2);
+
+vec2f
+vec2f_diff(vec2f v1, vec2f v2);
 
 vec2f
 vec2f_from_angle(float rad);
 
 float
 vec2f_len_sq(vec2f v);
+
+float
+vec2f_len(vec2f v);
 
 vec2f
 vec2f_normalize(vec2f v);
@@ -183,7 +208,15 @@ mat4f
 mat4f_x_mat4f(mat4f m1, mat4f m2);
 
 
-#ifdef RADIANCE_CASCADES_MATHY_IMPLEMENTATION
+#ifdef PR_MATHY_IMPLEMENTATION
+
+double radians(double x) {
+    return x * PI / 180.0;
+}
+
+float radiansf(float x) {
+    return x * PI / 180.f;
+}
 
 vec4f _vec4f(float x, float y, float z, float w) {
     vec4f result;
@@ -192,6 +225,17 @@ vec4f _vec4f(float x, float y, float z, float w) {
     result.y = y;
     result.z = z;
     result.w = w;
+
+    return result;
+}
+
+vec4f _diag_vec4f(float v) {
+    vec4f result;
+
+    result.x = v;
+    result.y = v;
+    result.z = v;
+    result.w = v;
 
     return result;
 }
@@ -218,7 +262,7 @@ vec4f vec4f_mult(vec4f v, float x) {
     return result;
 }
 
-vec4f vec4f_sum_vec4f(vec4f v1, vec4f v2) {
+vec4f vec4f_sum(vec4f v1, vec4f v2) {
     vec4f result;
 
     result.x = v1.x + v2.x;
@@ -229,7 +273,7 @@ vec4f vec4f_sum_vec4f(vec4f v1, vec4f v2) {
     return result;
 }
 
-vec4f vec4f_diff_vec4f(vec4f v1, vec4f v2) {
+vec4f vec4f_diff(vec4f v1, vec4f v2) {
     vec4f result;
 
     result.x = v1.x - v2.x;
@@ -240,7 +284,43 @@ vec4f vec4f_diff_vec4f(vec4f v1, vec4f v2) {
     return result;
 }
 
-vec2f vec2f_sum_vec2f(vec2f v1, vec2f v2) {
+vec2f _vec2f(float x, float y) {
+    vec2f result;
+
+    result.x = x;
+    result.y = y;
+
+    return result;
+}
+
+vec2f _diag_vec2f(float v) {
+    vec2f result;
+
+    result.x = v;
+    result.y = v;
+
+    return result;
+}
+
+vec2f vec2f_divide(vec2f v, float x) {
+    vec2f result;
+
+    result.x = v.x / x;
+    result.y = v.y / x;
+
+    return result;
+}
+
+vec2f vec2f_mult(vec2f v, float x) {
+    vec2f result;
+
+    result.x = v.x * x;
+    result.y = v.y * x;
+
+    return result;
+}
+
+vec2f vec2f_sum(vec2f v1, vec2f v2) {
     vec2f result;
 
     result.x = v1.x + v2.x;
@@ -248,6 +328,16 @@ vec2f vec2f_sum_vec2f(vec2f v1, vec2f v2) {
 
     return result;
 }
+
+vec2f vec2f_diff(vec2f v1, vec2f v2) {
+    vec2f result;
+
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+
+    return result;
+}
+
 
 vec2f vec2f_from_angle(float rad) {
     vec2f result;
@@ -266,10 +356,14 @@ float vec2f_len_sq(vec2f v) {
     return v.x * v.x + v.y * v.y;
 }
 
+float vec2f_len(vec2f v) {
+    return sqrtf(v.x * v.x + v.y * v.y);
+}
+
 vec2f vec2f_normalize(vec2f v) {
     vec2f result;
 
-    float magnitude = sqrtf(v.x * v.x + v.y * v.y);
+    float magnitude = vec2f_len(v);
     result.x = v.x / magnitude;
     result.y = v.y / magnitude;
 
@@ -307,6 +401,6 @@ mat4f mat4f_x_mat4f(mat4f m1, mat4f m2) {
     return result;
 }
 
-#endif
+#endif //PR_MATHY_IMPLEMENTATION
 
 #endif //_RC_MATHY_H_

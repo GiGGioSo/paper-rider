@@ -49,26 +49,26 @@
 
 #define CAMERA_MAX_VELOCITY (1950.f)
 
-#define START_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
-#define START_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
+#define START_BUTTON_DEFAULT_COLOR (_vec4f(0.8f, 0.2f, 0.5f, 1.0f))
+#define START_BUTTON_SELECTED_COLOR (_vec4f(0.6, 0.0f, 0.3f, 1.0f))
 
-#define EDIT_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
-#define EDIT_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
+#define EDIT_BUTTON_DEFAULT_COLOR (_vec4f(0.9f, 0.4f, 0.6f, 1.0f))
+#define EDIT_BUTTON_SELECTED_COLOR (_vec4f(1.0, 0.6f, 0.8f, 1.0f))
 
-#define DEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.9f, 0.4f, 0.6f, 1.0f))
-#define DEL_BUTTON_SELECTED_COLOR (glm::vec4(1.0, 0.6f, 0.8f, 1.0f))
+#define DEL_BUTTON_DEFAULT_COLOR (_vec4f(0.9f, 0.4f, 0.6f, 1.0f))
+#define DEL_BUTTON_SELECTED_COLOR (_vec4f(1.0, 0.6f, 0.8f, 1.0f))
 
-#define LEVEL_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
-#define LEVEL_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
+#define LEVEL_BUTTON_DEFAULT_COLOR (_vec4f(0.8f, 0.2f, 0.5f, 1.0f))
+#define LEVEL_BUTTON_SELECTED_COLOR (_vec4f(0.6, 0.0f, 0.3f, 1.0f))
 
-#define SHOW_BUTTON_DEFAULT_COLOR (glm::vec4(0.8f, 0.2f, 0.5f, 1.0f))
-#define SHOW_BUTTON_SELECTED_COLOR (glm::vec4(0.6, 0.0f, 0.3f, 1.0f))
+#define SHOW_BUTTON_DEFAULT_COLOR (_vec4f(0.8f, 0.2f, 0.5f, 1.0f))
+#define SHOW_BUTTON_SELECTED_COLOR (_vec4f(0.6, 0.0f, 0.3f, 1.0f))
 
-#define OPTION_SLIDER_DEFAULT_COLOR (glm::vec4(1.0f))
-#define OPTION_SLIDER_SELECTED_COLOR (glm::vec4(1.0f, 0.5f, 0.5f, 1.0f))
+#define OPTION_SLIDER_DEFAULT_COLOR (_diag_vec4f(1.0f))
+#define OPTION_SLIDER_SELECTED_COLOR (_vec4f(1.0f, 0.5f, 0.5f, 1.0f))
 
-#define OPTION_BUTTON_DEFAULT_COLOR (glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
-#define OPTION_BUTTON_SELECTED_COLOR (glm::vec4(0.4f, 0.4f, 0.4f, 1.0f))
+#define OPTION_BUTTON_DEFAULT_COLOR (_vec4f(0.7f, 0.7f, 0.7f, 1.0f))
+#define OPTION_BUTTON_SELECTED_COLOR (_vec4f(0.4f, 0.4f, 0.4f, 1.0f))
 
 // Utilities functions for code reuse
 inline void
@@ -78,9 +78,9 @@ boostpad_render(PR_BoostPad *pad);
 inline void
 obstacle_render(PR_Obstacle *obs);
 inline void
-button_render(PR_Button but, glm::vec4 col, PR_Font *font);
+button_render(PR_Button but, vec4f col, PR_Font *font);
 inline void
-button_render_in_menu_camera(PR_Button but, glm::vec4 col, PR_Font *font, PR_MenuCamera *cam);
+button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam);
 inline void
 portal_render_info(PR_Portal *portal, float tx, float ty);
 inline void
@@ -90,7 +90,7 @@ obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty);
 inline void
 goal_line_render_info(PR_Rect *rect, float tx, float ty);
 inline void
-start_pos_render_info(PR_Rect *rect, glm::vec2 vel, float tx, float ty);
+start_pos_render_info(PR_Rect *rect, vec2f vel, float tx, float ty);
 inline void
 plane_update_animation(PR_Plane *p);
 inline void
@@ -161,7 +161,7 @@ option_slider_init_selection(PR_OptionSlider *slider, float pad);
 void
 option_slider_update_value(PR_OptionSlider *slider, float value);
 void
-option_slider_render(PR_OptionSlider *slider, glm::vec4 color);
+option_slider_render(PR_OptionSlider *slider, vec4f color);
 void
 option_slider_handle_mouse(PR_OptionSlider *slider, float mouseX, float mouseY, PR_Key mouse_button);
 void
@@ -180,7 +180,7 @@ void free_all_cases(PR_PlayMenu *menu, PR_Level *level,
     da_clear(&level->obstacles);
     da_clear(&level->boosts);
     for(size_t ps_index = 0;
-        ps_index < ARRAY_LENGTH(level->particle_systems);
+        ps_index < ARR_LEN(level->particle_systems);
         ++ps_index) {
         if (level->particle_systems[ps_index].particles) {
             std::free(level->particle_systems[ps_index].particles);
@@ -206,7 +206,7 @@ void level_set_to_null(PR_Level *level) {
     level->obstacles = {NULL, 0, 0};
     level->boosts = {NULL, 0, 0};
     for(size_t ps_index = 0;
-        ps_index < ARRAY_LENGTH(level->particle_systems);
+        ps_index < ARR_LEN(level->particle_systems);
         ++ps_index) {
         level->particle_systems[ps_index].particles_number = 0;
         level->particle_systems[ps_index].particles = NULL;
@@ -586,7 +586,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
                 char map_path[256] = "";
                 assert((std::strlen(dir_path)+std::strlen(dp->d_name)+1 <=
-                            ARRAY_LENGTH(map_path))
+                            ARR_LEN(map_path))
                         && "Map path too big for temporary buffer!");
                 std::strcat(map_path, dir_path);
                 std::strcat(map_path, dp->d_name);
@@ -612,13 +612,13 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 lb.is_new_level = false;
 
                 assert((std::strlen(map_name)+1 <=
-                            ARRAY_LENGTH(lb.button.text))
+                            ARR_LEN(lb.button.text))
                         && "Map name bigger than button text buffer!");
                 std::snprintf(lb.button.text, std::strlen(map_name)+1,
                               "%s", map_name);
 
                 assert((std::strlen(map_path)+1 <=
-                            ARRAY_LENGTH(lb.mapfile_path))
+                            ARR_LEN(lb.mapfile_path))
                         && "Mapfile path bigger than button mapfile buffer!");
                 std::snprintf(lb.mapfile_path, std::strlen(map_path)+1,
                               "%s", map_path);
@@ -665,7 +665,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     return result;
 }
 
-glm::vec4 get_obstacle_color(PR_Obstacle *obs) {
+vec4f get_obstacle_color(PR_Obstacle *obs) {
     if (obs->collide_rider && obs->collide_plane) {
         return glob->colors[glob->current_level.current_red];
     } else
@@ -679,16 +679,16 @@ glm::vec4 get_obstacle_color(PR_Obstacle *obs) {
     }
 }
 
-glm::vec4 get_portal_color(PR_Portal *portal) {
+vec4f get_portal_color(PR_Portal *portal) {
     switch(portal->type) {
         case PR_INVERSE:
         {
-            return glm::vec4(0.f, 0.f, 0.f, 1.f);
+            return _vec4f(0.f, 0.f, 0.f, 1.f);
             break;
         }
         case PR_SHUFFLE_COLORS:
         {
-            return glm::vec4(1.f);
+            return _diag_vec4f(1.f);
             break;
         }
     }
@@ -700,11 +700,11 @@ const char *campaign_levels_filepath[2] = {
 };
 
 int start_menu_prepare(PR_StartMenu *start) {
-    start->play = {
+    start->play = (PR_Button) {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
-            .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+            .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
+            .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
             .angle = 0.f,
             .triangle = false
         },
@@ -715,8 +715,8 @@ int start_menu_prepare(PR_StartMenu *start) {
     start->options = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
-            .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+            .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
+            .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
             .angle = 0.f,
             .triangle = false
         },
@@ -727,8 +727,8 @@ int start_menu_prepare(PR_StartMenu *start) {
     start->quit = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
-            .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+            .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
+            .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
             .angle = 0.f,
             .triangle = false
         },
@@ -851,25 +851,25 @@ void start_menu_update() {
 
     // ### RENDERING ###
     PR_Rect full_screen = {
-        .pos = glm::vec2(0.f, 0.f),
-        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .pos = _vec2f(0.f, 0.f),
+        .dim = _vec2f(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
         .triangle = false,
     };
     renderer_add_queue_uni(
             full_screen,
-            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
-    button_render(start->play, glm::vec4(1.f), &glob->rend_res.fonts[0]);
-    button_render(start->options, glm::vec4(1.f), &glob->rend_res.fonts[0]);
-    button_render(start->quit, glm::vec4(1.f), &glob->rend_res.fonts[0]);
+    button_render(start->play, _diag_vec4f(1.f), &glob->rend_res.fonts[0]);
+    button_render(start->options, _diag_vec4f(1.f), &glob->rend_res.fonts[0]);
+    button_render(start->quit, _diag_vec4f(1.f), &glob->rend_res.fonts[0]);
     // # Issue draw calls #
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
     // ### Test drawing array textures ###
     if (ACTION_PRESSED(PR_MENU_LEVEL_DELETE)) {
-        renderer_add_queue_uni(100, 100, 1200, 800, 0, glm::vec4(1,0,0,1), false, false);
+        renderer_add_queue_uni(100, 100, 1200, 800, 0, _vec4f(1,0,0,1), false, false);
         renderer_add_queue_array_tex(glob->rend_res.array_textures[0], 100, 100, 1200, 800, 0, false, PR_TEX1_FRECCIA);
         renderer_draw_uni(glob->rend_res.shaders[0]);
         renderer_draw_array_tex(glob->rend_res.shaders[4], glob->rend_res.array_textures[0]);
@@ -884,8 +884,8 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->to_start_menu = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
-            .dim = glm::vec2(GAME_WIDTH / 20.f, GAME_HEIGHT / 15.f),
+            .pos = _vec2f(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
+            .dim = _vec2f(GAME_WIDTH / 20.f, GAME_HEIGHT / 15.f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -893,12 +893,18 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         .text = "<-",
     };
 
+    std::cout << "color to_start_menu: ("
+        << opt->to_start_menu.col.r << ", "
+        << opt->to_start_menu.col.g << ", "
+        << opt->to_start_menu.col.b << ", "
+        << opt->to_start_menu.col.a << ")" << std::endl;
+
     opt->showing_general_pane = true;
     opt->to_general_pane = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.1f),
-            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.125f),
+            .pos = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.1f),
+            .dim = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.125f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -908,8 +914,8 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->to_controls_pane = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.7f, GAME_HEIGHT * 0.1f),
-            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.125f),
+            .pos = _vec2f(GAME_WIDTH * 0.7f, GAME_HEIGHT * 0.1f),
+            .dim = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.125f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -920,9 +926,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     // # Master volume slider initialization #
     opt->master_volume = {
         .background = {
-            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+            .pos = _vec2f(GAME_WIDTH * 0.75f,
                              GAME_HEIGHT * (0.2f + (0.f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
+            .dim = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -938,9 +944,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     // # Sfx volume slider initialization #
     opt->sfx_volume = {
         .background = {
-            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+            .pos = _vec2f(GAME_WIDTH * 0.75f,
                              GAME_HEIGHT * (0.2f + (0.8f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
+            .dim = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -956,9 +962,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     // # Music volume slider initialization #
     opt->music_volume = {
         .background = {
-            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+            .pos = _vec2f(GAME_WIDTH * 0.75f,
                              GAME_HEIGHT * (0.2f + (1.6f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
+            .dim = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.05f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -975,9 +981,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->display_mode_fullscreen = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * (0.5f + 1.f/12.f), 
+            .pos = _vec2f(GAME_WIDTH * (0.5f + 1.f/12.f), 
                              GAME_HEIGHT * (0.2f + (2.4f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
+            .dim = _vec2f(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -988,9 +994,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->display_mode_borderless = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * (0.5f + 3.f/12.f), 
+            .pos = _vec2f(GAME_WIDTH * (0.5f + 3.f/12.f), 
                              GAME_HEIGHT * (0.2f + (2.4f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
+            .dim = _vec2f(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1001,9 +1007,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->display_mode_windowed = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * (0.5f + 5.f/12.f), 
+            .pos = _vec2f(GAME_WIDTH * (0.5f + 5.f/12.f), 
                              GAME_HEIGHT * (0.2f + (2.4f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
+            .dim = _vec2f(GAME_WIDTH * 0.12f, GAME_HEIGHT * 0.06f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1016,9 +1022,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->resolution_up = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * (0.5f + 0.4f), 
+            .pos = _vec2f(GAME_WIDTH * (0.5f + 0.4f), 
                              GAME_HEIGHT * (0.2f + (3.2f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.04f, GAME_HEIGHT * 0.06f),
+            .dim = _vec2f(GAME_WIDTH * 0.04f, GAME_HEIGHT * 0.06f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1028,9 +1034,9 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     opt->resolution_down = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * (0.5f + 0.1f), 
+            .pos = _vec2f(GAME_WIDTH * (0.5f + 0.1f), 
                              GAME_HEIGHT * (0.2f + (3.2f + 0.4f) / 5.f)),
-            .dim = glm::vec2(GAME_WIDTH * 0.04f, GAME_HEIGHT * 0.06f),
+            .dim = _vec2f(GAME_WIDTH * 0.04f, GAME_HEIGHT * 0.06f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1048,7 +1054,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
 
     // NOTE: Set up all of the changing keybinds buttons
     for(size_t bind_index = 0;
-        bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+        bind_index < ARR_LEN(opt->change_kb_binds1);
         ++bind_index) {
 
         PR_InputAction *action = &input->actions[bind_index];
@@ -1066,8 +1072,8 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
             .from_center = true,
             .body = {
                 .pos =
-                    glm::vec2(GAME_WIDTH * 9.f / 16.f, y),
-                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                    _vec2f(GAME_WIDTH * 9.f / 16.f, y),
+                .dim = _vec2f(GAME_WIDTH * 0.1f, h),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -1077,14 +1083,14 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
         std::strncpy(kb1->text,
                      (kb1_name != NULL) ? kb1_name : "...",
-                     ARRAY_LENGTH(kb1->text)-1);
+                     ARR_LEN(kb1->text)-1);
 
         *kb2 = {
             .from_center = true,
             .body = {
                 .pos =
-                    glm::vec2(GAME_WIDTH * 11.f / 16.f, y),
-                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                    _vec2f(GAME_WIDTH * 11.f / 16.f, y),
+                .dim = _vec2f(GAME_WIDTH * 0.1f, h),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -1094,14 +1100,14 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
         std::strncpy(kb2->text,
                      (kb2_name != NULL) ? kb2_name : "...",
-                     ARRAY_LENGTH(kb2->text)-1);
+                     ARR_LEN(kb2->text)-1);
 
         *gp1 = {
             .from_center = true,
             .body = {
                 .pos =
-                    glm::vec2(GAME_WIDTH * 13.f / 16.f, y),
-                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                    _vec2f(GAME_WIDTH * 13.f / 16.f, y),
+                .dim = _vec2f(GAME_WIDTH * 0.1f, h),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -1113,14 +1119,14 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                                     action->gp_binds[0].type);
         std::strncpy(gp1->text,
                      (gp1_name != NULL) ? gp1_name : "...",
-                     ARRAY_LENGTH(gp1->text)-1);
+                     ARR_LEN(gp1->text)-1);
 
         *gp2 = {
             .from_center = true,
             .body = {
                 .pos =
-                    glm::vec2(GAME_WIDTH * 15.f / 16.f, y),
-                .dim = glm::vec2(GAME_WIDTH * 0.1f, h),
+                    _vec2f(GAME_WIDTH * 15.f / 16.f, y),
+                .dim = _vec2f(GAME_WIDTH * 0.1f, h),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -1132,7 +1138,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                                     action->gp_binds[1].type);
         std::strncpy(gp2->text,
                      (gp2_name != NULL) ? gp2_name : "...",
-                     ARRAY_LENGTH(gp2->text)-1);
+                     ARR_LEN(gp2->text)-1);
     }
 
     // NOTE: Make the cursor show
@@ -1197,9 +1203,9 @@ void options_menu_update() {
     PR_Button unsaved_resolution_background = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.75f,
+            .pos = _vec2f(GAME_WIDTH * 0.75f,
                     opt->resolution_up.body.pos.y),
-            .dim = glm::vec2(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.15f),
+            .dim = _vec2f(GAME_WIDTH * 0.25f, GAME_HEIGHT * 0.15f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1403,7 +1409,7 @@ void options_menu_update() {
             int save_binds_ret = keybindings_save_to_file(
                         "./my_binds.prkeys",
                         input->actions,
-                        (int) ARRAY_LENGTH(input->actions));
+                        (int) ARR_LEN(input->actions));
             if (save_binds_ret) {
                 std::cout << "Could not save keybindings to file ./my_binds.prkeys: "
                           << save_binds_ret
@@ -1428,7 +1434,7 @@ void options_menu_update() {
                 }
             }
             if (ACTION_CLICKED(PR_MENU_DOWN)) {
-                if (opt->selected_row < ARRAY_LENGTH(input->actions)-1) {
+                if (opt->selected_row < ARR_LEN(input->actions)-1) {
                     opt->selected_row++;
                 }
             }
@@ -1446,7 +1452,7 @@ void options_menu_update() {
         }
 
         for(int bind_index = 0;
-            bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+            bind_index < ARR_LEN(opt->change_kb_binds1);
             ++bind_index) {
 
             // NOTE: No need to check them all if we are already selected
@@ -1606,7 +1612,7 @@ void options_menu_update() {
                 //          -1 so that when a row is exactly filled at the end
                 //              it doesn't count that as another row
                 size_t last_row_y =
-                    (ARRAY_LENGTH(input->actions) + 1) *
+                    (ARR_LEN(input->actions) + 1) *
                         ((float)GAME_HEIGHT / 6) +
                     ((float)GAME_HEIGHT / 12);
 
@@ -1635,31 +1641,31 @@ void options_menu_update() {
 
     // Rendering the background
     PR_Rect full_screen = {
-        .pos = glm::vec2(0.f, 0.f),
-        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .pos = _vec2f(0.f, 0.f),
+        .dim = _vec2f(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
         .triangle = false,
     };
     renderer_add_queue_uni(
             full_screen,
-            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
 
     // render the `go_to_start_menu` button
-    button_render_in_menu_camera(opt->to_start_menu, glm::vec4(1.f),
+    button_render_in_menu_camera(opt->to_start_menu, _diag_vec4f(1.f),
                                  &glob->rend_res.fonts[0], cam);
 
     // render GENERAL and CONTROLS buttons
-    button_render_in_menu_camera(opt->to_general_pane, glm::vec4(1.f),
+    button_render_in_menu_camera(opt->to_general_pane, _diag_vec4f(1.f),
                                  &glob->rend_res.fonts[0], cam);
-    button_render_in_menu_camera(opt->to_controls_pane, glm::vec4(1.f),
+    button_render_in_menu_camera(opt->to_controls_pane, _diag_vec4f(1.f),
                                  &glob->rend_res.fonts[0], cam);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
     if (opt->showing_general_pane) {
-        glm::vec4 color = glm::vec4(1.f);
+        vec4f color = _diag_vec4f(1.f);
         // Master volume rendering
         color = (opt->current_selection == PR_OPTION_MASTER_VOLUME) ?
                 OPTION_SLIDER_SELECTED_COLOR : OPTION_SLIDER_DEFAULT_COLOR;
@@ -1701,7 +1707,7 @@ void options_menu_update() {
         if (opt->resolution_selection !=
                 window_resolution_from_dim(win->width, win->height)) {
             button_render(unsaved_resolution_background,
-                          glm::vec4(0), // font color, useless here
+                          _diag_vec4f(0), // font color, useless here
                           &glob->rend_res.fonts[0]); // font, useless here
         }
         button_render(opt->resolution_up,
@@ -1739,12 +1745,12 @@ void options_menu_update() {
         renderer_draw_text(&glob->rend_res.fonts[1], glob->rend_res.shaders[2]);
     } else {
         // renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f,
-        //                         "CONTROLS PANE", glm::vec4(1.0f),
+        //                         "CONTROLS PANE", _diag_vec4f(1.0f),
         //                         &glob->rend_res.fonts[0], true);
 
         // NOTE: Render action labels
         for(size_t bind_index = 0;
-            bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+            bind_index < ARR_LEN(opt->change_kb_binds1);
             ++bind_index) {
 
             PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
@@ -1753,7 +1759,7 @@ void options_menu_update() {
             renderer_add_queue_text(GAME_WIDTH * 0.25f,
                                     in_cam_rect.pos.y,
                                     get_action_name(bind_index),
-                                    glm::vec4(1.0f),
+                                    _diag_vec4f(1.0f),
                                     &glob->rend_res.fonts[ACTION_NAME_FONT],
                                     true);
         }
@@ -1762,7 +1768,7 @@ void options_menu_update() {
 
         // NOTE: Render action buttons and text inside of them
         for(size_t bind_index = 0;
-            bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+            bind_index < ARR_LEN(opt->change_kb_binds1);
             ++bind_index) {
 
             PR_Button *kb1 = &opt->change_kb_binds1[bind_index];
@@ -1770,13 +1776,13 @@ void options_menu_update() {
             PR_Button *gp1 = &opt->change_gp_binds1[bind_index];
             PR_Button *gp2 = &opt->change_gp_binds2[bind_index];
 
-            button_render_in_menu_camera(*kb1, glm::vec4(1.f),
+            button_render_in_menu_camera(*kb1, _diag_vec4f(1.f),
                                          &glob->rend_res.fonts[1], cam);
-            button_render_in_menu_camera(*kb2, glm::vec4(1.f),
+            button_render_in_menu_camera(*kb2, _diag_vec4f(1.f),
                                          &glob->rend_res.fonts[1], cam);
-            button_render_in_menu_camera(*gp1, glm::vec4(1.f),
+            button_render_in_menu_camera(*gp1, _diag_vec4f(1.f),
                                          &glob->rend_res.fonts[1], cam);
-            button_render_in_menu_camera(*gp2, glm::vec4(1.f),
+            button_render_in_menu_camera(*gp2, _diag_vec4f(1.f),
                                          &glob->rend_res.fonts[1], cam);
         }
         renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -1793,8 +1799,8 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     menu->to_start_menu = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
-            .dim = glm::vec2(GAME_WIDTH / 20.f, GAME_HEIGHT / 15.f),
+            .pos = _vec2f(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
+            .dim = _vec2f(GAME_WIDTH / 20.f, GAME_HEIGHT / 15.f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1835,7 +1841,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     //       I want to have 4 rows of buttons on the screen,
     //        with some space on top (1/5) to change category (campaign/custom)
     for(size_t levelbutton_index = 0;
-        levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
+        levelbutton_index < ARR_LEN(menu->campaign_buttons);
         ++levelbutton_index) {
 
         PR_LevelButton *lb =
@@ -1846,13 +1852,13 @@ int play_menu_prepare(PR_PlayMenu *menu) {
         lb->is_new_level = false;
 
         int size = std::snprintf(nullptr, 0, "LEVEL %zu", levelbutton_index+1);
-        assert((size+1 <= ARRAY_LENGTH(lb->button.text))
+        assert((size+1 <= ARR_LEN(lb->button.text))
                 && "Text buffer is too little!");
         std::snprintf(lb->button.text, size+1,
                       "LEVEL %zu", levelbutton_index+1);
-        if (levelbutton_index < ARRAY_LENGTH(campaign_levels_filepath)) {
+        if (levelbutton_index < ARR_LEN(campaign_levels_filepath)) {
             assert((std::strlen(campaign_levels_filepath[levelbutton_index]) <
-                        ARRAY_LENGTH(lb->mapfile_path))
+                        ARR_LEN(lb->mapfile_path))
                     && "Map file too big for button mapfile buffer!");
             std::snprintf(
                     lb->mapfile_path,
@@ -1879,7 +1885,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
         }
         PR_Button *add_level = &menu->add_custom_button;
         button_set_position(add_level, menu->custom_buttons.count);
-        assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
+        assert(std::strlen("+")+1 <= ARR_LEN(add_level->text)
                 && "Text bigger than button text buffer!");
         std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
     }
@@ -1891,8 +1897,8 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     cam->goal_position = cam->pos.y;
 
     menu->deleting_frame = {
-        .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
-        .dim = glm::vec2(GAME_WIDTH * 0.6f, GAME_HEIGHT * 0.6f),
+        .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
+        .dim = _vec2f(GAME_WIDTH * 0.6f, GAME_HEIGHT * 0.6f),
         .angle = 0.f,
         .triangle = false,
     };
@@ -1901,8 +1907,8 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     *yes = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.35f, GAME_HEIGHT * 0.6f),
-            .dim = glm::vec2(GAME_WIDTH * 0.2f, GAME_HEIGHT * 0.1f),
+            .pos = _vec2f(GAME_WIDTH * 0.35f, GAME_HEIGHT * 0.6f),
+            .dim = _vec2f(GAME_WIDTH * 0.2f, GAME_HEIGHT * 0.1f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1915,8 +1921,8 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     *no = {
         .from_center = true,
         .body = {
-            .pos = glm::vec2(GAME_WIDTH * 0.65f, GAME_HEIGHT * 0.6f),
-            .dim = glm::vec2(GAME_WIDTH * 0.2f, GAME_HEIGHT * 0.1f),
+            .pos = _vec2f(GAME_WIDTH * 0.65f, GAME_HEIGHT * 0.6f),
+            .dim = _vec2f(GAME_WIDTH * 0.2f, GAME_HEIGHT * 0.1f),
             .angle = 0.f,
             .triangle = false,
         },
@@ -1984,7 +1990,7 @@ void play_menu_update(void) {
 
             PR_Button *add_level = &menu->add_custom_button;
             button_set_position(add_level, menu->custom_buttons.count);
-            assert(std::strlen("+")+1 <= ARRAY_LENGTH(add_level->text)
+            assert(std::strlen("+")+1 <= ARR_LEN(add_level->text)
                     && "Text bigger than button text buffer!");
             std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
         } else {
@@ -2015,10 +2021,10 @@ void play_menu_update(void) {
         }
         if (ACTION_CLICKED(PR_MENU_DOWN)) {
             if (menu->selected_campaign_button+3 <
-                    ARRAY_LENGTH(menu->campaign_buttons)) {
+                    ARR_LEN(menu->campaign_buttons)) {
                 menu->selected_campaign_button += 3;
             } else {
-                menu->selected_campaign_button = ARRAY_LENGTH(menu->campaign_buttons)-1;
+                menu->selected_campaign_button = ARR_LEN(menu->campaign_buttons)-1;
             }
         }
         if (ACTION_CLICKED(PR_MENU_LEFT)) {
@@ -2028,12 +2034,12 @@ void play_menu_update(void) {
         }
         if (ACTION_CLICKED(PR_MENU_RIGHT)) {
             if (menu->selected_campaign_button+1 <
-                    ARRAY_LENGTH(menu->campaign_buttons)) {
+                    ARR_LEN(menu->campaign_buttons)) {
                 menu->selected_campaign_button++;
             }
         }
         for(int levelbutton_index = 0;
-            levelbutton_index < ARRAY_LENGTH(menu->campaign_buttons);
+            levelbutton_index < ARR_LEN(menu->campaign_buttons);
             ++levelbutton_index) {
 
             PR_LevelButton *lb =
@@ -2348,7 +2354,7 @@ void play_menu_update(void) {
                                           "./custom_maps/map%zu-%.06u.prmap",
                                           map_number, random_id);
                         assert((path_size+1 <=
-                                    ARRAY_LENGTH(new_lb.mapfile_path))
+                                    ARR_LEN(new_lb.mapfile_path))
                                 && "Mapfile path buffer is too little!");
                         std::snprintf(new_lb.mapfile_path, path_size+1,
                                       "./custom_maps/map%zu-%.06u.prmap",
@@ -2459,23 +2465,23 @@ void play_menu_update(void) {
 
     // ### DRAWING ###
     PR_Rect full_screen = {
-        .pos = glm::vec2(0.f, 0.f),
-        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .pos = _vec2f(0.f, 0.f),
+        .dim = _vec2f(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
         .triangle = false,
     };
     renderer_add_queue_uni(
             full_screen,
-            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
 
     button_render_in_menu_camera(menu->show_campaign_button,
-                                 glm::vec4(1.0f),
+                                 _diag_vec4f(1.0f),
                                  &glob->rend_res.fonts[0],
                                  cam);
 
     button_render_in_menu_camera(menu->show_custom_button,
-                                 glm::vec4(1.0f),
+                                 _diag_vec4f(1.0f),
                                  &glob->rend_res.fonts[0],
                                  cam);
 
@@ -2488,7 +2494,7 @@ void play_menu_update(void) {
                 &menu->campaign_buttons[levelbutton_index];
 
             button_render_in_menu_camera(lb->button,
-                                         glm::vec4(1.0f),
+                                         _diag_vec4f(1.0f),
                                          &glob->rend_res.fonts[0],
                                          cam);
         }
@@ -2507,7 +2513,7 @@ void play_menu_update(void) {
                                    lb.button.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x,
                                     button_rend_rect.pos.y,
-                                    lb.button.text, glm::vec4(1.0f),
+                                    lb.button.text, _diag_vec4f(1.0f),
                                     &glob->rend_res.fonts[0], true);
 
             button_rend_rect = rect_in_menu_camera_space(lb.edit.body, cam);
@@ -2519,7 +2525,7 @@ void play_menu_update(void) {
                                         button_rend_rect.dim.x*0.5f,
                                     button_rend_rect.pos.y+
                                         button_rend_rect.dim.y*0.5f,
-                                    lb.edit.text, glm::vec4(1.0f),
+                                    lb.edit.text, _diag_vec4f(1.0f),
                                     &glob->rend_res.fonts[0], true);
 
             button_rend_rect = rect_in_menu_camera_space(lb.del.body, cam);
@@ -2529,7 +2535,7 @@ void play_menu_update(void) {
                                    lb.del.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x,
                                     button_rend_rect.pos.y,
-                                    lb.del.text, glm::vec4(1.0f),
+                                    lb.del.text, _diag_vec4f(1.0f),
                                     &glob->rend_res.fonts[0], true);
         }
 
@@ -2541,12 +2547,12 @@ void play_menu_update(void) {
                                add_level.from_center);
         renderer_add_queue_text(button_rend_rect.pos.x,
                                 button_rend_rect.pos.y,
-                                add_level.text, glm::vec4(1.0f),
+                                add_level.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
     }
 
     // render the `go_to_start_menu` button
-    button_render(menu->to_start_menu, glm::vec4(1.f),
+    button_render(menu->to_start_menu, _diag_vec4f(1.f),
                   &glob->rend_res.fonts[0]);
 
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -2554,19 +2560,19 @@ void play_menu_update(void) {
 
     if (menu->deleting_level) {
         renderer_add_queue_uni(menu->deleting_frame,
-                               glm::vec4(0.9f, 0.9f, 0.9f, 1.f), true);
-        button_render(menu->delete_yes, glm::vec4(1.f),
+                               _vec4f(0.9f, 0.9f, 0.9f, 1.f), true);
+        button_render(menu->delete_yes, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[0]);
-        button_render(menu->delete_no, glm::vec4(1.f),
+        button_render(menu->delete_no, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[0]);
         renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.3f,
                                 "DELETE THE LEVEL:",
-                                glm::vec4(0.0f, 0.0f, 0.0f, 1.f),
+                                _vec4f(0.0f, 0.0f, 0.0f, 1.f),
                                 &glob->rend_res.fonts[0], true);
         renderer_add_queue_text(
             GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.45f,
             menu->custom_buttons.items[menu->deleting_index].button.text,
-            glm::vec4(0.0f, 0.0f, 0.0f, 1.f),
+            _vec4f(0.0f, 0.0f, 0.0f, 1.f),
             &glob->rend_res.fonts[0], true);
     }
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -2623,8 +2629,13 @@ int level_prepare(PR_Level *level,
     p->body.triangle = true;
     p->render_zone.dim.y = 32.f * 2.f;
     p->render_zone.dim.x = p->render_zone.dim.y * 0.5f * 3.f;
-    p->render_zone.pos = p->body.pos +
-                         (p->body.dim - p->render_zone.dim) * 0.5f;
+    p->render_zone.pos = vec2f_sum(
+                            p->body.pos,
+                            vec2f_mult(
+                                vec2f_diff(
+                                    p->body.dim,
+                                    p->render_zone.dim),
+                                0.5f));
     p->render_zone.angle = p->body.angle;
     p->render_zone.triangle = false;
     p->acc.x = 0.f;
@@ -2649,17 +2660,22 @@ int level_prepare(PR_Level *level,
         p->render_zone.pos.x +
         (p->render_zone.dim.x - rid->body.dim.x)*0.5f -
         (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-            sin(glm::radians(rid->body.angle)) -
-        (p->render_zone.dim.x*0.2f) * cos(glm::radians(rid->body.angle));
+            sin(radiansf(rid->body.angle)) -
+        (p->render_zone.dim.x*0.2f) * cos(radiansf(rid->body.angle));
     rid->body.pos.y =
         p->render_zone.pos.y +
         (p->render_zone.dim.y - rid->body.dim.y)*0.5f -
         (p->render_zone.dim.y + rid->body.dim.y)*0.5f *
-            cos(glm::radians(rid->body.angle)) +
-        (p->render_zone.dim.x*0.2f) * sin(glm::radians(rid->body.angle));
+            cos(radiansf(rid->body.angle)) +
+        (p->render_zone.dim.x*0.2f) * sin(radiansf(rid->body.angle));
     rid->render_zone.dim = rid->body.dim;
-    rid->render_zone.pos = rid->body.pos +
-                           (rid->body.dim - rid->render_zone.dim) * 0.5f;
+    rid->render_zone.pos = vec2f_sum(
+                            rid->body.pos,
+                            vec2f_mult(
+                                vec2f_diff(
+                                    rid->body.dim,
+                                    rid->render_zone.dim),
+                                0.5f));
     rid->vel.x = 0.0f;
     rid->vel.y = 0.0f;
     rid->body.angle = p->body.angle;
@@ -2686,7 +2702,7 @@ int level_prepare(PR_Level *level,
             level->boosts = {NULL, 0, 0};
             level->start_pos.pos.x = 0.f;
             level->start_pos.pos.y = GAME_HEIGHT * 0.5f;
-            level->start_vel = glm::vec2(0.f);
+            level->start_vel = _diag_vec2f(0.f);
             level->start_pos.angle = 0.f;
             level->goal_line.pos.x = GAME_WIDTH * 0.4f;
         } else {
@@ -2934,14 +2950,14 @@ int level_prepare(PR_Level *level,
 }
 void level_update(void) {
     PR_Rect full_screen = {
-        .pos = glm::vec2(0.f, 0.f),
-        .dim = glm::vec2(GAME_WIDTH, GAME_HEIGHT),
+        .pos = _vec2f(0.f, 0.f),
+        .dim = _vec2f(GAME_WIDTH, GAME_HEIGHT),
         .angle = 0.f,
         .triangle = false,
     };
     renderer_add_queue_uni(
             full_screen,
-            glm::vec4(0.3f, 0.8f, 0.9f, 1.0f),
+            _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
     renderer_draw_uni(glob->rend_res.shaders[0]);
 
@@ -3073,8 +3089,8 @@ void level_update(void) {
             //if (glob->input.boost.pressed &&
             //    !rid->crashed && rid->attached) {
             //    float propulsion = 8.f;
-            //    p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-            //    p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+            //    p->acc.x += propulsion * cos(radiansf(p->body.angle));
+            //    p->acc.y += propulsion * -sin(radiansf(p->body.angle));
             //    boost_ps->active = true;
             //}
         }
@@ -3124,7 +3140,7 @@ void level_update(void) {
                 } else {
                     rid->input_velocity +=
                         RIDER_INPUT_VELOCITY_ACCELERATION *
-                            -glm::sign(rid->input_velocity) * dt;
+                            -SIGN(rid->input_velocity) * dt;
                 }
                 // NOTE: Base speed is the speed of the plane at the moment of the jump,
                 //          which decreases slowly but constantly overtime
@@ -3132,21 +3148,21 @@ void level_update(void) {
                 //
                 //       This way, by touching nothing you get to keep the plane velocity,
                 //       but you are still able to move left and right in a satisfying way
-                if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
-                    rid->input_velocity = glm::sign(rid->input_velocity) *
+                if (ABS(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
+                    rid->input_velocity = SIGN(rid->input_velocity) *
                                           RIDER_INPUT_VELOCITY_LIMIT;
                 }
                 
-                rid->base_velocity -= glm::sign(rid->base_velocity) *
+                rid->base_velocity -= SIGN(rid->base_velocity) *
                                       rid->air_friction_acc * dt;
                 // If the player moves in the opposite direction of the
                 // base velocity, remove a net amount based on the intensity
                 // of the movement
-                if (glm::abs(rider_left_right) > 0 &&
-                        glm::sign(rider_left_right) !=
-                            glm::sign(rid->base_velocity)) {
-                    rid->base_velocity -= glm::sign(rid->base_velocity) *
-                                          glm::abs(rider_left_right) *
+                if (ABS(rider_left_right) > 0 &&
+                        SIGN(rider_left_right) !=
+                            SIGN(rid->base_velocity)) {
+                    rid->base_velocity -= SIGN(rid->base_velocity) *
+                                          ABS(rider_left_right) *
                                           3000 * dt;
                 }
 
@@ -3168,19 +3184,21 @@ void level_update(void) {
                 }
 
                 // NOTE: Limit velocity before applying it to the rider
-                if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
-                    rid->vel.y = glm::sign(rid->vel.y) *
+                if (ABS(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+                    rid->vel.y = SIGN(rid->vel.y) *
                                  RIDER_VELOCITY_Y_LIMIT ;
                 }
-                rid->body.pos += rid->vel * dt;
+                rid->body.pos = vec2f_sum(rid->body.pos,
+                                          vec2f_mult(rid->vel, dt));
                 rid->jump_time_elapsed += dt;
 
                 // NOTE: Check if rider remounts the plane
                 if (rect_are_colliding(p->body, rid->body, NULL, NULL) &&
                     rid->jump_time_elapsed > 0.5f) {
                     rid->attached = true;
-                    p->vel += (rid->vel - p->vel) * 0.5f;
-                    rid->vel *= 0.f;
+                    p->vel = vec2f_sum(p->vel,
+                            vec2f_mult(vec2f_diff(rid->vel, p->vel), 0.5f));
+                    rid->vel = _diag_vec2f(0.f);
                     rid->attach_time_elapsed = 0;
                 }
 
@@ -3216,7 +3234,7 @@ void level_update(void) {
                 } else {
                     rid->input_velocity +=
                         RIDER_INPUT_VELOCITY_ACCELERATION *
-                            -glm::sign(rid->input_velocity) * dt;
+                            -SIGN(rid->input_velocity) * dt;
                 }
                 // NOTE: Base speed is the speed of the plane at the moment of the jump,
                 //          which decreases slowly but constantly overtime
@@ -3224,11 +3242,11 @@ void level_update(void) {
                 //
                 //       This way, by touching nothing you get to keep the plane velocity,
                 //       but you are still able to move left and right in a satisfying way
-                if (glm::abs(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
-                    rid->input_velocity = glm::sign(rid->input_velocity) *
+                if (ABS(rid->input_velocity) > RIDER_INPUT_VELOCITY_LIMIT) {
+                    rid->input_velocity = SIGN(rid->input_velocity) *
                                           RIDER_INPUT_VELOCITY_LIMIT;
                 }
-                rid->base_velocity -= glm::sign(rid->base_velocity) *
+                rid->base_velocity -= SIGN(rid->base_velocity) *
                                       rid->air_friction_acc * dt;
 
                 rid->vel.x = rid->base_velocity + rid->input_velocity;
@@ -3249,11 +3267,12 @@ void level_update(void) {
                 }
 
                 // NOTE: Limit velocity before applying it to the rider
-                if (glm::abs(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
-                    rid->vel.y = glm::sign(rid->vel.y) *
+                if (ABS(rid->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+                    rid->vel.y = SIGN(rid->vel.y) *
                                  RIDER_VELOCITY_Y_LIMIT ;
                 }
-                rid->body.pos += rid->vel * dt;
+                rid->body.pos = vec2f_sum(rid->body.pos,
+                                          vec2f_mult(rid->vel, dt));
                 rid->jump_time_elapsed += dt;
 
                 // NOTE: Make the camera follow the rider
@@ -3279,16 +3298,16 @@ void level_update(void) {
         plane_crash_ps->active = false;
         p->body.angle = 0.f;
         p->render_zone.angle = 0.f;
-        if (glm::abs(p->render_zone.pos.y +
+        if (ABS(p->render_zone.pos.y +
                      p->render_zone.dim.y*0.75f - GAME_HEIGHT) < 0.03f &&
-                glm::length(p->vel) < 0.03f) {
+                vec2f_len_sq(p->vel) < POW2(0.03f)) {
             p->render_zone.pos.y = (float)GAME_HEIGHT -
                                     p->render_zone.dim.y*0.75f;
             p->vel.y = 0.f;
         } else {
             p->vel.y += (p->inverse ? -GRAVITY : GRAVITY) * 1.5f * dt;
-            if (glm::abs(p->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
-                p->vel.y = glm::sign(p->vel.y) * RIDER_VELOCITY_Y_LIMIT;
+            if (ABS(p->vel.y) > RIDER_VELOCITY_Y_LIMIT) {
+                p->vel.y = SIGN(p->vel.y) * RIDER_VELOCITY_Y_LIMIT;
             }
             p->render_zone.pos.y += p->vel.y * dt;
             if (p->render_zone.pos.y + p->render_zone.dim.y*0.75f >
@@ -3317,7 +3336,7 @@ void level_update(void) {
     }
 
     for(size_t px_index = 0;
-        px_index < ARRAY_LENGTH(level->parallaxs);
+        px_index < ARR_LEN(level->parallaxs);
         ++px_index) {
         parallax_update_n_queue_render(&level->parallaxs[px_index], cam->pos.x);
     }
@@ -3330,16 +3349,27 @@ void level_update(void) {
     //                                     p->body.pos.y;
 
     if (!p->crashed) {
-        p->render_zone.pos = p->body.pos +
-                               (p->body.dim - p->render_zone.dim) * 0.5f;
+        p->render_zone.pos = vec2f_sum(
+                                p->body.pos,
+                                vec2f_mult(
+                                    vec2f_diff(
+                                        p->body.dim,
+                                        p->render_zone.dim),
+                                    0.5f));
 
         p->render_zone.angle = p->body.angle;
         plane_update_animation(p);
     }
 
     if (!rid->crashed) {
-        rid->render_zone.pos = rid->body.pos +
-                               (rid->body.dim - rid->render_zone.dim) * 0.5f;
+        rid->render_zone.pos =
+            vec2f_sum(
+                rid->body.pos,
+                vec2f_mult(
+                    vec2f_diff(
+                        rid->body.dim,
+                        rid->render_zone.dim),
+                    0.5f));
         rid->render_zone.angle = rid->body.angle;
     }
 
@@ -3450,7 +3480,7 @@ void level_update(void) {
             set_start_pos_option_buttons(level->selected_options_buttons);
         }
         renderer_add_queue_uni(rect_in_camera_space(level->start_pos, cam),
-                               glm::vec4(0.9f, 0.3f, 0.7f, 1.f), false);
+                               _vec4f(0.9f, 0.3f, 0.7f, 1.f), false);
 
         if (ACTION_CLICKED(PR_EDIT_OBJ_CREATE)) {
             level->adding_now = true;
@@ -3493,7 +3523,7 @@ void level_update(void) {
         }
 
         renderer_add_queue_text(GAME_WIDTH * 0.9f, GAME_HEIGHT * 0.03f,
-                                "EDITING", glm::vec4(1.f),
+                                "EDITING", _diag_vec4f(1.f),
                                 &glob->rend_res.fonts[0], true);
 
         // NOTE: Loop over window edged pacman style,
@@ -3593,8 +3623,8 @@ void level_update(void) {
                 }
                 p->crashed = true;
                 plane_activate_crash_animation(p);
-                p->acc *= 0.f;
-                p->vel *= 0.f;
+                p->acc = _diag_vec2f(0.f);
+                p->vel = _diag_vec2f(0.f);
 
                 // TODO: Debug flag
                 std::cout << "Plane collided with "
@@ -3615,7 +3645,7 @@ void level_update(void) {
                                      GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     rid->crashed = true;
                     rid->attached = false;
-                    rid->vel *= 0.f;
+                    rid->vel = _diag_vec2f(0.f);
                     rid->base_velocity = 0.f;
                     rid->input_velocity = 0.f;
 
@@ -3659,16 +3689,20 @@ void level_update(void) {
                                &p->crash_position.x,
                                &p->crash_position.y)) {
 
-            p->crash_position +=
-                cam->pos - glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+            p->crash_position =
+                vec2f_sum(
+                    p->crash_position,
+                    vec2f_diff(
+                        cam->pos,
+                        _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f)));
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
             }
             p->crashed = true;
             plane_activate_crash_animation(p);
-            p->acc *= 0.f;
-            p->vel *= 0.f;
+            p->acc = _diag_vec2f(0.f);
+            p->vel = _diag_vec2f(0.f);
 
             // TODO: Debug flag
             std::cout << "Plane collided with the ceiling" << std::endl;
@@ -3681,9 +3715,12 @@ void level_update(void) {
             if (level->editing_available) {
                 level_activate_edit_mode(level);
             } else {
-                rid->crash_position +=
-                    cam->pos -
-                    glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+                rid->crash_position =
+                    vec2f_sum(
+                        rid->crash_position,
+                        vec2f_diff(
+                            cam->pos,
+                            _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f)));
 
                 rid->crashed = true;
                 rid->attached = false;
@@ -3691,7 +3728,7 @@ void level_update(void) {
                 level->gamemenu_selected = PR_BUTTON_RESTART;
                 glfwSetInputMode(glob->window.glfw_win,
                                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                rid->vel *= 0.f;
+                rid->vel = _diag_vec2f(0.f);
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
             }
@@ -3706,17 +3743,20 @@ void level_update(void) {
                                &p->crash_position.x,
                                &p->crash_position.y)) {
 
-            p->crash_position +=
-                cam->pos -
-                glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+            p->crash_position =
+                vec2f_sum(
+                    p->crash_position,
+                    vec2f_diff(
+                        cam->pos,
+                        _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f)));
 
             if (rid->attached) {
                 rider_jump_from_plane(rid, p);
             }
             p->crashed = true;
             plane_activate_crash_animation(p);
-            p->acc *= 0.f;
-            p->vel *= 0.f;
+            p->acc = _diag_vec2f(0.f);
+            p->vel = _diag_vec2f(0.f);
 
             // TODO: Debug flag
             std::cout << "Plane collided with the floor" << std::endl;
@@ -3729,9 +3769,12 @@ void level_update(void) {
             if (level->editing_available) {
                 level_activate_edit_mode(level);
             } else {
-                rid->crash_position +=
-                    cam->pos -
-                    glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+                rid->crash_position =
+                    vec2f_sum(
+                        rid->crash_position,
+                        vec2f_diff(
+                            cam->pos,
+                            _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f)));
 
                 level->game_over = true;
                 level->gamemenu_selected = PR_BUTTON_RESTART;
@@ -3739,7 +3782,7 @@ void level_update(void) {
                                  GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 rid->crashed = true;
                 rid->attached = false;
-                rid->vel *= 0.f;
+                rid->vel = _diag_vec2f(0.f);
                 rid->base_velocity = 0.f;
                 rid->input_velocity = 0.f;
             }
@@ -3751,7 +3794,7 @@ void level_update(void) {
 
     // NOTE: Rendering goal line
     renderer_add_queue_uni(rect_in_camera_space(level->goal_line, cam),
-                           glm::vec4(1.0f), false);
+                           _diag_vec4f(1.0f), false);
 
     // Actually issuing the render calls
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -3762,9 +3805,9 @@ void level_update(void) {
     // NOTE: Updating and rendering all the particle systems
     // Set the time_between_particles for the boost based on the velocity
     glob->current_level.particle_systems[0].time_between_particles =
-        lerp(0.02f, 0.01f, glm::length(p->vel)/PLANE_VELOCITY_LIMIT);
+        lerp(0.02f, 0.01f, vec2f_len(p->vel)/PLANE_VELOCITY_LIMIT);
     for(size_t ps_index = 0;
-        ps_index < ARRAY_LENGTH(glob->current_level.particle_systems);
+        ps_index < ARR_LEN(glob->current_level.particle_systems);
         ++ps_index) {
 
         PR_ParticleSystem *ps =
@@ -3823,7 +3866,7 @@ void level_update(void) {
     }
     // NOTE: Rendering the plane hitbox
     // renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
-    //                        glm::vec4(1.0f, 1.0f, 1.0f, 1.f),
+    //                        _vec4f(1.0f, 1.0f, 1.0f, 1.f),
     //                        false);
 
     // NOTE: Rendering plane texture
@@ -3841,7 +3884,7 @@ void level_update(void) {
 
     // NOTE: Rendering the rider
     renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
-                          glm::vec4(0.0f, 0.0f, 1.0f, 1.f),
+                          _vec4f(0.0f, 0.0f, 1.0f, 1.f),
                           false);
     // NOTE: Issuing draw call for plane/rider and particles
     renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -3857,7 +3900,7 @@ void level_update(void) {
         add_portal.body.dim.y = GAME_HEIGHT * 0.3f;
         add_portal.body.triangle = false;
         add_portal.body.angle = 0.f;
-        add_portal.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        add_portal.col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
         std::snprintf(add_portal.text,
                       std::strlen("ADD PORTAL")+1,
                       "ADD PORTAL");
@@ -3870,7 +3913,7 @@ void level_update(void) {
         add_boost.body.dim.y = GAME_HEIGHT * 0.3f;
         add_boost.body.triangle = false;
         add_boost.body.angle = 0.f;
-        add_boost.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        add_boost.col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
         std::snprintf(add_boost.text,
                       std::strlen("ADD BOOST")+1,
                       "ADD BOOST");
@@ -3883,7 +3926,7 @@ void level_update(void) {
         add_obstacle.body.dim.y = GAME_HEIGHT * 0.3f;
         add_obstacle.body.triangle = false;
         add_obstacle.body.angle = 0.f;
-        add_obstacle.col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        add_obstacle.col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
         std::snprintf(add_obstacle.text,
                       std::strlen("ADD OBSTACLE")+1,
                       "ADD OBSTACLE");
@@ -3953,11 +3996,11 @@ void level_update(void) {
         }
 
         // TODO: Selected an appropriate font for this
-        button_render(add_portal, glm::vec4(1.f),
+        button_render(add_portal, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[1]);
-        button_render(add_boost, glm::vec4(1.f),
+        button_render(add_boost, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[1]);
-        button_render(add_obstacle, glm::vec4(1.f),
+        button_render(add_obstacle, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[1]);
 
         renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -4027,7 +4070,7 @@ void level_update(void) {
                     option_button_index < SELECTED_PORTAL_OPTIONS;
                     ++option_button_index) {
                     assert((option_button_index <
-                                ARRAY_LENGTH(level->selected_options_buttons))
+                                ARR_LEN(level->selected_options_buttons))
                             && "Selected options out of bound for portals");
 
                     PR_Button *button =
@@ -4045,7 +4088,7 @@ void level_update(void) {
                                             minus1.body.dim.x * 0.5f;
                         minus1.body.pos.y = button->body.pos.y -
                                             button->body.dim.y * 0.5f;
-                        minus1.col = button->col * 0.5f;
+                        minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
@@ -4063,7 +4106,7 @@ void level_update(void) {
                                            plus1.body.dim.x * 0.5f;
                         plus1.body.pos.y = button->body.pos.y -
                                            button->body.dim.y * 0.5f;
-                        plus1.col = button->col * 0.5f;
+                        plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
@@ -4155,15 +4198,15 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(*button, glm::vec4(1.f),
+                        button_render(*button, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus1, glm::vec4(1.f),
+                        button_render(plus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus5, glm::vec4(1.f),
+                        button_render(plus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus1, glm::vec4(1.f),
+                        button_render(minus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus5, glm::vec4(1.f),
+                        button_render(minus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
                     } else {
 
@@ -4193,7 +4236,7 @@ void level_update(void) {
                         }
 
                         // TODO: Selected an appropriate font for this
-                        button_render(*button, glm::vec4(1.f),
+                        button_render(*button, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
                     }
 
@@ -4212,7 +4255,7 @@ void level_update(void) {
                     option_button_index < SELECTED_BOOST_OPTIONS;
                     ++option_button_index) {
                     assert((option_button_index <
-                                ARRAY_LENGTH(level->selected_options_buttons))
+                                ARR_LEN(level->selected_options_buttons))
                             && "Selected options out of bound for boosts");
 
                     PR_Button *button =
@@ -4241,7 +4284,7 @@ void level_update(void) {
                         // TODO: Selected an appropriate font for this
                         renderer_add_queue_text(button->body.pos.x,
                                                 button->body.pos.y,
-                                                button->text, glm::vec4(1.0f),
+                                                button->text, _diag_vec4f(1.0f),
                                                 &glob->rend_res.fonts[1], true);
                     } else {
                         PR_Button minus1;
@@ -4255,7 +4298,7 @@ void level_update(void) {
                                             minus1.body.dim.x * 0.5f;
                         minus1.body.pos.y = button->body.pos.y -
                                             button->body.dim.y * 0.5f;
-                        minus1.col = button->col * 0.5f;
+                        minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
@@ -4273,7 +4316,7 @@ void level_update(void) {
                                            plus1.body.dim.x * 0.5f;
                         plus1.body.pos.y = button->body.pos.y -
                                            button->body.dim.y * 0.5f;
-                        plus1.col = button->col * 0.5f;
+                        plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
@@ -4401,15 +4444,15 @@ void level_update(void) {
                                 }
                             }
                         }
-                        button_render(*button, glm::vec4(1.f),
+                        button_render(*button, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus1, glm::vec4(1.f),
+                        button_render(plus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus5, glm::vec4(1.f),
+                        button_render(plus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus1, glm::vec4(1.f),
+                        button_render(minus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus5, glm::vec4(1.f),
+                        button_render(minus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
                     }
 
@@ -4429,7 +4472,7 @@ void level_update(void) {
                     option_button_index < SELECTED_OBSTACLE_OPTIONS;
                     ++option_button_index) {
                     assert((option_button_index <
-                                ARRAY_LENGTH(level->selected_options_buttons))
+                                ARR_LEN(level->selected_options_buttons))
                             && "Selected options out of bound for obstacles");
 
                     PR_Button *button =
@@ -4447,7 +4490,7 @@ void level_update(void) {
                                             minus1.body.dim.x * 0.5f;
                         minus1.body.pos.y = button->body.pos.y -
                                             button->body.dim.y * 0.5f;
-                        minus1.col = button->col * 0.5f;
+                        minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
@@ -4465,7 +4508,7 @@ void level_update(void) {
                                            plus1.body.dim.x * 0.5f;
                         plus1.body.pos.y = button->body.pos.y -
                                            button->body.dim.y * 0.5f;
-                        plus1.col = button->col * 0.5f;
+                        plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
@@ -4571,15 +4614,15 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(*button, glm::vec4(1.f),
+                        button_render(*button, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus1, glm::vec4(1.f),
+                        button_render(plus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus5, glm::vec4(1.f),
+                        button_render(plus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus1, glm::vec4(1.f),
+                        button_render(minus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus5, glm::vec4(1.f),
+                        button_render(minus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
                     } else {
 
@@ -4606,7 +4649,7 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(*button, glm::vec4(1.f),
+                        button_render(*button, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
                     }
 
@@ -4634,7 +4677,7 @@ void level_update(void) {
                     option_button_index < SELECTED_START_POS_OPTIONS;
                     ++option_button_index) {
                     assert((option_button_index <
-                                ARRAY_LENGTH(level->selected_options_buttons))
+                                ARR_LEN(level->selected_options_buttons))
                             && "Selected options out of bound for obstacles");
 
                     PR_Button *button =
@@ -4652,7 +4695,7 @@ void level_update(void) {
                                                 minus1.body.dim.x * 0.5f;
                         minus1.body.pos.y = button->body.pos.y -
                                                 button->body.dim.y * 0.5f;
-                        minus1.col = button->col * 0.5f;
+                        minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
                         std::snprintf(minus1.text, strlen("-1")+1, "-1");
 
@@ -4670,7 +4713,7 @@ void level_update(void) {
                                            plus1.body.dim.x * 0.5f;
                         plus1.body.pos.y = button->body.pos.y -
                                            button->body.dim.y * 0.5f;
-                        plus1.col = button->col * 0.5f;
+                        plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
                         std::snprintf(plus1.text, strlen("+1")+1, "+1");
 
@@ -4768,15 +4811,15 @@ void level_update(void) {
                             }
                         }
                         // TODO: Selected an appropriate font for this
-                        button_render(*button, glm::vec4(1.f),
+                        button_render(*button, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus1, glm::vec4(1.f),
+                        button_render(plus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(plus5, glm::vec4(1.f),
+                        button_render(plus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus1, glm::vec4(1.f),
+                        button_render(minus1, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
-                        button_render(minus5, glm::vec4(1.f),
+                        button_render(minus5, _diag_vec4f(1.f),
                                       &glob->rend_res.fonts[1]);
                     } else {
                         // UNREACHABLE
@@ -4813,8 +4856,8 @@ void level_update(void) {
         PR_Button b_restart = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.4f),
-                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+                .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.4f),
+                .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -4824,8 +4867,8 @@ void level_update(void) {
         PR_Button b_quit = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.7f),
-                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+                .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.7f),
+                .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -4898,7 +4941,7 @@ void level_update(void) {
             char congratulations[] = "CONGRATULATIONS!";
             renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.1f,
                                     congratulations,
-                                    glm::vec4(0.f, 0.f, 0.f, 1.f),
+                                    _vec4f(0.f, 0.f, 0.f, 1.f),
                                     &glob->rend_res.fonts[0], true);
             renderer_draw_text(&glob->rend_res.fonts[0],
                                glob->rend_res.shaders[3]);
@@ -4911,7 +4954,7 @@ void level_update(void) {
                           level->finish_time);
             renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f,
                                     time_recap,
-                                    glm::vec4(0.f, 0.f, 0.f, 1.f),
+                                    _vec4f(0.f, 0.f, 0.f, 1.f),
                                     &glob->rend_res.fonts[1], true);
             renderer_draw_text(&glob->rend_res.fonts[1],
                                glob->rend_res.shaders[2]);
@@ -4921,14 +4964,14 @@ void level_update(void) {
                                b_restart.from_center);
         renderer_add_queue_text(b_restart.body.pos.x,
                                 b_restart.body.pos.y,
-                                b_restart.text, glm::vec4(1.0f),
+                                b_restart.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
         renderer_add_queue_uni(b_quit.body,
                                b_quit.col,
                                b_quit.from_center);
         renderer_add_queue_text(b_quit.body.pos.x,
                                 b_quit.body.pos.y,
-                                b_quit.text, glm::vec4(1.0f),
+                                b_quit.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
 
         renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -4940,8 +4983,8 @@ void level_update(void) {
         PR_Button b_resume = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
-                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+                .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f),
+                .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -4951,8 +4994,8 @@ void level_update(void) {
         PR_Button b_restart = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
-                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+                .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
+                .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -4962,8 +5005,8 @@ void level_update(void) {
         PR_Button b_quit = {
             .from_center = true,
             .body = {
-                .pos = glm::vec2(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
-                .dim = glm::vec2(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
+                .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
+                .dim = _vec2f(GAME_WIDTH * 0.4f, GAME_HEIGHT * 0.2f),
                 .angle = 0.f,
                 .triangle = false,
             },
@@ -5021,7 +5064,7 @@ void level_update(void) {
                                     b_resume.from_center))) {
             level->pause_now = false;
             for(size_t ps_index = 0;
-                ps_index < ARRAY_LENGTH(level->particle_systems);
+                ps_index < ARR_LEN(level->particle_systems);
                 ++ps_index) {
                 level->particle_systems[ps_index].frozen = false;
             }
@@ -5075,21 +5118,21 @@ void level_update(void) {
                                b_resume.from_center);
         renderer_add_queue_text(b_resume.body.pos.x,
                                 b_resume.body.pos.y,
-                                b_resume.text, glm::vec4(1.0f),
+                                b_resume.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
         renderer_add_queue_uni(b_restart.body,
                                b_restart.col,
                                b_restart.from_center);
         renderer_add_queue_text(b_restart.body.pos.x,
                                 b_restart.body.pos.y,
-                                b_restart.text, glm::vec4(1.0f),
+                                b_restart.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
         renderer_add_queue_uni(b_quit.body,
                                b_quit.col,
                                b_quit.from_center);
         renderer_add_queue_text(b_quit.body.pos.x,
                                 b_quit.body.pos.y,
-                                b_quit.text, glm::vec4(1.0f),
+                                b_quit.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
 
         renderer_draw_uni(glob->rend_res.shaders[0]);
@@ -5103,7 +5146,7 @@ void level_update(void) {
             std::cout << "Pausing" << std::endl;
             level->pause_now = true;
             for(size_t ps_index = 0;
-                ps_index < ARRAY_LENGTH(level->particle_systems);
+                ps_index < ARR_LEN(level->particle_systems);
                 ++ps_index) {
                 level->particle_systems[ps_index].frozen = true;
             }
@@ -5129,7 +5172,7 @@ void level_update(void) {
 inline void plane_update_animation(PR_Plane *p) {
     // NOTE: Animation based on the accelleration
     if (p->animation_countdown < 0) {
-        if (glm::abs(p->acc.y) < 20.f) {
+        if (ABS(p->acc.y) < 20.f) {
             p->current_animation = PR_PLANE_IDLE_ACC;
             p->animation_countdown = 0.25f;
         } else {
@@ -5162,7 +5205,7 @@ inline void plane_update_animation(PR_Plane *p) {
 inline void plane_activate_crash_animation(PR_Plane *p) {
     p->anim.active = true;
     p->anim.current = 1;
-    float speed = glm::length(p->vel);
+    float speed = vec2f_len(p->vel);
     if (speed == 0) {
         p->anim.frame_stop = 0;
     } else
@@ -5207,7 +5250,7 @@ inline void portal_render(PR_Portal *portal) {
         q1.angle = 0.f;
         q1.triangle = false;
         q1.pos = b.pos;
-        q1.dim = b.dim * 0.5f;
+        q1.dim = vec2f_mult(b.dim, 0.5f);
         renderer_add_queue_uni(
             rect_in_camera_space(q1, cam),
             glob->colors[glob->current_level.current_gray],
@@ -5218,7 +5261,7 @@ inline void portal_render(PR_Portal *portal) {
         q2.triangle = false;
         q2.pos.x = b.pos.x + b.dim.x*0.5f;
         q2.pos.y = b.pos.y;
-        q2.dim = b.dim * 0.5f;
+        q2.dim = vec2f_mult(b.dim, 0.5f);
         renderer_add_queue_uni(
             rect_in_camera_space(q2, cam),
             glob->colors[glob->current_level.current_white],
@@ -5229,7 +5272,7 @@ inline void portal_render(PR_Portal *portal) {
         q3.triangle = false;
         q3.pos.x = b.pos.x;
         q3.pos.y = b.pos.y + b.dim.y*0.5f;
-        q3.dim = b.dim * 0.5f;
+        q3.dim = vec2f_mult(b.dim, 0.5f);
         renderer_add_queue_uni(
             rect_in_camera_space(q3, cam),
             glob->colors[glob->current_level.current_blue],
@@ -5240,7 +5283,7 @@ inline void portal_render(PR_Portal *portal) {
         q4.triangle = false;
         q4.pos.x = b.pos.x + b.dim.x*0.5f;
         q4.pos.y = b.pos.y + b.dim.y*0.5f;
-        q4.dim = b.dim * 0.5f;
+        q4.dim = vec2f_mult(b.dim, 0.5f);
         renderer_add_queue_uni(
             rect_in_camera_space(q4, cam),
             glob->colors[glob->current_level.current_red],
@@ -5257,25 +5300,27 @@ inline void boostpad_render(PR_BoostPad *pad) {
 
     PR_Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
 
-    if (glm::abs(pad_in_cam_pos.pos.x) >
-            glm::abs(pad_in_cam_pos.dim.x) + glm::abs(pad_in_cam_pos.dim.y) +
-            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
-     || glm::abs(pad_in_cam_pos.pos.y) >
-            glm::abs(pad_in_cam_pos.dim.x) + glm::abs(pad_in_cam_pos.dim.y) +
-            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
+    if (ABS(pad_in_cam_pos.pos.x) >
+            ABS(pad_in_cam_pos.dim.x) + ABS(pad_in_cam_pos.dim.y) +
+            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
+     || ABS(pad_in_cam_pos.pos.y) >
+            ABS(pad_in_cam_pos.dim.x) + ABS(pad_in_cam_pos.dim.y) +
+            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
     ) return;
 
     renderer_add_queue_uni(pad_in_cam_pos,
-                          glm::vec4(0.f, 1.f, 0.f, 1.f),
+                          _vec4f(0.f, 1.f, 0.f, 1.f),
                           false);
     
     if (pad->body.triangle) {
         pad_in_cam_pos.pos.x += pad_in_cam_pos.dim.x * 0.25f;
         pad_in_cam_pos.pos.y += pad_in_cam_pos.dim.y * 0.5f;
-        pad_in_cam_pos.dim *= 0.4f;
+        pad_in_cam_pos.dim = vec2f_mult(pad_in_cam_pos.dim, 0.4f);
     } else  {
-        pad_in_cam_pos.pos += pad_in_cam_pos.dim * 0.5f;
-        pad_in_cam_pos.dim *= 0.5f;
+        pad_in_cam_pos.pos = vec2f_sum(
+                pad_in_cam_pos.pos,
+                vec2f_mult(pad_in_cam_pos.dim, 0.5f));
+        pad_in_cam_pos.dim = vec2f_mult(pad_in_cam_pos.dim, 0.5f);
     }
     pad_in_cam_pos.angle = pad->boost_angle;
     renderer_add_queue_tex(pad_in_cam_pos,
@@ -5289,12 +5334,12 @@ inline void obstacle_render(PR_Obstacle *obs) {
     PR_Camera *cam = &glob->current_level.camera;
     PR_Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
 
-    if (glm::abs(obs_in_cam_pos.pos.x) >
-            glm::abs(obs_in_cam_pos.dim.x) + glm::abs(obs_in_cam_pos.dim.y) +
-            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
-     || glm::abs(obs_in_cam_pos.pos.y) >
-            glm::abs(obs_in_cam_pos.dim.x) + glm::abs(obs_in_cam_pos.dim.y) +
-            glm::abs(GAME_WIDTH) + glm::abs(GAME_HEIGHT)
+    if (ABS(obs_in_cam_pos.pos.x) >
+            ABS(obs_in_cam_pos.dim.x) + ABS(obs_in_cam_pos.dim.y) +
+            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
+     || ABS(obs_in_cam_pos.pos.y) >
+            ABS(obs_in_cam_pos.dim.x) + ABS(obs_in_cam_pos.dim.y) +
+            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
     ) return;
 
     renderer_add_queue_uni(obs_in_cam_pos,
@@ -5302,13 +5347,13 @@ inline void obstacle_render(PR_Obstacle *obs) {
                           false);
 }
 
-inline void button_render(PR_Button but, glm::vec4 col, PR_Font *font) {
+inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
     renderer_add_queue_uni(but.body, but.col, but.from_center);
     renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
                             but.text, col, font, true);
 }
 
-inline void button_render_in_menu_camera(PR_Button but, glm::vec4 col, PR_Font *font, PR_MenuCamera *cam) {
+inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam) {
 
     PR_Rect in_cam_rect = rect_in_menu_camera_space(but.body, cam);
     renderer_add_queue_uni(in_cam_rect, but.col, but.from_center);
@@ -5322,23 +5367,23 @@ inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "PORTAL INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "pos: (%f, %f)",
                  (portal)->body.pos.x, (portal)->body.pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "dim: (%f, %f)",
                  (portal)->body.dim.x, (portal)->body.dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "type: %s",
                  get_portal_type_name((portal)->type));
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "enable_effect: %s",
                  (portal)->enable_effect ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
@@ -5348,27 +5393,27 @@ inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "BOOST INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "pos: (%f, %f)",
                  (boost)->body.pos.x, (boost)->body.pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "dim: (%f, %f)",
                  (boost)->body.dim.x, (boost)->body.dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "angle: %f",
                  (boost)->body.angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "boost_angle: %f",
                  (boost)->boost_angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "boost_power: %f",
                  (boost)->boost_power);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
@@ -5378,27 +5423,27 @@ inline void obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty) {
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "OBSTACLE INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "pos: (%f, %f)",
                  (obstacle)->body.pos.x, (obstacle)->body.pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "dim: (%f, %f)",
                  (obstacle)->body.dim.x, (obstacle)->body.dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "angle: %f",
                  (obstacle)->body.angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "collide_plane: %s",
                  (obstacle)->collide_plane ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "collide_rider: %s",
                  (obstacle)->collide_rider ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
@@ -5408,42 +5453,42 @@ inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "GOAL LINE INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "pos: (%f, %f)",
                  rect->pos.x, rect->pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "dim: (%f, %f)",
                  rect->dim.x, rect->dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void start_pos_render_info(PR_Rect *rect, glm::vec2 vel,
+inline void start_pos_render_info(PR_Rect *rect, vec2f vel,
                                   float tx, float ty) {
     char buffer[99];
     std::memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
     std::sprintf(buffer, "START POS INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "pos: (%f, %f)",
                  rect->pos.x, rect->pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     // std::sprintf(buffer, "dim: (%f, %f)",
     //              rect->dim.x, rect->dim.y);
-    // renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    // renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
     //                         &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "vel: (%f, %f)",
                  vel.x, vel.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     std::sprintf(buffer, "angle: %f",
                  rect->angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, glm::vec4(1.f),
+    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
@@ -5451,7 +5496,7 @@ inline void apply_air_resistances(PR_Plane* p) {
     PR_Atmosphere *air = &glob->current_level.air;
 
 
-    float vertical_alar_surface = p->alar_surface * cos(glm::radians(p->body.angle));
+    float vertical_alar_surface = p->alar_surface * cos(radiansf(p->body.angle));
 
     // TODO: the same values are calculated multiple times,
     //       OPTIMIZE! (when you settled the mechanics)
@@ -5459,8 +5504,8 @@ inline void apply_air_resistances(PR_Plane* p) {
                             POW2(p->vel.y) * air->density *
                             vertical_lift_coefficient(p->body.angle) * 0.5f;
     // NOTE: Correcting the sign of `vertical_lift`
-    vertical_lift = glm::abs(vertical_lift) *
-                    glm::sign(-p->vel.y);
+    vertical_lift = ABS(vertical_lift) *
+                    SIGN(-p->vel.y);
 
     // TODO: the same values are calculated multiple times,
     //       OPTIMIZE! (when you settled the mechanics)
@@ -5472,17 +5517,17 @@ inline void apply_air_resistances(PR_Plane* p) {
         (180 < p->body.angle && p->body.angle <= 270) || // 3o quadrante
         (-360 < p->body.angle && p->body.angle <= -270) || // 1o quadrante
         (-180 < p->body.angle && p->body.angle <= -90))  { // 3o quadrante
-        vertical_drag = -glm::abs(vertical_drag) *
-                            glm::sign(p->vel.y);
+        vertical_drag = -ABS(vertical_drag) *
+                            SIGN(p->vel.y);
     } else {
-        vertical_drag = glm::abs(vertical_drag) *
-                            glm::sign(p->vel.y);
+        vertical_drag = ABS(vertical_drag) *
+                            SIGN(p->vel.y);
     }
 
     p->acc.y += vertical_lift;
     p->acc.x += vertical_drag;
 
-    float horizontal_alar_surface = p->alar_surface * sin(glm::radians(p->body.angle));
+    float horizontal_alar_surface = p->alar_surface * sin(radiansf(p->body.angle));
 
     // TODO: the same values are calculated multiple times,
     //       OPTIMIZE! (when you settled the mechanics)
@@ -5494,11 +5539,11 @@ inline void apply_air_resistances(PR_Plane* p) {
         (180 < p->body.angle && p->body.angle <= 270) ||
         (-360 < p->body.angle && p->body.angle <= -270) ||
         (-180 < p->body.angle && p->body.angle <= -90))  {
-        horizontal_lift = glm::abs(horizontal_lift) *
-                            -glm::sign(p->vel.x);
+        horizontal_lift = ABS(horizontal_lift) *
+                            -SIGN(p->vel.x);
     } else {
-        horizontal_lift = glm::abs(horizontal_lift) *
-                            glm::sign(p->vel.x);
+        horizontal_lift = ABS(horizontal_lift) *
+                            SIGN(p->vel.x);
     }
 
     // TODO: the same values are calculated multiple times,
@@ -5507,8 +5552,8 @@ inline void apply_air_resistances(PR_Plane* p) {
                             POW2(p->vel.x) * air->density *
                             horizontal_drag_coefficient(p->body.angle) * 0.5f;
     // NOTE: Correcting the sign of `horizontal_drag`
-    horizontal_drag = glm::abs(horizontal_drag) *
-                        glm::sign(-p->vel.x);
+    horizontal_drag = ABS(horizontal_drag) *
+                        SIGN(-p->vel.x);
 
     p->acc.y += horizontal_lift;
     p->acc.x += horizontal_drag;
@@ -5541,16 +5586,16 @@ inline void move_rider_to_plane(PR_Rider *rid, PR_Plane *p) {
         p->body.pos.x +
         (p->body.dim.x - rid->body.dim.x)*0.5f -
         (p->body.dim.y + rid->body.dim.y)*0.5f *
-            sin(glm::radians(rid->body.angle)) -
+            sin(radiansf(rid->body.angle)) -
         (p->body.dim.x*0.2f) *
-            cos(glm::radians(rid->body.angle));
+            cos(radiansf(rid->body.angle));
     rid->body.pos.y =
         p->body.pos.y +
         (p->body.dim.y - rid->body.dim.y)*0.5f -
         (p->body.dim.y + rid->body.dim.y)*0.5f *
-            cos(glm::radians(rid->body.angle)) +
+            cos(radiansf(rid->body.angle)) +
         (p->body.dim.x*0.2f) *
-            sin(glm::radians(rid->body.angle));
+            sin(radiansf(rid->body.angle));
 }
 
 inline void rider_jump_from_plane(PR_Rider *rid, PR_Plane *p) {
@@ -5573,17 +5618,17 @@ inline void level_reset_colors(PR_Level *level) {
 inline void level_shuffle_colors(PR_Level *level) {
     int8_t shuffled_colors[] = {-1, -1, -1, -1};
     for(size_t i = 0;
-        i < ARRAY_LENGTH(shuffled_colors);
+        i < ARR_LEN(shuffled_colors);
         ++i) {
         int tmp_r;
         bool present;
         do {
             tmp_r = (int) (((float) rand() / (float)RAND_MAX) *
-                    ARRAY_LENGTH(shuffled_colors));
+                    ARR_LEN(shuffled_colors));
             present = false;
             for(size_t j = 0; j < i; ++j) {
                 if ((shuffled_colors[j] == tmp_r) ||
-                    (i < ARRAY_LENGTH(shuffled_colors)-1 &&
+                    (i < ARR_LEN(shuffled_colors)-1 &&
                         (size_t)tmp_r == i)) {
                     present = true;
                     break;
@@ -5717,7 +5762,7 @@ void set_portal_option_buttons(PR_Button *buttons) {
                 break;
         }
 
-        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
 
     }
 }
@@ -5780,7 +5825,7 @@ void set_boost_option_buttons(PR_Button *buttons) {
                 break;
         }
 
-        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
     }
 }
 
@@ -5840,7 +5885,7 @@ void set_obstacle_option_buttons(PR_Button *buttons) {
                               "UNDEFINED");
                 break;
         }
-        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
     }
 }
 
@@ -5883,15 +5928,19 @@ void set_start_pos_option_buttons(PR_Button *buttons) {
                               "UNDEFINED");
                 break;
         }
-        button->col = glm::vec4(0.5f, 0.5f, 0.5f, 1.f);
+        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
     }
 }
 
 inline PR_Rect rect_in_camera_space(PR_Rect r, PR_Camera *cam) {
     PR_Rect res;
 
-    res.pos = r.pos - cam->pos +
-        glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+    res.pos =
+        vec2f_sum(
+            vec2f_diff(
+                r.pos,
+                cam->pos),
+            _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f));
     res.dim = r.dim;
     res.angle = r.angle;
     res.triangle = r.triangle;
@@ -5902,8 +5951,14 @@ inline PR_Rect rect_in_camera_space(PR_Rect r, PR_Camera *cam) {
 inline PR_Rect rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam) {
     PR_Rect res;
 
-    res.pos = r.pos - cam->pos +
-        glm::vec2(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f);
+    // NOTE(gio): works
+    res.pos =
+        vec2f_sum(
+            vec2f_diff(
+                r.pos,
+                cam->pos),
+            _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f));
+
     res.dim = r.dim;
     res.angle = r.angle;
     res.triangle = r.triangle;
@@ -5923,14 +5978,14 @@ void level_activate_edit_mode(PR_Level *level) {
     level->plane.crashed = false;
     animation_reset(&level->plane.anim);
     level->plane.anim.frame_stop = level->plane.anim.frame_number - 1;
-    level->plane.vel = glm::vec2(0.f);
+    level->plane.vel = _diag_vec2f(0.f);
     if (level->rider.inverse) {
         level->rider.body.dim.y = -level->rider.body.dim.y;
     }
     level->rider.inverse = false;
     level->rider.crashed = false;
     level->rider.attached = true;
-    level->rider.vel = glm::vec2(0.f);
+    level->rider.vel = _diag_vec2f(0.f);
     level->colors_shuffled = false;
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
@@ -5954,7 +6009,7 @@ void update_plane_physics_n_boost_collisions(PR_Level *level) {
     float dt = glob->state.delta_time;
 
     // NOTE: Reset the accelleration for it to be recalculated
-    p->acc *= 0;
+    p->acc = _diag_vec2f(0.f);
     apply_air_resistances(p);
     // NOTE: Checking collision with boost_pads
     for (size_t boost_index = 0;
@@ -5968,9 +6023,9 @@ void update_plane_physics_n_boost_collisions(PR_Level *level) {
             boost_ps->active = true;
             
             p->acc.x += pad.boost_power *
-                        cos(glm::radians(pad.boost_angle));
+                        cos(radiansf(pad.boost_angle));
             p->acc.y += pad.boost_power *
-                        -sin(glm::radians(pad.boost_angle));
+                        -sin(radiansf(pad.boost_angle));
 
         }
     }
@@ -5979,24 +6034,32 @@ void update_plane_physics_n_boost_collisions(PR_Level *level) {
     //if (glob->input.boost.pressed &&
     //    !rid->crashed && rid->attached) {
     //    float propulsion = 8.f;
-    //    p->acc.x += propulsion * cos(glm::radians(p->body.angle));
-    //    p->acc.y += propulsion * -sin(glm::radians(p->body.angle));
+    //    p->acc.x += propulsion * cos(radiansf(p->body.angle));
+    //    p->acc.y += propulsion * -sin(radiansf(p->body.angle));
     //    boost_ps->active = true;
     //}
+
     // NOTE: The mass is greater if the rider is attached
-    if (rid->attached) p->acc *= 1.f/(p->mass + rid->mass);
-    else p->acc *= 1.f/p->mass;
+    if (rid->attached) {
+        p->acc = vec2f_divide(p->acc, p->mass + rid->mass);
+    } else {
+        p->acc = vec2f_divide(p->acc, p->mass);
+    }
 
     // NOTE: Gravity is already an accelleration so it doesn't need to be divided
     p->acc.y += p->inverse ? -GRAVITY : GRAVITY;
 
     // NOTE: Motion of the plane
-    p->vel += p->acc * dt;
+    p->vel = vec2f_sum(p->vel, vec2f_mult(p->acc, dt));
     // NOTE: Limit velocities
-    if (glm::length(p->vel) > PLANE_VELOCITY_LIMIT) {
-        p->vel *= PLANE_VELOCITY_LIMIT / glm::length(p->vel);
+    if (vec2f_len_sq(p->vel) > POW2(PLANE_VELOCITY_LIMIT)) {
+        p->vel = vec2f_mult(p->vel, PLANE_VELOCITY_LIMIT / vec2f_len(p->vel));
     }
-    p->body.pos += p->vel * dt + p->acc * POW2(dt) * 0.5f;
+    p->body.pos = vec2f_sum(
+            p->body.pos,
+            vec2f_sum(
+                vec2f_mult(p->vel, dt),
+                vec2f_mult(p->acc, POW2(dt) * 0.5f)));
 }
 
 // Particle systems
@@ -6004,7 +6067,9 @@ void create_particle_plane_boost(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
     if (ps->active) {
         PR_Plane *p = &glob->current_level.plane;
-        particle->body.pos = p->body.pos + p->body.dim * 0.5f;
+        particle->body.pos = vec2f_sum(
+                p->body.pos,
+                vec2f_mult(p->body.dim, 0.5f));
         particle->body.dim.x = 10.f;
         particle->body.dim.y = 10.f;
         particle->body.triangle = false;
@@ -6012,12 +6077,12 @@ void create_particle_plane_boost(PR_ParticleSystem *ps,
         particle->color.g = 1.0f;
         particle->color.b = 1.0f;
         particle->color.a = 1.0f;
-        float movement_angle = glm::radians(p->body.angle);
+        float movement_angle = radiansf(p->body.angle);
         particle->vel.x =
-            (glm::length(p->vel) - 400.f) * cos(movement_angle) +
+            (vec2f_len(p->vel) - 400.f) * cos(movement_angle) +
             (float)((rand() % 101) - 50);
         particle->vel.y =
-            -(glm::length(p->vel) - 400.f) * sin(movement_angle) +
+            -(vec2f_len(p->vel) - 400.f) * sin(movement_angle) +
             (float)((rand() % 101) - 50);
         particle->active = true;
     } else {
@@ -6041,9 +6106,11 @@ void update_particle_plane_boost(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
     UNUSED(ps);
     float dt = glob->state.delta_time;
-    particle->vel *= (1.f - dt); 
+    particle->vel = vec2f_mult(particle->vel, (1.f - dt)); 
     particle->color.a -= particle->color.a * dt * 3.0f;
-    particle->body.pos += particle->vel * dt;
+    particle->body.pos = vec2f_sum(
+            particle->body.pos,
+            vec2f_mult(particle->vel, dt));
 }
 void draw_particle_plane_boost(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
@@ -6060,7 +6127,9 @@ void create_particle_plane_crash(PR_ParticleSystem *ps,
         //particle->body.pos = p->body.pos + p->body.dim*0.5f;
         particle->body.dim.x = 15.f;
         particle->body.dim.y = 15.f;
-        particle->body.pos = p->crash_position - particle->body.dim*0.5f;
+        particle->body.pos = vec2f_diff(
+                p->crash_position,
+                vec2f_mult(particle->body.dim, 0.5f));
         particle->body.angle = 0.f;
         particle->body.triangle = false;
         particle->vel.x = (float)((rand() % 301) - 150.f);
@@ -6092,10 +6161,12 @@ void update_particle_plane_crash(PR_ParticleSystem *ps,
     particle->color.a -= particle->color.a * dt * 2.0f;
     particle->vel.y += 400.f * dt;
     particle->vel.x *= (1.f - dt);
-    particle->body.pos += particle->vel * dt;
+    particle->body.pos = vec2f_sum(
+            particle->body.pos,
+            vec2f_mult(particle->vel, dt));
     particle->body.angle -=
-        glm::sign(particle->vel.x) *
-        lerp(0.f, 720.f, glm::abs(particle->vel.x)/150.f) * dt;
+        SIGN(particle->vel.x) *
+        lerp(0.f, 720.f, ABS(particle->vel.x)/150.f) * dt;
 }
 void draw_particle_plane_crash(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
@@ -6118,7 +6189,9 @@ void create_particle_rider_crash(PR_ParticleSystem *ps,
         //particle->body.pos = rid->body.pos + rid->body.dim*0.5f;
         particle->body.dim.x = 15.f;
         particle->body.dim.y = 15.f;
-        particle->body.pos = rid->crash_position - particle->body.dim*0.5f;
+        particle->body.pos = vec2f_diff(
+                rid->crash_position,
+                vec2f_mult(particle->body.dim, 0.5f));
         particle->body.angle = 0.f;
         particle->body.triangle = false;
         particle->vel.x = (float)((rand() % 301) - 150.f);
@@ -6151,10 +6224,12 @@ void update_particle_rider_crash(PR_ParticleSystem *ps,
     particle->color.a -= particle->color.a * dt * 2.0f;
     particle->vel.y += 400.f * dt;
     particle->vel.x *= (1.f - dt);
-    particle->body.pos += particle->vel * dt;
+    particle->body.pos = vec2f_sum(
+            particle->body.pos,
+            vec2f_mult(particle->vel, dt));
     particle->body.angle -=
-        glm::sign(particle->vel.x) *
-        lerp(0.f, 720.f, glm::abs(particle->vel.x)/150.f) * dt;
+        SIGN(particle->vel.x) *
+        lerp(0.f, 720.f, ABS(particle->vel.x)/150.f) * dt;
 }
 void draw_particle_rider_crash(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
@@ -6182,19 +6257,19 @@ void option_slider_init_selection(PR_OptionSlider *slider, float pad) {
     slider->selection.dim.x =
         (slider->background.dim.x - pad_dim * 2.f) * slider->value;
 
-    snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
+    snprintf(slider->value_text, ARR_LEN(slider->value_text),
              "%.2f", slider->value);
 }
 void option_slider_update_value(PR_OptionSlider *slider, float value) {
     if (value < 0.01f) value = 0.f;
     else if (value > 0.99f) value = 1.f;
-    float pad_dim = glm::abs(slider->selection.pos.x -
+    float pad_dim = ABS(slider->selection.pos.x -
                                 slider->background.pos.x +
                                 slider->background.dim.x * 0.5f);
     slider->value = value;
     slider->selection.dim.x =
         (slider->background.dim.x - pad_dim * 2.f) * value;
-    snprintf(slider->value_text, ARRAY_LENGTH(slider->value_text),
+    snprintf(slider->value_text, ARR_LEN(slider->value_text),
              "%.2f", slider->value);
 }
 void option_slider_handle_mouse(PR_OptionSlider *slider,
@@ -6210,7 +6285,7 @@ void option_slider_handle_mouse(PR_OptionSlider *slider,
     }
     // If still hooked: update. Otherwise skip
     if (slider->mouse_hooked) {
-        float pad_dim = glm::abs(slider->selection.pos.x -
+        float pad_dim = ABS(slider->selection.pos.x -
                                     slider->background.pos.x +
                                     slider->background.dim.x * 0.5f);
         float new_value =
@@ -6219,9 +6294,9 @@ void option_slider_handle_mouse(PR_OptionSlider *slider,
         option_slider_update_value(slider, new_value);
     }
 }
-void option_slider_render(PR_OptionSlider *slider, glm::vec4 color) {
+void option_slider_render(PR_OptionSlider *slider, vec4f color) {
     renderer_add_queue_uni(slider->background,
-                           glm::vec4(0.f, 0.f, 0.f, 1.f), true);
+                           _vec4f(0.f, 0.f, 0.f, 1.f), true);
     renderer_add_queue_uni(slider->selection,
                            color, false);
     renderer_add_queue_text(
@@ -6270,7 +6345,7 @@ void options_menu_selection_handle_mouse(PR_OptionsMenu *opt,
 
 void options_menu_update_bindings(PR_OptionsMenu *opt, PR_InputAction *actions) {
     for(size_t bind_index = 0;
-        bind_index < ARRAY_LENGTH(opt->change_kb_binds1);
+        bind_index < ARR_LEN(opt->change_kb_binds1);
         ++bind_index) {
 
         PR_InputAction *action = &actions[bind_index];
@@ -6283,26 +6358,26 @@ void options_menu_update_bindings(PR_OptionsMenu *opt, PR_InputAction *actions) 
         const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
         std::strncpy(kb1->text,
                      (kb1_name != NULL) ? kb1_name : "...",
-                     ARRAY_LENGTH(kb1->text)-1);
+                     ARR_LEN(kb1->text)-1);
 
         const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
         std::strncpy(kb2->text,
                      (kb2_name != NULL) ? kb2_name : "...",
-                     ARRAY_LENGTH(kb2->text)-1);
+                     ARR_LEN(kb2->text)-1);
 
         const char *gp1_name =
             get_gamepad_button_name(action->gp_binds[0].bind_index,
                                     action->gp_binds[0].type);
         std::strncpy(gp1->text,
                      (gp1_name != NULL) ? gp1_name : "...",
-                     ARRAY_LENGTH(gp1->text)-1);
+                     ARR_LEN(gp1->text)-1);
 
         const char *gp2_name =
             get_gamepad_button_name(action->gp_binds[1].bind_index,
                                     action->gp_binds[1].type);
         std::strncpy(gp2->text,
                      (gp2_name != NULL) ? gp2_name : "...",
-                     ARRAY_LENGTH(gp2->text)-1);
+                     ARR_LEN(gp2->text)-1);
     }
 }
 

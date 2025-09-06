@@ -96,7 +96,7 @@ void shaderer_set_float(PR_Shader s, const char* name, float value) {
     glUniform1f(glGetUniformLocation(s, name), value);
 }
 
-void shaderer_set_vec3(PR_Shader s, const char* name, glm::vec3 value) {
+void shaderer_set_vec3(PR_Shader s, const char* name, vec3f value) {
     glUseProgram(s);
     glUniform3f(glGetUniformLocation(s, name), value.x, value.y, value.z);
 }

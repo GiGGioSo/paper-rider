@@ -1,11 +1,11 @@
 #ifndef PP_RECT_H
 #define PP_RECT_H
 
-#include "glm/vec2.hpp"
+#include "pr_mathy.h"
 
 typedef struct PR_Rect {
-    glm::vec2 pos;
-    glm::vec2 dim;
+    vec2f pos;
+    vec2f dim;
 
     float angle;
     // lmao.

@@ -112,8 +112,8 @@ inline float lerp(float x1, float x2, float t) {
     return result;
 }
 
-inline glm::vec2 lerp_v2(glm::vec2 x1, glm::vec2 x2, float t) {
-    glm::vec2 result;
+inline vec2f lerp_v2(vec2f x1, vec2f x2, float t) {
+    vec2f result;
     result.x = lerp(x1.x, x2.x, t);
     result.y = lerp(x1.y, x2.y, t);
 
@@ -127,25 +127,25 @@ inline glm::vec2 lerp_v2(glm::vec2 x1, glm::vec2 x2, float t) {
 
 inline
 float vertical_lift_coefficient(float angle) {
-    float result = 1.f - (float) cos(glm::radians(180.f - 2.f * angle));
+    float result = 1.f - (float) cos(radiansf(180.f - 2.f * angle));
     return result;
 }
 
 inline
 float vertical_drag_coefficient(float angle) {
-    float result = (float) sin(glm::radians(180.f - 2.f * angle));
+    float result = (float) sin(radiansf(180.f - 2.f * angle));
     return result;
 }
 
 inline
 float horizontal_lift_coefficient(float angle) {
-    float result = (float) sin(glm::radians(2.f * angle));
+    float result = (float) sin(radiansf(2.f * angle));
     return result;
 }
 
 inline
 float horizontal_drag_coefficient(float angle) {
-    float result = 1.f - (float) cos(glm::radians(2.f * angle));
+    float result = 1.f - (float) cos(radiansf(2.f * angle));
     return result;
 }
 

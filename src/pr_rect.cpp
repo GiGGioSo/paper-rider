@@ -64,8 +64,8 @@ bool rect_contains_point(const PR_Rect rec, float px, float py, bool centered) {
 
     w = rec.dim.x;
     h = rec.dim.y;
-    float cosine = cos(glm::radians(rec.angle));
-    float sine = sin(glm::radians(rec.angle));
+    float cosine = cos(radiansf(rec.angle));
+    float sine = sin(radiansf(rec.angle));
 
     float rx = center_x +
             (px - center_x) * cosine -
@@ -95,17 +95,17 @@ bool rect_contains_point(const PR_Rect rec, float px, float py, bool centered) {
 bool rect_are_colliding(const PR_Rect r1, const PR_Rect r2, float *cx, float *cy) {
     // NOTE: check if the objects are very distant,
     //       in that case don't check the collision
-    if (glm::abs(r1.pos.x - r2.pos.x) >
-            glm::abs(r1.dim.x) + glm::abs(r1.dim.y) +
-            glm::abs(r2.dim.x) + glm::abs(r2.dim.y)
-     || glm::abs(r1.pos.y - r2.pos.y) >
-            glm::abs(r1.dim.x) + glm::abs(r1.dim.y) +
-            glm::abs(r2.dim.x) + glm::abs(r2.dim.y)
+    if (ABS(r1.pos.x - r2.pos.x) >
+            ABS(r1.dim.x) + ABS(r1.dim.y) +
+            ABS(r2.dim.x) + ABS(r2.dim.y)
+     || ABS(r1.pos.y - r2.pos.y) >
+            ABS(r1.dim.x) + ABS(r1.dim.y) +
+            ABS(r2.dim.x) + ABS(r2.dim.y)
     ) return false;
 
     float center_x1 = r1.pos.x + r1.dim.x * 0.5f;
     float center_y1 = r1.pos.y + r1.dim.y * 0.5f;
-    float r1_angle = glm::radians(-r1.angle);
+    float r1_angle = radiansf(-r1.angle);
     float cos_r1 = cos(r1_angle);
     float sin_r1 = sin(r1_angle);
 
@@ -148,7 +148,7 @@ bool rect_are_colliding(const PR_Rect r1, const PR_Rect r2, float *cx, float *cy
 
     float center_x2 = r2.pos.x + r2.dim.x * 0.5f;
     float center_y2 = r2.pos.y + r2.dim.y * 0.5f;
-    float r2_angle = glm::radians(-r2.angle);
+    float r2_angle = radiansf(-r2.angle);
     float cos_r2 = cos(r2_angle);
     float sin_r2 = sin(r2_angle);
 

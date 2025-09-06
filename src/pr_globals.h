@@ -10,6 +10,7 @@
 #include "pr_renderer.h"
 #include "pr_input.h"
 #include "pr_rect.h"
+#include "pr_mathy.h"
 
 #define GAME_WIDTH 1440
 #define GAME_HEIGHT 1080
@@ -78,10 +79,10 @@ typedef struct PR_Plane {
     bool inverse;
 
     bool crashed;
-    glm::vec2 crash_position;
+    vec2f crash_position;
 
-    glm::vec2 vel;
-    glm::vec2 acc;
+    vec2f vel;
+    vec2f acc;
 
     PR_PlaneAnimationState current_animation;
     float animation_countdown;
@@ -95,13 +96,13 @@ typedef struct PR_Rider {
 
     PR_Rect render_zone;
 
-    glm::vec2 vel;
+    vec2f vel;
 
     // portal effect
     bool inverse;
 
     bool crashed;
-    glm::vec2 crash_position;
+    vec2f crash_position;
 
     float base_velocity;
     float input_velocity;
@@ -146,7 +147,7 @@ typedef struct PR_Portal {
 } PR_Portal;
 
 typedef struct PR_Camera {
-    glm::vec2 pos;
+    vec2f pos;
     float speed_multiplier;
 } PR_Camera;
 
@@ -156,8 +157,8 @@ typedef struct PR_Atmosphere {
 
 typedef struct PR_Particle {
     PR_Rect body;
-    glm::vec2 vel;
-    glm::vec4 color;
+    vec2f vel;
+    vec4f color;
     bool active;
 } PR_Particle;
 typedef struct PR_ParticleSystem {
@@ -192,7 +193,7 @@ typedef struct PR_Parallax {
 typedef struct PR_Button {
     bool from_center;
     PR_Rect body;
-    glm::vec4 col;
+    vec4f col;
     char text[256];
 } PR_Button;
 typedef struct PR_LevelButton {
@@ -215,7 +216,7 @@ typedef struct PR_CustomLevelButtons {
 } PR_CustomLevelButtons;
 
 typedef struct PR_MenuCamera {
-    glm::vec2 pos;
+    vec2f pos;
     float speed_multiplier;
     float goal_position;
     bool follow_selection;
@@ -355,7 +356,7 @@ typedef struct PR_Level {
 
     PR_Rect goal_line;
     PR_Rect start_pos;
-    glm::vec2 start_vel;
+    vec2f start_vel;
 
     PR_ParticleSystem particle_systems[3];
     PR_Parallax parallaxs[3];
@@ -451,7 +452,7 @@ typedef struct PR_WinInfo {
 } PR_WinInfo;
 
 typedef struct PR {
-    glm::vec4 colors[4];
+    vec4f colors[4];
 
     PR_StartMenu current_start_menu;
 

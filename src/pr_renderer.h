@@ -1,10 +1,10 @@
 #ifndef PR_RENDERER_H
 #define PR_RENDERER_H
 
-#include "../include/glm/glm.hpp"
 #include "../include/stb_truetype.h"
 #include "pr_rect.h"
 #include "pr_shaderer.h"
+#include "pr_mathy.h"
 
 #include <iostream>
 
@@ -103,10 +103,10 @@ renderer_init(PR_Renderer *renderer);
 
 // NOTE: Unicolor rendering
 void
-renderer_add_queue_uni(float x, float y, float w, float h, float r, glm::vec4 c, bool triangle, bool centered);
+renderer_add_queue_uni(float x, float y, float w, float h, float r, vec4f c, bool triangle, bool centered);
 
 inline void
-renderer_add_queue_uni(PR_Rect rec, glm::vec4 c, bool centered) {
+renderer_add_queue_uni(PR_Rect rec, vec4f c, bool centered) {
     renderer_add_queue_uni(rec.pos.x, rec.pos.y,
                           rec.dim.x, rec.dim.y, rec.angle,
                           c, rec.triangle, centered);
@@ -153,7 +153,7 @@ int
 renderer_create_font_atlas(PR_Font *font);
 
 void
-renderer_add_queue_text(float x, float y, const char* text, glm::vec4 c, PR_Font *font, bool centered);
+renderer_add_queue_text(float x, float y, const char* text, vec4f c, PR_Font *font, bool centered);
 
 void
 renderer_draw_text(PR_Font* font, PR_Shader s);

@@ -10,16 +10,16 @@ void parallax_init(PR_Parallax *px, float fc, PR_TexCoords tc,
     px->reference_point = p_start_x + p_w * 1.5f;
 
     for(size_t piece_index = 0;
-        piece_index < ARRAY_LENGTH(px->pieces);
+        piece_index < ARR_LEN(px->pieces);
         ++piece_index) {
 
         PR_ParallaxPiece *piece = px->pieces + piece_index;
 
-        *piece = {
+        *piece = (PR_ParallaxPiece) {
             .base_pos_x = p_start_x + (p_w * piece_index),
             .body = {
-                .pos = glm::vec2(p_start_x + (p_w * piece_index), p_start_y),
-                .dim = glm::vec2(p_w, p_h),
+                .pos = _vec2f(p_start_x + (p_w * piece_index), p_start_y),
+                .dim = _vec2f(p_w, p_h),
                 .angle = 0.f,
                 .triangle = false,
             }
@@ -29,7 +29,7 @@ void parallax_init(PR_Parallax *px, float fc, PR_TexCoords tc,
 
 void parallax_update_n_queue_render(PR_Parallax *px, float current_x) {
     for(size_t piece_index = 0;
-        piece_index < ARRAY_LENGTH(px->pieces);
+        piece_index < ARR_LEN(px->pieces);
         ++piece_index) {
 
         PR_ParallaxPiece *piece = px->pieces + piece_index;

@@ -150,7 +150,7 @@ void renderer_init(PR_Renderer* renderer) {
 // NON-textured quads
 void renderer_add_queue_uni(float x, float y,
                            float w, float h,
-                           float r, glm::vec4 c,
+                           float r, vec4f c,
                            bool triangle, bool centered) {
 
     PR_Renderer* renderer = &glob->renderer;
@@ -179,7 +179,7 @@ void renderer_add_queue_uni(float x, float y,
         x  , y  , c.r, c.g, c.b, c.a,
     };
 
-    r = glm::radians(-r);
+    r = radians(-r);
     float cos_r = cos(r);
     float sin_r = sin(r);
     float center_x = x + w/2;
@@ -416,7 +416,7 @@ void renderer_add_queue_tex(float x, float y,
         x+w, y+h, tx+tw, ty+th,
     };
 
-    r = glm::radians(-r);
+    r = radiansf(-r);
     float center_x = x + w/2;
     float center_y = y + h/2;
 
@@ -508,7 +508,7 @@ void renderer_add_queue_array_tex(PR_ArrayTexture at,
         x+w, y+h, tc.tx + tc.tw, tc.ty + tc.th, (float) layer
     };
 
-    r = glm::radians(-r);
+    r = radiansf(-r);
     float center_x = x + w/2;
     float center_y = y + h/2;
 
@@ -608,7 +608,7 @@ int renderer_create_font_atlas(PR_Font* font) {
 }
 
 void renderer_add_queue_text(float x, float y,
-                             const char *text, glm::vec4 c,
+                             const char *text, vec4f c,
                              PR_Font* font, bool centered) {
 
     PR_Renderer *renderer = &glob->renderer;

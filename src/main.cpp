@@ -517,12 +517,12 @@ void glob_free(void) {
     ma_sound_group_uninit(&s->sfx_group);
     ma_engine_uninit(&s->engine);
     for(size_t font_index = 0;
-        font_index < ARRAY_LENGTH(glob->rend_res.fonts);
+        font_index < ARR_LEN(glob->rend_res.fonts);
         ++font_index) {
         std::free(glob->rend_res.fonts[font_index].char_data);
     }
     for(size_t array_texture_index = 0;
-        array_texture_index < ARRAY_LENGTH(glob->rend_res.array_textures);
+        array_texture_index < ARR_LEN(glob->rend_res.array_textures);
         ++array_texture_index) {
         std::free(glob->rend_res.array_textures[array_texture_index].elements);
     }
