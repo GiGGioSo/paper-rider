@@ -73,13 +73,12 @@ int main() {
             glfwCreateWindow(glob->window.width, glob->window.height,
                              glob->window.title, NULL, NULL);
     } else {
-        std::cout << "[ERROR] Unknown window mode: "
-                  << glob->window.display_mode << std::endl;
+        printf("[ERROR] Unknown window mode: %d\n", glob->window.display_mode);
         glfwTerminate();
         return 1;
     }
     if (glob->window.glfw_win == NULL) {
-        std::cout << "[ERROR] Failed to create GLFW window" << std::endl;
+        printf("[ERROR] Failed to create GLFW window\n");
         glfwTerminate();
         return 1;
     }
@@ -87,7 +86,7 @@ int main() {
     glfwSwapInterval(0);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        std::cout << "[ERROR] Failed to initialize GLAD" << std::endl;
+        printf("[ERROR] Failed to initialize GLAD");
         return 1;
     }
 
@@ -126,13 +125,11 @@ int main() {
             time_from_last_fps_update -= 1.f;
 
             // TODO: Debug flag
-            std::cout << "FPS: " << fps_to_display << std::endl;
-            std::cout << "Controller: "
-                      << (int) glob->input.current_gamepad
-                      << ", Name: "
-                      << (glob->input.gamepad_name ?
-                               glob->input.gamepad_name : "none")
-                      << std::endl;
+            printf("FPS: %d\n", fps_to_display);
+            printf("Controller: %d, Name: %s\n",
+                    (int) glob->input.current_gamepad,
+                    (glob->input.gamepad_name ?
+                     glob->input.gamepad_name : "none"));
 
         }
 
@@ -174,9 +171,7 @@ int main() {
             }
             default:
             {
-                std::cout << "Unknown state: "
-                          << glob->state.current_case
-                          << std::endl;
+                printf("Unknown state: %d\n", glob->state.current_case);
             }
         }
 
@@ -257,12 +252,9 @@ int glob_init(void) {
     renderer_create_texture(&glob->rend_res.global_sprite,
                             "res/paper-rider_sprite3.png");
 
-    std::cout << "Loaded the spritesheet of size: "
-              << glob->rend_res.global_sprite.width
-              << "x"
-              << glob->rend_res.global_sprite.height
-              << std::endl;
-
+    printf("Loaded the spritesheet of size: %dx%d\n",
+            glob->rend_res.global_sprite.width,
+            glob->rend_res.global_sprite.height);
 
     // # PR_Font initialization
     int error = 0;
@@ -277,9 +269,8 @@ int glob_init(void) {
                                                    f1->num_chars);
     error = renderer_create_font_atlas(f1);
     if (error) {
-        std::cout << "[ERROR] Could not create font atlas: "
-                  << error << std::endl;
-        return 1;
+        printf("[ERROR] Could not create font atlas: %d\n", error);
+        return error;
     }
 
     PR_Font *f2 = &glob->rend_res.fonts[OBJECT_INFO_FONT];
@@ -293,9 +284,8 @@ int glob_init(void) {
                                                    f2->num_chars);
     error = renderer_create_font_atlas(f2);
     if (error) {
-        std::cout << "[ERROR] Could not create font atlas: "
-                  << error << std::endl;
-        return 1;
+        printf("[ERROR] Could not create font atlas: %d\n", error);
+        return error;
     }
 
     PR_Font *f3 = &glob->rend_res.fonts[ACTION_NAME_FONT];
@@ -309,9 +299,8 @@ int glob_init(void) {
                                                    f3->num_chars);
     error = renderer_create_font_atlas(f3);
     if (error) {
-        std::cout << "[ERROR] Could not create font atlas: "
-                  << error << std::endl;
-        return 1;
+        printf("[ERROR] Could not create font atlas: %d\n", error);
+        return error;
     }
     
     // # Array textures initialization
@@ -347,8 +336,7 @@ int glob_init(void) {
     ma_result result;
     result = ma_engine_init(NULL, &sound->engine);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the audio engine!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the audio engine!\n");
         return 1;
     }
 
@@ -356,15 +344,13 @@ int glob_init(void) {
     result = ma_sound_group_init(&sound->engine, 0, NULL,
                                  &sound->music_group);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound music group!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound music group!\n");
         return 1;
     }
     result = ma_sound_group_init(&sound->engine, 0, NULL,
                                  &sound->sfx_group);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound sfx group!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound sfx group!\n");
         return 1;
     }
 
@@ -375,8 +361,7 @@ int glob_init(void) {
                                      &sound->music_group, NULL,
                                      &sound->menu_music);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound menu_music!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound menu_music!\n");
         return 1;
     }
     ma_sound_set_looping(&sound->menu_music, true);
@@ -387,8 +372,7 @@ int glob_init(void) {
                                      &sound->music_group, NULL,
                                      &sound->playing_music);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound playing_music!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound playing_music!\n");
         return 1;
     }
 
@@ -398,8 +382,7 @@ int glob_init(void) {
                                      &sound->music_group, NULL,
                                      &sound->gameover_music);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound gameover_music!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound gameover_music!\n");
         return 1;
     }
 
@@ -410,8 +393,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->change_selection);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound change_selection!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound change_selection!\n");
         return 1;
     }
     result = ma_sound_init_from_file(&sound->engine,
@@ -420,8 +402,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->click_selected);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound click_selected!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound click_selected!\n");
         return 1;
     }
     result = ma_sound_init_from_file(&sound->engine,
@@ -430,8 +411,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->change_pane);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound change_pane!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound change_pane!\n");
         return 1;
     }
     result = ma_sound_init_from_file(&sound->engine,
@@ -440,8 +420,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->to_start_menu);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound campaign_custom!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound campaign_custom!\n");
         return 1;
     }
     /*
@@ -451,8 +430,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->rider_detach);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound rider_detach!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound rider_detach!\n");
         return 1;
     }
     result = ma_sound_init_from_file(&sound->engine,
@@ -461,8 +439,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->rider_double_jump);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound rider_double_jump!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound rider_double_jump!\n");
         return 1;
     }
     result = ma_sound_init_from_file(&sound->engine,
@@ -471,8 +448,7 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->plane_crash);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound plane_crash!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound plane_crash!\n");
         return 1;
     }
     result = ma_sound_init_from_file(&sound->engine,
@@ -481,13 +457,12 @@ int glob_init(void) {
                                      &sound->sfx_group, NULL,
                                      &sound->rider_crash);
     if (result != MA_SUCCESS) {
-        std::cout << "[ERROR] Could not initialize the sound rider_crash!"
-                  << std::endl;
+        printf("[ERROR] Could not initialize the sound rider_crash!\n");
         return 1;
     }
     */
 
-    std::cout << "Loaded all audio files successfully!" << std::endl;
+    printf("Loaded all audio files successfully!\n");
 
     start_menu_set_to_null(&glob->current_start_menu);
     play_menu_set_to_null(&glob->current_play_menu);
@@ -593,9 +568,10 @@ void callback_debug(GLenum source,
     UNUSED(length);
     UNUSED(user);
 
-    std::cout << "------------------------------"
-              << "\nSource: " << source
-              << "\nType: " << type
-              << "\nMessage: " << message
-              << "\n-----------------------------";
+    printf("------------------------------"
+           "\nSource: %d"
+           "\nType: %d"
+           "\nMessage: %s"
+           "\n-----------------------------",
+           source, type, message);
 }

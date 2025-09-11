@@ -253,16 +253,9 @@ int load_map_from_file(const char *file_path,
         std::fscanf(map_file, " %zu", &number_of_obstacles);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::cout << "[LOADING] " << number_of_obstacles
-                  << " obstacles from the file " << file_path
-                  << std::endl;
-
-        // *obstacles = (PR_Obstacle *) std::malloc(sizeof(PR_Obstacle) *
-        //                                           *number_of_obstacles);
-        // if (*obstacles == NULL) {
-        //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
-        //     return_defer(2);
-        // }
+        printf("[LOADING] %d obstacles from the file %s\n",
+                number_of_obstacles,
+                file_path);
 
         for (size_t obstacle_index = 0;
              obstacle_index < number_of_obstacles;
@@ -280,8 +273,8 @@ int load_map_from_file(const char *file_path,
             // TODO: You cannot check feof on the obstacles
             //       because after them there are the boosts
             if (std::feof(map_file)) {
-                std::cout << "[WARNING] Found only " << obstacle_index
-                          << " obstacles in the map file" << std::endl;
+                printf("[WARNING] Found only %d obstacles in the map file",
+                        obstacle_index);
                 return_defer(1);
             }
 
@@ -298,15 +291,9 @@ int load_map_from_file(const char *file_path,
 
             da_append(obstacles, obs, PR_Obstacle);
 
-            std::cout << "x: " << x
-                      << " y: " << y
-                      << " w: " << w
-                      << " h: " << h
-                      << " r: " << r
-                      << " tr: " << triangle
-                      << " cp: " << collide_plane
-                      << " cr: " << collide_rider
-                      << std::endl;
+            printf("x: %f y: %f w: %f h: %f r: %f tr: %d cp: %d cr: %d",
+                    x, y, w, h, r,
+                    triangle, collide_plane, collide_rider);
 
         }
 
@@ -315,16 +302,8 @@ int load_map_from_file(const char *file_path,
         std::fscanf(map_file, " %zu", &number_of_boosts);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::cout << "[LOADING] " << number_of_boosts
-                  << " boost pads from file " << file_path
-                  << std::endl;
-
-        // *boosts = (PR_BoostPad *) std::malloc(sizeof(PR_BoostPad) *
-        //                            *number_of_boosts);
-        // if (*boosts == NULL) {
-        //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
-        //     return_defer(2);
-        // }
+        printf("[LOADING] %d boost pads from file %s\n",
+                number_of_boosts, file_path);
 
         for(size_t boost_index = 0;
             boost_index < number_of_boosts;
@@ -339,8 +318,8 @@ int load_map_from_file(const char *file_path,
 
             if (std::ferror(map_file)) return_defer(1);
             if (std::feof(map_file)) {
-                std::cout << "[WARNING] Found only " << boost_index
-                          << " boosts in the map file" << std::endl;
+                printf("[WARNING] Found only %d boosts in the map file\n",
+                        boost_index);
                 break;
             }
 
@@ -356,16 +335,9 @@ int load_map_from_file(const char *file_path,
 
             da_append(boosts, pad, PR_BoostPad);
 
-            std::cout << "x: " << x
-                      << " y: " << y
-                      << " w: " << w
-                      << " h: " << h
-                      << " r: " << r
-                      << " tr: " << triangle
-                      << " ba: " << ba
-                      << " bp: " << bp
-                      << std::endl;
-
+            printf("x: %f y: %f w: %f h: %f r: %f tr: %d ba: %d bp: %d\n",
+                    x, y, w, h, r,
+                    triangle, ba, bp);
 
         }
 
@@ -374,16 +346,9 @@ int load_map_from_file(const char *file_path,
         std::fscanf(map_file, " %zu", &number_of_portals);
         if (std::ferror(map_file)) return_defer(1);
 
-        std::cout << "[LOADING] " << number_of_portals
-                  << " portals from file " << file_path
-                  << std::endl;
-
-        // *portals = (PR_Portal *) std::malloc(sizeof(PR_Portal) *
-        //                            *number_of_portals);
-        // if (*portals == NULL) {
-        //     std::cout << "[ERROR] Buy more RAM!" << std::endl;
-        //     return_defer(2);
-        // }
+        printf("[LOADING] %d portals from file %s\n",
+                number_of_portals,
+                file_path);
 
         for(size_t portal_index = 0;
             portal_index < number_of_portals;
@@ -398,8 +363,8 @@ int load_map_from_file(const char *file_path,
                         &type, &enable, &x, &y, &w, &h);
             if (std::ferror(map_file)) return_defer(1);
             if (std::feof(map_file)) {
-                std::cout << "[WARNING] Found only " << portal_index
-                          << " portals in the map file" << std::endl;
+                printf("[WARNING] Found only %d portals in the map file\n",
+                        portal_index);
                 break;
             }
 
@@ -417,10 +382,7 @@ int load_map_from_file(const char *file_path,
                 }
                 default:
                 {
-                    std::cout << "[WARNING] Unknown portal type: "
-                              << type
-                              << ". Assigning the default portal type: 0."
-                              << std::endl;
+                    printf("[WARNING] Unknown portal type: %d. Assigning the default portal type: 0", type);
                     break;
                 }
 
@@ -436,22 +398,16 @@ int load_map_from_file(const char *file_path,
 
             da_append(portals, portal, PR_Portal);
 
-            std::cout << "x: " << x
-                      << " y: " << y
-                      << " w: " << w
-                      << " h: " << h
-                      << " type: " << type
-                      << " enable: " << enable
-                      << std::endl;
+            printf("x: %f y: %f w: %f h: %f type: %d enable: %d",
+                    x, y, w, h, type, enable);
         }
 
         std::fscanf(map_file, " %f", goal_line);
         if (std::ferror(map_file)) return_defer(1);
         *goal_line = *goal_line;
         
-        std::cout << "[LOADING] goal_line set at: "
-                  << *goal_line
-                  << std::endl;
+        printf("[LOADING] goal_line set at: %f",
+                *goal_line);
 
         std::fscanf(map_file, " %f %f %f %f %f",
                     start_x, start_y, start_vel_x, start_vel_y, start_angle);
@@ -459,11 +415,9 @@ int load_map_from_file(const char *file_path,
         *start_x = *start_x;
         *start_y = *start_y;
 
-        std::cout << "[LOADING] player start position set to"
-                  << " x: " << *start_x
-                  << " y: " << *start_y
-                  << " with angle of: " << *start_angle
-                  << std::endl;
+        printf("[LOADING] player start position set to x: %f y: %f with angle of: %f\n",
+                *start_x, *start_y, *start_angle);
+
     }
 
     defer:
@@ -572,8 +526,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
 
         dir = opendir(dir_path);
         if (dir == NULL) {
-            std::cout << "[ERROR] Could not open directory: "
-                      << dir_path << std::endl;
+            printf("[ERROR] Could not open directory: %s\n", dir_path);
             return_defer(1);
         }
 
@@ -590,11 +543,9 @@ int load_custom_buttons_from_dir(const char *dir_path,
                         && "Map path too big for temporary buffer!");
                 std::strcat(map_path, dir_path);
                 std::strcat(map_path, dp->d_name);
-                std::cout << "map_path: " 
-                          << map_path
-                          << " length: "
-                          << std::strlen(map_path)
-                          << std::endl;
+                printf("map_path: %s, length: %d\n",
+                        map_path,
+                        std::strlen(map_path));
 
                 char map_name[256] = {};
 
@@ -604,9 +555,8 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 std::fscanf(map_file, " %s", map_name);
                 if (std::ferror(map_file)) return_defer(1);
 
-                std::cout << "Found map_file: "
-                          << map_name << " length: " << std::strlen(map_name)
-                          << std::endl;
+                printf("Found map_file: %s, length: %d\n",
+                        map_name, std::strlen(map_name));
 
                 PR_CustomLevelButton lb;
                 lb.is_new_level = false;
@@ -656,8 +606,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     if (result != 0 && buttons->count > 0) da_clear(buttons);
     if (dir) {
         if (closedir(dir) < 0) {
-            std::cout << "[ERROR] Could not close directory: "
-                      << dir_path << std::endl;
+            printf("[ERROR] Could not close directory: %s\n", dir_path);
             result = 1;
         }
     }
@@ -892,12 +841,6 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
         .text = "<-",
     };
-
-    std::cout << "color to_start_menu: ("
-        << opt->to_start_menu.col.r << ", "
-        << opt->to_start_menu.col.g << ", "
-        << opt->to_start_menu.col.b << ", "
-        << opt->to_start_menu.col.a << ")" << std::endl;
 
     opt->showing_general_pane = true;
     opt->to_general_pane = {
@@ -1411,12 +1354,11 @@ void options_menu_update() {
                         input->actions,
                         (int) ARR_LEN(input->actions));
             if (save_binds_ret) {
-                std::cout << "Could not save keybindings to file ./my_binds.prkeys: "
-                          << save_binds_ret
-                          << std::endl;
+                printf(
+                    "Could not save keybindings to file ./my_binds.prkeys: %d",
+                    save_binds_ret);
             } else {
-                std::cout << "Saved keybindings to file ./my_binds.prkeys"
-                          << std::endl;
+                printf("Saved keybindings to file ./my_binds.prkeys\n");
             }
             input->modified = false;
         }
@@ -1878,9 +1820,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
             load_custom_buttons_from_dir("./custom_maps/",
                                          &menu->custom_buttons);
         if (result != 0) {
-            std::cout << "[ERROR] Could not load custom map files"
-                      << std::endl;
-
+            printf("[ERROR] Could not load custom map files\n");
             return result;
         }
         PR_Button *add_level = &menu->add_custom_button;
@@ -1994,8 +1934,7 @@ void play_menu_update(void) {
                     && "Text bigger than button text buffer!");
             std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
         } else {
-            std::cout << "[ERROR] Could not load custom map files"
-                      << std::endl;
+            printf("[ERROR] Could not load custom map files\n");
         }
         // if (ma_sound_is_playing(&sound->change_pane)) {
         //     ma_sound_seek_to_pcm_frame(&sound->change_pane, 0);
@@ -2123,13 +2062,12 @@ void play_menu_update(void) {
                                          menu->delete_yes.from_center))) {
                     if (!deleted_lb.is_new_level &&
                             std::remove(deleted_lb.mapfile_path)) {
-                        std::cout << "[ERROR]: Could not delete the mapfile: "
-                                  << deleted_lb.mapfile_path
-                                  << std::endl;
+                        printf("[ERROR]: Could not delete the mapfile: %s\n",
+                                deleted_lb.mapfile_path);
                     }
 
-                    std::cout << "REMOVED LEVEL "
-                              << menu->deleting_index << std::endl;
+                    printf("REMOVED LEVEL %d",
+                            menu->deleting_index);
 
                     da_remove(&menu->custom_buttons, menu->deleting_index);
 
