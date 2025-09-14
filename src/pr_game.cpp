@@ -2665,8 +2665,7 @@ int level_prepare(PR_Level *level,
     } else {
         return 1;
         /*
-        std::cout << "[WARNING] Loading fallback map information!"
-                  << std::endl;
+        printf("[WARNING] Loading fallback map information!\n");
 
         // Hardcoding the fuck out of everything
         level->goal_line.pos.x = 1000.f;
@@ -2684,7 +2683,7 @@ int level_prepare(PR_Level *level,
                 (PR_Portal *) std::malloc(sizeof(PR_Portal) *
                                            level->portals_number);
             if (level->portals == NULL) {
-                std::cout << "Buy more RAM!" << std::endl;
+                printf("Buy more RAM!\n");
                 return 1;
             }
         }
@@ -2716,7 +2715,7 @@ int level_prepare(PR_Level *level,
                 (PR_Obstacle *) std::malloc(sizeof(PR_Obstacle) *
                                              level->obstacles_number);
             if (level->obstacles == NULL) {
-                std::cout << "Buy more RAM!" << std::endl;
+                printf("Buy more RAM!\n");
                 return 1;
             }
         }
@@ -2745,7 +2744,7 @@ int level_prepare(PR_Level *level,
                 (PR_BoostPad *) std::malloc(sizeof(PR_BoostPad) *
                                         level->boosts_number);
             if (level->boosts == NULL) {
-                std::cout << "Buy more RAM!" << std::endl;
+                printf("Buy more RAM!\n");
                 return 1;
             }
         }
@@ -2773,7 +2772,7 @@ int level_prepare(PR_Level *level,
             (PR_Particle *) std::malloc(sizeof(PR_Particle) *
                                          boost_ps->particles_number);
         if (boost_ps->particles == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
+            printf("Buy more RAM!\n");
             return 1;
         }
     }
@@ -2801,7 +2800,7 @@ int level_prepare(PR_Level *level,
             (PR_Particle *) std::malloc(sizeof(PR_Particle) *
                                          plane_crash_ps->particles_number);
         if (plane_crash_ps->particles == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
+            printf("Buy more RAM!\n");
             return 1;
         }
     }
@@ -2829,7 +2828,7 @@ int level_prepare(PR_Level *level,
             (PR_Particle *) std::malloc(sizeof(PR_Particle) *
                                      rider_crash_ps->particles_number);
         if (rider_crash_ps->particles == NULL) {
-            std::cout << "Buy more RAM!" << std::endl;
+            printf("Buy more RAM!\n");
             return 1;
         }
     }
@@ -3006,9 +3005,8 @@ void level_update(void) {
                     if (ACTION_PRESSED(PR_EDIT_MOVE_RIGHT))
                         b->pos.x += velx * dt;
                 } else {
-                    std::cout << "Could not get object body of type: "
-                              << level->selected_type
-                              << std::endl;
+                    printf("Could not get object body of type: %d\n",
+                            level->selected_type);
                 }
             } else {
                 if (ACTION_PRESSED(PR_EDIT_MOVE_UP))
@@ -3492,16 +3490,15 @@ void level_update(void) {
                  (rid->attached && rect_are_colliding(p->body,
                                                       portal->body,
                                                       NULL, NULL)))) {
-                // std::cout << "------------------------"
-                //           << "\nCollided with portal"
-                //           << std::endl;
+                // printf("------------------------\n"
+                //        "Collided with portal\n");
                 switch(portal->type) {
                     case PR_INVERSE:
                         // NOTE: Skip if the plane/rider already has the effect
-                        // std::cout << "-------------------------"
-                        //           << "\np->inv: " << p->inverse
-                        //           << "\nrid->inv: " << rid->inverse
-                        //           << std::endl;
+                        // printf("-------------------------\n"
+                        //        "p->inv: %d\n"
+                        //        "rid->inv: %d\n",
+                        //        p->inverse, rid->inverse);
                         if (p->inverse != portal->enable_effect &&
                             rid->inverse != portal->enable_effect) {
 
@@ -3565,8 +3562,8 @@ void level_update(void) {
                 p->vel = _diag_vec2f(0.f);
 
                 // TODO: Debug flag
-                std::cout << "Plane collided with "
-                          << obstacle_index << std::endl;
+                printf("Plane collided with %d\n",
+                        obstacle_index);
             }
             if (!rid->crashed && obs->collide_rider &&
                 rect_are_colliding(rid->body, obs->body,
@@ -3588,8 +3585,8 @@ void level_update(void) {
                     rid->input_velocity = 0.f;
 
                     // TODO: Debug flag
-                    std::cout << "Rider collided with "
-                              << obstacle_index << std::endl;
+                    printf("Rider collided with \n",
+                            obstacle_index);
                 }
             }
         }
@@ -3643,7 +3640,7 @@ void level_update(void) {
             p->vel = _diag_vec2f(0.f);
 
             // TODO: Debug flag
-            std::cout << "Plane collided with the ceiling" << std::endl;
+            printf("Plane collided with the ceiling\n");
         }
         if (!rid->crashed &&
             rect_are_colliding(rid_body_camera_space, rider_ceiling,
