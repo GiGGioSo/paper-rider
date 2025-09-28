@@ -1,14 +1,6 @@
 #ifndef _RC_MATHY_H_
 #define _RC_MATHY_H_
 
-/*
-
-TODO(gio): substitute glm
-glm::ortho
-
-
- */
-
 ///
 ////////////////////////////////////
 /// TY - MATHY THE MATHEMATICIAN ///

@@ -1,9 +1,13 @@
 #ifndef PR_COMMON_H
 #define PR_COMMON_H
 
-#include <cstdint>
-#include <cassert>
-#include <cstring>
+#include "pr_mathy.h"
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
@@ -54,5 +58,9 @@ do {                                                                      \
 } while (0)
 
 #define da_last(da) ((da)->items[(da)->count-1])
+
+
+char *read_whole_file(const char *path);
+
 
 #endif // PR_COMMON_H

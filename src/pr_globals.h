@@ -2,7 +2,6 @@
 #define PR_GLOBALS_H
 
 #include "glfw3.h"
-#include "glm/mat4x4.hpp"
 #include "miniaudio.h"
 
 #include "pr_common.h"
@@ -422,7 +421,7 @@ typedef struct PR_Sound {
 } PR_Sound;
 
 typedef struct PR_RenderResources {
-    glm::mat4 ortho_proj;
+    mat4f ortho_proj;
     PR_Shader shaders[5];
     PR_Font fonts[3];
     PR_Texture global_sprite;

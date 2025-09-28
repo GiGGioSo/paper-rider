@@ -5,7 +5,6 @@
 
 #include "glad/glad.h"
 #include "glfw3.h"
-#include "glm/ext.hpp"
 
 #include "pr_globals.h"
 #include "pr_renderer.h"
@@ -14,24 +13,24 @@
 #include "pr_mathy.h"
 
 // Callbacks
-void callback_framebuffer_size(GLFWwindow *window, int width, int height);
+void callback_framebuffer_size(GLFWwindow *window, int32 width, int32 height);
 void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user);
-void callback_gamepad(int gamepad_id, int event);
+void callback_gamepad(int32 gamepad_id, int32 event);
 
 // Initializing global structure
 PR *glob = NULL;
-int glob_init();
+int32 glob_init();
 void glob_free();
 
 float last_frame = 0.f;
 float this_frame = 0.f;
 
-int fps_to_display;
-int fps_counter;
+int32 fps_to_display;
+int32 fps_counter;
 float time_from_last_fps_update;
 
 int main() {
-    srand(time(nullptr));
+    srand(time(NULL));
 
     glob = (PR *) malloc(sizeof(PR));
     glob->window.title = "Paper Rider";
@@ -109,7 +108,11 @@ int main() {
                               glob->window.width,
                               glob->window.height);
 
-    glob_init();
+    int32 init_result = glob_init();
+    if (init_result != 0) {
+        glfwTerminate();
+        return init_result;
+    }
 
     while (!glfwWindowShouldClose(glob->window.glfw_win)) {
 
@@ -185,7 +188,7 @@ int main() {
     return 0;
 }
 
-int glob_init(void) {
+int32 glob_init(void) {
     // NOTE: Set custom cursor
     uint8_t cursor_pixels[16 * 16 * 4];
     for(size_t row = 0; row < 16; ++row) {
@@ -211,40 +214,48 @@ int glob_init(void) {
     glfwSetCursor(glob->window.glfw_win, cursor);
 
     // ### Rendering initialization ###
-    glob->rend_res.ortho_proj = glm::ortho(0.0f, (float)GAME_WIDTH,
-                                       (float)GAME_HEIGHT, 0.0f);
+    glob->rend_res.ortho_proj = orthographic(
+            0.0f, (float)GAME_WIDTH,
+            (float)GAME_HEIGHT, 0.0f,
+            -1, 1);
 
     PR_InputController *in = &glob->input;
     input_controller_init(in);
 
     // NOTE: Initializing of the shaders
+    int32 shader_result;
     PR_Shader *s1 = &glob->rend_res.shaders[0];
-    shaderer_create_program(s1, "./res/shaders/quad_default.vs",
+    shader_result = shaderer_create_program(s1, "./res/shaders/quad_default.vs",
                             "./res/shaders/quad_default.fs");
+    if (shader_result) return shader_result;
     shaderer_set_mat4(*s1, "projection",
                       glob->rend_res.ortho_proj);
 
     PR_Shader *s2 = &glob->rend_res.shaders[1];
-    shaderer_create_program(s2, "./res/shaders/tex_default.vs",
+    shader_result = shaderer_create_program(s2, "./res/shaders/tex_default.vs",
                             "./res/shaders/tex_default.fs");
+    if (shader_result) return shader_result;
     shaderer_set_mat4(*s2, "projection",
                       glob->rend_res.ortho_proj);
 
     PR_Shader *s3 = &glob->rend_res.shaders[2];
-    shaderer_create_program(s3, "./res/shaders/text_default.vs",
+    shader_result = shaderer_create_program(s3, "./res/shaders/text_default.vs",
                             "./res/shaders/text_default.fs");
+    if (shader_result) return shader_result;
     shaderer_set_mat4(*s3, "projection",
                       glob->rend_res.ortho_proj);
 
     PR_Shader *s4 = &glob->rend_res.shaders[3];
-    shaderer_create_program(s4, "./res/shaders/text_wave.vs",
+    shader_result = shaderer_create_program(s4, "./res/shaders/text_wave.vs",
                             "./res/shaders/text_default.fs");
+    if (shader_result) return shader_result;
     shaderer_set_mat4(*s4, "projection",
                       glob->rend_res.ortho_proj);
 
     PR_Shader *s5 = &glob->rend_res.shaders[4];
-    shaderer_create_program(s5, "./res/shaders/tex_array.vs",
+    shader_result = shaderer_create_program(s5, "./res/shaders/tex_array.vs",
                             "./res/shaders/tex_array.fs");
+    if (shader_result) return shader_result;
     shaderer_set_mat4(*s5, "projection",
                       glob->rend_res.ortho_proj);
 
@@ -257,7 +268,7 @@ int glob_init(void) {
             glob->rend_res.global_sprite.height);
 
     // # PR_Font initialization
-    int error = 0;
+    int32 error = 0;
     PR_Font *f1 = &glob->rend_res.fonts[DEFAULT_FONT];
     f1->filename = "./arial.ttf";
     f1->first_char = 32;
@@ -504,7 +515,7 @@ void glob_free(void) {
     free(glob);
 }
 
-void callback_gamepad(int gamepad_id, int event) {
+void callback_gamepad(int32 gamepad_id, int32 event) {
     PR_InputController *in = &glob->input;
 
     if (event == GLFW_CONNECTED) {
@@ -530,13 +541,13 @@ void callback_gamepad(int gamepad_id, int event) {
 }
 
 void callback_framebuffer_size(GLFWwindow *window,
-                               int width, int height) {
+                               int32 width, int32 height) {
     UNUSED(window);
 
     PR_WinInfo *win = &glob->window;
 
-    int height_from_width = width * 3 / 4;
-    int width_from_height = height * 4 / 3;
+    int32 height_from_width = width * 3 / 4;
+    int32 width_from_height = height * 4 / 3;
 
     if (height_from_width == height) {
         win->vertical_bar = 0;
