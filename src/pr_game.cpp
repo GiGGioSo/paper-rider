@@ -1,9 +1,8 @@
-#include <cassert>
-#include <cstring>
-#include <cmath>
-#include <iostream>
-#include <cstdio>
-#include <cerrno>
+#include <assert.h>
+#include <string.h>
+#include <math.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include "pr_game.h"
 #include "pr_common.h"
@@ -183,7 +182,7 @@ void free_all_cases(PR_PlayMenu *menu, PR_Level *level,
         ps_index < ARR_LEN(level->particle_systems);
         ++ps_index) {
         if (level->particle_systems[ps_index].particles) {
-            std::free(level->particle_systems[ps_index].particles);
+            free(level->particle_systems[ps_index].particles);
             level->particle_systems[ps_index].particles = NULL;
         }
     }
@@ -242,18 +241,18 @@ int load_map_from_file(const char *file_path,
         da_clear(portals);
         da_clear(boosts);
 
-        map_file = std::fopen(file_path, "rb");
+        map_file = fopen(file_path, "rb");
         if (map_file == NULL) return_defer(1);
 
         char tmp[256];
-        std::fscanf(map_file, " %s ", tmp);
-        if (std::ferror(map_file)) return_defer(1);
+        fscanf(map_file, " %s ", tmp);
+        if (ferror(map_file)) return_defer(1);
 
         size_t number_of_obstacles;
-        std::fscanf(map_file, " %zu", &number_of_obstacles);
-        if (std::ferror(map_file)) return_defer(1);
+        fscanf(map_file, " %zu", &number_of_obstacles);
+        if (ferror(map_file)) return_defer(1);
 
-        printf("[LOADING] %d obstacles from the file %s\n",
+        printf("[LOADING] %zu obstacles from the file %s\n",
                 number_of_obstacles,
                 file_path);
 
@@ -264,16 +263,16 @@ int load_map_from_file(const char *file_path,
             int collide_plane, collide_rider, triangle;
             float x, y, w, h, r;
 
-            std::fscanf(map_file,
-                        " %i %i %i %f %f %f %f %f",
-                        &collide_plane, &collide_rider, &triangle,
-                        &x, &y, &w, &h, &r);
+            fscanf(map_file,
+                    " %i %i %i %f %f %f %f %f",
+                    &collide_plane, &collide_rider, &triangle,
+                    &x, &y, &w, &h, &r);
 
-            if (std::ferror(map_file)) return_defer(1);
+            if (ferror(map_file)) return_defer(1);
             // TODO: You cannot check feof on the obstacles
             //       because after them there are the boosts
-            if (std::feof(map_file)) {
-                printf("[WARNING] Found only %d obstacles in the map file",
+            if (feof(map_file)) {
+                printf("[WARNING] Found only %zu obstacles in the map file",
                         obstacle_index);
                 return_defer(1);
             }
@@ -299,10 +298,10 @@ int load_map_from_file(const char *file_path,
 
         // NOTE: Loading the boosts from memory
         size_t number_of_boosts;
-        std::fscanf(map_file, " %zu", &number_of_boosts);
-        if (std::ferror(map_file)) return_defer(1);
+        fscanf(map_file, " %zu", &number_of_boosts);
+        if (ferror(map_file)) return_defer(1);
 
-        printf("[LOADING] %d boost pads from file %s\n",
+        printf("[LOADING] %zu boost pads from file %s\n",
                 number_of_boosts, file_path);
 
         for(size_t boost_index = 0;
@@ -312,13 +311,13 @@ int load_map_from_file(const char *file_path,
             int triangle;
             float x, y, w, h, r, ba, bp;
 
-            std::fscanf(map_file,
+            fscanf(map_file,
                         " %i %f %f %f %f %f %f %f",
                         &triangle, &x, &y, &w, &h, &r, &ba, &bp);
 
-            if (std::ferror(map_file)) return_defer(1);
-            if (std::feof(map_file)) {
-                printf("[WARNING] Found only %d boosts in the map file\n",
+            if (ferror(map_file)) return_defer(1);
+            if (feof(map_file)) {
+                printf("[WARNING] Found only %zu boosts in the map file\n",
                         boost_index);
                 break;
             }
@@ -335,7 +334,7 @@ int load_map_from_file(const char *file_path,
 
             da_append(boosts, pad, PR_BoostPad);
 
-            printf("x: %f y: %f w: %f h: %f r: %f tr: %d ba: %d bp: %d\n",
+            printf("x: %f y: %f w: %f h: %f r: %f tr: %d ba: %f bp: %f\n",
                     x, y, w, h, r,
                     triangle, ba, bp);
 
@@ -343,10 +342,10 @@ int load_map_from_file(const char *file_path,
 
         // NOTE: Loading the portals from memory
         size_t number_of_portals;
-        std::fscanf(map_file, " %zu", &number_of_portals);
-        if (std::ferror(map_file)) return_defer(1);
+        fscanf(map_file, " %zu", &number_of_portals);
+        if (ferror(map_file)) return_defer(1);
 
-        printf("[LOADING] %d portals from file %s\n",
+        printf("[LOADING] %zu portals from file %s\n",
                 number_of_portals,
                 file_path);
 
@@ -358,12 +357,12 @@ int load_map_from_file(const char *file_path,
             int type;
             int enable;
 
-            std::fscanf(map_file,
+            fscanf(map_file,
                         " %i %i %f %f %f %f",
                         &type, &enable, &x, &y, &w, &h);
-            if (std::ferror(map_file)) return_defer(1);
-            if (std::feof(map_file)) {
-                printf("[WARNING] Found only %d portals in the map file\n",
+            if (ferror(map_file)) return_defer(1);
+            if (feof(map_file)) {
+                printf("[WARNING] Found only %zu portals in the map file\n",
                         portal_index);
                 break;
             }
@@ -402,16 +401,16 @@ int load_map_from_file(const char *file_path,
                     x, y, w, h, type, enable);
         }
 
-        std::fscanf(map_file, " %f", goal_line);
-        if (std::ferror(map_file)) return_defer(1);
+        fscanf(map_file, " %f", goal_line);
+        if (ferror(map_file)) return_defer(1);
         *goal_line = *goal_line;
         
         printf("[LOADING] goal_line set at: %f",
                 *goal_line);
 
-        std::fscanf(map_file, " %f %f %f %f %f",
+        fscanf(map_file, " %f %f %f %f %f",
                     start_x, start_y, start_vel_x, start_vel_y, start_angle);
-        if (std::ferror(map_file)) return_defer(1);
+        if (ferror(map_file)) return_defer(1);
         *start_x = *start_x;
         *start_y = *start_y;
 
@@ -421,7 +420,7 @@ int load_map_from_file(const char *file_path,
     }
 
     defer:
-    if (map_file) std::fclose(map_file);
+    if (map_file) fclose(map_file);
     if (result != 0 && obstacles->count > 0) da_clear(obstacles);
     if (result != 0 && boosts->count > 0) da_clear(boosts);
     if (result != 0 && portals->count > 0) da_clear(portals);
@@ -434,14 +433,14 @@ int save_map_to_file(const char *file_path,
     FILE *map_file = NULL;
 
     {
-        map_file = std::fopen(file_path, "wb");
+        map_file = fopen(file_path, "wb");
         if (map_file == NULL) return_defer(1);
 
-        std::fprintf(map_file, "%s\n", level->name);
-        if (std::ferror(map_file)) return_defer(1);
+        fprintf(map_file, "%s\n", level->name);
+        if (ferror(map_file)) return_defer(1);
 
-        std::fprintf(map_file, "%zu\n", level->obstacles.count);
-        if (std::ferror(map_file)) return_defer(1);
+        fprintf(map_file, "%zu\n", level->obstacles.count);
+        if (ferror(map_file)) return_defer(1);
 
         for(size_t obs_index = 0;
             obs_index < level->obstacles.count;
@@ -449,17 +448,17 @@ int save_map_to_file(const char *file_path,
 
             PR_Obstacle obs = level->obstacles.items[obs_index];
             PR_Rect b = obs.body;
-            std::fprintf(map_file,
+            fprintf(map_file,
                          "%i %i %i %f %f %f %f %f\n",
                          obs.collide_plane, obs.collide_rider,
                          b.triangle, b.pos.x, b.pos.y,
                          b.dim.x, b.dim.y, b.angle);
-            if (std::ferror(map_file)) return_defer(1);
+            if (ferror(map_file)) return_defer(1);
 
         }
 
-        std::fprintf(map_file, "%zu\n", level->boosts.count);
-        if (std::ferror(map_file)) return_defer(1);
+        fprintf(map_file, "%zu\n", level->boosts.count);
+        if (ferror(map_file)) return_defer(1);
 
         for(size_t boost_index = 0;
             boost_index < level->boosts.count;
@@ -467,16 +466,16 @@ int save_map_to_file(const char *file_path,
 
             PR_BoostPad pad = level->boosts.items[boost_index];
             PR_Rect b = pad.body;
-            std::fprintf(map_file,
+            fprintf(map_file,
                          "%i %f %f %f %f %f %f %f\n",
                          b.triangle, b.pos.x, b.pos.y,
                          b.dim.x, b.dim.y, b.angle,
                          pad.boost_angle, pad.boost_power);
-            if (std::ferror(map_file)) return_defer(1);
+            if (ferror(map_file)) return_defer(1);
         }
 
-        std::fprintf(map_file, "%zu\n", level->portals.count);
-        if (std::ferror(map_file)) return_defer(1);
+        fprintf(map_file, "%zu\n", level->portals.count);
+        if (ferror(map_file)) return_defer(1);
 
         for(size_t portal_index = 0;
             portal_index < level->portals.count;
@@ -484,31 +483,31 @@ int save_map_to_file(const char *file_path,
 
             PR_Portal portal = level->portals.items[portal_index];
             PR_Rect b = portal.body;
-            std::fprintf(map_file,
+            fprintf(map_file,
                         "%i %i %f %f %f %f\n",
                         portal.type, portal.enable_effect,
                         b.pos.x, b.pos.y, b.dim.x, b.dim.y);
-            if (std::ferror(map_file)) return_defer(1);
+            if (ferror(map_file)) return_defer(1);
         }
 
         // Goal line
-        std::fprintf(map_file,
+        fprintf(map_file,
                      "%f\n",
                      level->goal_line.pos.x);
-        if (std::ferror(map_file)) return_defer(1);
+        if (ferror(map_file)) return_defer(1);
 
         // Player start position
-        std::fprintf(map_file,
+        fprintf(map_file,
                      "%f %f %f %f %f",
                      level->start_pos.pos.x,
                      level->start_pos.pos.y,
                      level->start_vel.x, level->start_vel.y,
                      level->start_pos.angle);
-        if (std::ferror(map_file)) return_defer(1);
+        if (ferror(map_file)) return_defer(1);
     }
 
     defer:
-    if (map_file) std::fclose(map_file);
+    if (map_file) fclose(map_file);
     return result;
 }
 
@@ -533,44 +532,44 @@ int load_custom_buttons_from_dir(const char *dir_path,
         dirent *dp = NULL;
         while ((dp = readdir(dir))) {
 
-            const char *extension = std::strrchr(dp->d_name, '.');
+            const char *extension = strrchr(dp->d_name, '.');
 
-            if (std::strcmp(extension, ".prmap") == 0) {
+            if (strcmp(extension, ".prmap") == 0) {
 
                 char map_path[256] = "";
-                assert((std::strlen(dir_path)+std::strlen(dp->d_name)+1 <=
+                assert((strlen(dir_path)+strlen(dp->d_name)+1 <=
                             ARR_LEN(map_path))
                         && "Map path too big for temporary buffer!");
-                std::strcat(map_path, dir_path);
-                std::strcat(map_path, dp->d_name);
-                printf("map_path: %s, length: %d\n",
+                strcat(map_path, dir_path);
+                strcat(map_path, dp->d_name);
+                printf("map_path: %s, length: %zu\n",
                         map_path,
-                        std::strlen(map_path));
+                        strlen(map_path));
 
                 char map_name[256] = {};
 
-                map_file = std::fopen(map_path, "rb");
-                if (std::ferror(map_file)) return_defer(1);
+                map_file = fopen(map_path, "rb");
+                if (ferror(map_file)) return_defer(1);
 
-                std::fscanf(map_file, " %s", map_name);
-                if (std::ferror(map_file)) return_defer(1);
+                fscanf(map_file, " %s", map_name);
+                if (ferror(map_file)) return_defer(1);
 
-                printf("Found map_file: %s, length: %d\n",
-                        map_name, std::strlen(map_name));
+                printf("Found map_file: %s, length: %zu\n",
+                        map_name, strlen(map_name));
 
                 PR_CustomLevelButton lb;
                 lb.is_new_level = false;
 
-                assert((std::strlen(map_name)+1 <=
+                assert((strlen(map_name)+1 <=
                             ARR_LEN(lb.button.text))
                         && "Map name bigger than button text buffer!");
-                std::snprintf(lb.button.text, std::strlen(map_name)+1,
+                snprintf(lb.button.text, strlen(map_name)+1,
                               "%s", map_name);
 
-                assert((std::strlen(map_path)+1 <=
+                assert((strlen(map_path)+1 <=
                             ARR_LEN(lb.mapfile_path))
                         && "Mapfile path bigger than button mapfile buffer!");
-                std::snprintf(lb.mapfile_path, std::strlen(map_path)+1,
+                snprintf(lb.mapfile_path, strlen(map_path)+1,
                               "%s", map_path);
 
 
@@ -579,7 +578,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
                 size_t current_index = buttons->count-1;
 
                 while(current_index > 0 &&
-                      std::strcmp(
+                      strcmp(
                           buttons->items[current_index-1].button.text,
                           buttons->items[current_index].button.text) > 0) {
                     da_swap(buttons,
@@ -593,7 +592,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
                                       &buttons->items[current_index].edit,
                                       &buttons->items[current_index].del);
 
-                if (map_file) std::fclose(map_file);
+                if (map_file) fclose(map_file);
                 // NOTE: Always set to NULL the resource you free
                 map_file = NULL;
                 
@@ -602,7 +601,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
     }
 
     defer:
-    if (map_file) std::fclose(map_file);
+    if (map_file) fclose(map_file);
     if (result != 0 && buttons->count > 0) da_clear(buttons);
     if (dir) {
         if (closedir(dir) < 0) {
@@ -1024,7 +1023,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
             .text = {},
         };
         const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
-        std::strncpy(kb1->text,
+        strncpy(kb1->text,
                      (kb1_name != NULL) ? kb1_name : "...",
                      ARR_LEN(kb1->text)-1);
 
@@ -1041,7 +1040,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
             .text = {},
         };
         const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
-        std::strncpy(kb2->text,
+        strncpy(kb2->text,
                      (kb2_name != NULL) ? kb2_name : "...",
                      ARR_LEN(kb2->text)-1);
 
@@ -1060,7 +1059,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         const char *gp1_name =
             get_gamepad_button_name(action->gp_binds[0].bind_index,
                                     action->gp_binds[0].type);
-        std::strncpy(gp1->text,
+        strncpy(gp1->text,
                      (gp1_name != NULL) ? gp1_name : "...",
                      ARR_LEN(gp1->text)-1);
 
@@ -1079,7 +1078,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         const char *gp2_name =
             get_gamepad_button_name(action->gp_binds[1].bind_index,
                                     action->gp_binds[1].type);
-        std::strncpy(gp2->text,
+        strncpy(gp2->text,
                      (gp2_name != NULL) ? gp2_name : "...",
                      ARR_LEN(gp2->text)-1);
     }
@@ -1765,7 +1764,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
         menu->showing_campaign_buttons ? SHOW_BUTTON_SELECTED_COLOR :
                                          SHOW_BUTTON_DEFAULT_COLOR;
     campaign->from_center = true;
-    std::snprintf(campaign->text, strlen("CAMPAIGN")+1, "CAMPAIGN");
+    snprintf(campaign->text, strlen("CAMPAIGN")+1, "CAMPAIGN");
 
     PR_Button *custom = &menu->show_custom_button;
     custom->body.pos.x = (GAME_WIDTH * 7.f) / 10.f;
@@ -1777,7 +1776,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     custom->col = menu->showing_campaign_buttons ? SHOW_BUTTON_DEFAULT_COLOR :
                                                    SHOW_BUTTON_SELECTED_COLOR;
     custom->from_center = true;
-    std::snprintf(custom->text, strlen("CUSTOM")+1, "CUSTOM");
+    snprintf(custom->text, strlen("CUSTOM")+1, "CUSTOM");
 
     // NOTE: I want to put 3 buttons on each row
     //       I want to have 4 rows of buttons on the screen,
@@ -1793,21 +1792,21 @@ int play_menu_prepare(PR_PlayMenu *menu) {
 
         lb->is_new_level = false;
 
-        int size = std::snprintf(nullptr, 0, "LEVEL %zu", levelbutton_index+1);
+        int size = snprintf(nullptr, 0, "LEVEL %zu", levelbutton_index+1);
         assert((size+1 <= ARR_LEN(lb->button.text))
                 && "Text buffer is too little!");
-        std::snprintf(lb->button.text, size+1,
+        snprintf(lb->button.text, size+1,
                       "LEVEL %zu", levelbutton_index+1);
         if (levelbutton_index < ARR_LEN(campaign_levels_filepath)) {
-            assert((std::strlen(campaign_levels_filepath[levelbutton_index]) <
+            assert((strlen(campaign_levels_filepath[levelbutton_index]) <
                         ARR_LEN(lb->mapfile_path))
                     && "Map file too big for button mapfile buffer!");
-            std::snprintf(
+            snprintf(
                     lb->mapfile_path,
-                    std::strlen(campaign_levels_filepath[levelbutton_index])+1,
+                    strlen(campaign_levels_filepath[levelbutton_index])+1,
                     "%s", campaign_levels_filepath[levelbutton_index]);
         } else {
-            std::snprintf(lb->mapfile_path, 1, "");
+            snprintf(lb->mapfile_path, 1, "");
         }
     }
 
@@ -1825,9 +1824,9 @@ int play_menu_prepare(PR_PlayMenu *menu) {
         }
         PR_Button *add_level = &menu->add_custom_button;
         button_set_position(add_level, menu->custom_buttons.count);
-        assert(std::strlen("+")+1 <= ARR_LEN(add_level->text)
+        assert(strlen("+")+1 <= ARR_LEN(add_level->text)
                 && "Text bigger than button text buffer!");
-        std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
+        snprintf(add_level->text, strlen("+")+1, "%s", "+");
     }
 
     PR_MenuCamera *cam = &menu->camera;
@@ -1855,7 +1854,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
         .text = {},
     };
-    std::snprintf(yes->text, std::strlen("YES")+1, "%s", "YES");
+    snprintf(yes->text, strlen("YES")+1, "%s", "YES");
 
     PR_Button *no = &menu->delete_no;
     *no = {
@@ -1869,7 +1868,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
         .col = LEVEL_BUTTON_DEFAULT_COLOR,
         .text = {},
     };
-    std::snprintf(no->text, std::strlen("NO")+1, "%s", "NO");
+    snprintf(no->text, strlen("NO")+1, "%s", "NO");
 
     // NOTE: Make the cursor show
     glfwSetInputMode(glob->window.glfw_win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1930,9 +1929,9 @@ void play_menu_update(void) {
 
             PR_Button *add_level = &menu->add_custom_button;
             button_set_position(add_level, menu->custom_buttons.count);
-            assert(std::strlen("+")+1 <= ARR_LEN(add_level->text)
+            assert(strlen("+")+1 <= ARR_LEN(add_level->text)
                     && "Text bigger than button text buffer!");
-            std::snprintf(add_level->text, std::strlen("+")+1, "%s", "+");
+            snprintf(add_level->text, strlen("+")+1, "%s", "+");
         } else {
             printf("[ERROR] Could not load custom map files\n");
         }
@@ -2061,12 +2060,13 @@ void play_menu_update(void) {
                                          input->mouseX, input->mouseY,
                                          menu->delete_yes.from_center))) {
                     if (!deleted_lb.is_new_level &&
-                            std::remove(deleted_lb.mapfile_path)) {
-                        printf("[ERROR]: Could not delete the mapfile: %s\n",
+                            remove(deleted_lb.mapfile_path)) {
+                        fprintf(stderr,
+                                "[ERROR]: Could not delete the mapfile: %s\n",
                                 deleted_lb.mapfile_path);
                     }
 
-                    printf("REMOVED LEVEL %d",
+                    printf("REMOVED LEVEL %zu\n",
                             menu->deleting_index);
 
                     da_remove(&menu->custom_buttons, menu->deleting_index);
@@ -2259,14 +2259,14 @@ void play_menu_update(void) {
                     do {
                         found = true;
                         map_name_size =
-                            std::snprintf(nullptr, 0, "map_%zu", map_number);
-                        std::snprintf(map_name, map_name_size+1,
+                            snprintf(nullptr, 0, "map_%zu", map_number);
+                        snprintf(map_name, map_name_size+1,
                                       "map_%zu", map_number);
                         for(size_t lb_index = 0;
                             lb_index < menu->custom_buttons.count;
                             ++lb_index) {
 
-                            if (std::strcmp(map_name,
+                            if (strcmp(map_name,
                                  menu->custom_buttons.items[lb_index].button.text) == 0) {
                                 found = false;
                                 break;
@@ -2280,21 +2280,21 @@ void play_menu_update(void) {
                                             menu->custom_buttons.count);
                         new_lb.is_new_level = true;
 
-                        std::snprintf(new_lb.button.text, map_name_size+1,
+                        snprintf(new_lb.button.text, map_name_size+1,
                                       "%s", map_name);
 
                         uint32_t random_id = (uint32_t)
-                            (((float)std::rand() / (float)RAND_MAX) * 999999) +1;
+                            (((float)rand() / (float)RAND_MAX) * 999999) +1;
 
                         // Level map file path
                         int path_size =
-                            std::snprintf(nullptr, 0,
+                            snprintf(nullptr, 0,
                                           "./custom_maps/map%zu-%.06u.prmap",
                                           map_number, random_id);
                         assert((path_size+1 <=
                                     ARR_LEN(new_lb.mapfile_path))
                                 && "Mapfile path buffer is too little!");
-                        std::snprintf(new_lb.mapfile_path, path_size+1,
+                        snprintf(new_lb.mapfile_path, path_size+1,
                                       "./custom_maps/map%zu-%.06u.prmap",
                                       map_number, random_id);
 
@@ -2625,14 +2625,14 @@ int level_prepare(PR_Level *level,
     rid->base_velocity = 0.f;
     rid->input_velocity = 0.f;
     rid->inverse = false;
-    std::snprintf(level->file_path,
-                  std::strlen(mapfile_path)+1,
+    snprintf(level->file_path,
+                  strlen(mapfile_path)+1,
                   "%s", mapfile_path);
 
     level->start_pos.dim = p->body.dim;
     level->start_pos.triangle = false;
 
-    if (std::strcmp(mapfile_path, "")) {
+    if (strcmp(mapfile_path, "")) {
 
         if (is_new_level) {
             level->portals = {NULL, 0, 0};
@@ -2680,7 +2680,7 @@ int level_prepare(PR_Level *level,
 
         if (level->portals_number) {
             level->portals =
-                (PR_Portal *) std::malloc(sizeof(PR_Portal) *
+                (PR_Portal *) malloc(sizeof(PR_Portal) *
                                            level->portals_number);
             if (level->portals == NULL) {
                 printf("Buy more RAM!\n");
@@ -2712,7 +2712,7 @@ int level_prepare(PR_Level *level,
         level->obstacles_number = 50;
         if (level->obstacles_number) {
             level->obstacles =
-                (PR_Obstacle *) std::malloc(sizeof(PR_Obstacle) *
+                (PR_Obstacle *) malloc(sizeof(PR_Obstacle) *
                                              level->obstacles_number);
             if (level->obstacles == NULL) {
                 printf("Buy more RAM!\n");
@@ -2741,7 +2741,7 @@ int level_prepare(PR_Level *level,
         level->boosts_number = 2;
         if (level->boosts_number) {
             level->boosts =
-                (PR_BoostPad *) std::malloc(sizeof(PR_BoostPad) *
+                (PR_BoostPad *) malloc(sizeof(PR_BoostPad) *
                                         level->boosts_number);
             if (level->boosts == NULL) {
                 printf("Buy more RAM!\n");
@@ -2769,7 +2769,7 @@ int level_prepare(PR_Level *level,
     boost_ps->particles_number = 200;
     if (boost_ps->particles_number) {
         boost_ps->particles =
-            (PR_Particle *) std::malloc(sizeof(PR_Particle) *
+            (PR_Particle *) malloc(sizeof(PR_Particle) *
                                          boost_ps->particles_number);
         if (boost_ps->particles == NULL) {
             printf("Buy more RAM!\n");
@@ -2797,7 +2797,7 @@ int level_prepare(PR_Level *level,
     plane_crash_ps->particles_number = 100;
     if (plane_crash_ps->particles_number) {
         plane_crash_ps->particles =
-            (PR_Particle *) std::malloc(sizeof(PR_Particle) *
+            (PR_Particle *) malloc(sizeof(PR_Particle) *
                                          plane_crash_ps->particles_number);
         if (plane_crash_ps->particles == NULL) {
             printf("Buy more RAM!\n");
@@ -2825,7 +2825,7 @@ int level_prepare(PR_Level *level,
     rider_crash_ps->particles_number = 100;
     if (rider_crash_ps->particles_number) {
         rider_crash_ps->particles =
-            (PR_Particle *) std::malloc(sizeof(PR_Particle) *
+            (PR_Particle *) malloc(sizeof(PR_Particle) *
                                      rider_crash_ps->particles_number);
         if (rider_crash_ps->particles == NULL) {
             printf("Buy more RAM!\n");
@@ -3562,7 +3562,7 @@ void level_update(void) {
                 p->vel = _diag_vec2f(0.f);
 
                 // TODO: Debug flag
-                printf("Plane collided with %d\n",
+                printf("Plane collided with obstacle %zu\n",
                         obstacle_index);
             }
             if (!rid->crashed && obs->collide_rider &&
@@ -3585,7 +3585,7 @@ void level_update(void) {
                     rid->input_velocity = 0.f;
 
                     // TODO: Debug flag
-                    printf("Rider collided with \n",
+                    printf("Rider collided with obstacle %zu\n",
                             obstacle_index);
                 }
             }
@@ -3669,7 +3669,7 @@ void level_update(void) {
             }
 
             // TODO: Debug flag
-            std::cout << "Rider collided with the ceiling" << std::endl;
+            printf("Rider collided with the ceiling\n");
         }
 
         // NOTE: Collisions with the floor
@@ -3694,7 +3694,7 @@ void level_update(void) {
             p->vel = _diag_vec2f(0.f);
 
             // TODO: Debug flag
-            std::cout << "Plane collided with the floor" << std::endl;
+            printf("Plane collided with the floor\n");
         }
         if (!rid->crashed &&
             rect_are_colliding(rid_body_camera_space, rider_floor,
@@ -3723,7 +3723,7 @@ void level_update(void) {
             }
 
             // TODO: Debug flag
-            std::cout << "Rider collided with the floor" << std::endl;
+            printf("Rider collided with the floor\n");
         }
     }
 
@@ -3836,8 +3836,8 @@ void level_update(void) {
         add_portal.body.triangle = false;
         add_portal.body.angle = 0.f;
         add_portal.col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
-        std::snprintf(add_portal.text,
-                      std::strlen("ADD PORTAL")+1,
+        snprintf(add_portal.text,
+                      strlen("ADD PORTAL")+1,
                       "ADD PORTAL");
 
         PR_Button add_boost;
@@ -3849,8 +3849,8 @@ void level_update(void) {
         add_boost.body.triangle = false;
         add_boost.body.angle = 0.f;
         add_boost.col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
-        std::snprintf(add_boost.text,
-                      std::strlen("ADD BOOST")+1,
+        snprintf(add_boost.text,
+                      strlen("ADD BOOST")+1,
                       "ADD BOOST");
 
         PR_Button add_obstacle;
@@ -3862,8 +3862,8 @@ void level_update(void) {
         add_obstacle.body.triangle = false;
         add_obstacle.body.angle = 0.f;
         add_obstacle.col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
-        std::snprintf(add_obstacle.text,
-                      std::strlen("ADD OBSTACLE")+1,
+        snprintf(add_obstacle.text,
+                      strlen("ADD OBSTACLE")+1,
                       "ADD OBSTACLE");
 
         if (input->mouse_left.clicked) {
@@ -3951,7 +3951,7 @@ void level_update(void) {
 
                 int index = portal - portals->items;
                 da_remove(portals, index);
-                std::cout << "Removed portal n. " << index << std::endl;
+                printf("Removed portal n. %d\n", index);
                 
                 level->selected = NULL;
 
@@ -3963,7 +3963,7 @@ void level_update(void) {
 
                 int index = pad - boosts->items;
                 da_remove(boosts, index);
-                std::cout << "Removed boost n. " << index << std::endl;
+                printf("Removed boost n. %d\n", index);
                 
                 level->selected = NULL;
 
@@ -3975,7 +3975,7 @@ void level_update(void) {
 
                 int index = obs - obstacles->items;
                 da_remove(obstacles, index);
-                std::cout << "Removed obstacle n. " << index << std::endl;
+                printf("Removed obstacle n. %d\n", index);
 
                 level->selected = NULL;
 
@@ -4025,11 +4025,11 @@ void level_update(void) {
                                             button->body.dim.y * 0.5f;
                         minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
-                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
+                        snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
-                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
+                        snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR_Button plus1;
                         plus1.from_center = true;
@@ -4043,11 +4043,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
-                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
+                        snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
-                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
+                        snprintf(plus5.text, strlen("+5")+1, "+5");
 
 
                         if (input->mouse_left.clicked ||
@@ -4235,11 +4235,11 @@ void level_update(void) {
                                             button->body.dim.y * 0.5f;
                         minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
-                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
+                        snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
-                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
+                        snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR_Button plus1;
                         plus1.from_center = true;
@@ -4253,11 +4253,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
-                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
+                        snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
-                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
+                        snprintf(plus5.text, strlen("+5")+1, "+5");
 
                         if (input->mouse_left.clicked ||
                             input->mouse_right.pressed) {
@@ -4427,11 +4427,11 @@ void level_update(void) {
                                             button->body.dim.y * 0.5f;
                         minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
-                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
+                        snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
-                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
+                        snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR_Button plus1;
                         plus1.from_center = true;
@@ -4445,11 +4445,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
-                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
+                        snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
-                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
+                        snprintf(plus5.text, strlen("+5")+1, "+5");
 
 
                         if (input->mouse_left.clicked ||
@@ -4632,11 +4632,11 @@ void level_update(void) {
                                                 button->body.dim.y * 0.5f;
                         minus1.col = vec4f_mult(button->col, 0.5f);
                         minus1.col.a = 1.f;
-                        std::snprintf(minus1.text, strlen("-1")+1, "-1");
+                        snprintf(minus1.text, strlen("-1")+1, "-1");
 
                         PR_Button minus5 = minus1;
                         minus5.body.pos.x += minus5.body.dim.x * 1.2f;
-                        std::snprintf(minus5.text, strlen("-5")+1, "-5");
+                        snprintf(minus5.text, strlen("-5")+1, "-5");
 
                         PR_Button plus1;
                         plus1.from_center = true;
@@ -4650,11 +4650,11 @@ void level_update(void) {
                                            button->body.dim.y * 0.5f;
                         plus1.col = vec4f_mult(button->col, 0.5f);
                         plus1.col.a = 1.f;
-                        std::snprintf(plus1.text, strlen("+1")+1, "+1");
+                        snprintf(plus1.text, strlen("+1")+1, "+1");
 
                         PR_Button plus5 = plus1;
                         plus5.body.pos.x -= plus5.body.dim.x * 1.2f;
-                        std::snprintf(plus5.text, strlen("+5")+1, "+5");
+                        snprintf(plus5.text, strlen("+5")+1, "+5");
 
 
                         if (input->mouse_left.clicked ||
@@ -4881,10 +4881,10 @@ void level_update(void) {
             renderer_draw_text(&glob->rend_res.fonts[0],
                                glob->rend_res.shaders[3]);
             char time_recap[99];
-            int size = std::snprintf(nullptr, 0,
+            int size = snprintf(nullptr, 0,
                                      "You finished the level in %.3f seconds!",
                                      level->finish_time);
-            std::snprintf(time_recap, size+1,
+            snprintf(time_recap, size+1,
                           "You finished the level in %.3f seconds!",
                           level->finish_time);
             renderer_add_queue_text(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.2f,
@@ -5078,7 +5078,7 @@ void level_update(void) {
             !level->pause_now &&
             !level->game_over) {
 
-            std::cout << "Pausing" << std::endl;
+            printf("Pausing\n");
             level->pause_now = true;
             for(size_t ps_index = 0;
                 ps_index < ARR_LEN(level->particle_systems);
@@ -5093,11 +5093,12 @@ void level_update(void) {
 
     if (ACTION_CLICKED(PR_EDIT_SAVE_MAP)) {
         if (save_map_to_file(level->file_path, level)) {
-            std::cout << "[ERROR] Could not save the map in the file: "
-                      << level->file_path << std::endl;
+            fprintf(stderr,
+                    "[ERROR] Could not save the map in the file: %s\n",
+                    level->file_path);
         } else {
-            std::cout << "Saved current level to file: "
-                      << level->file_path << std::endl;
+            printf("Saved current level to file: %s\n",
+                    level->file_path);
             level->is_new = false;
         }
     }
@@ -5298,25 +5299,25 @@ inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font
 
 inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
     char buffer[99];
-    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
-    std::sprintf(buffer, "PORTAL INFO:");
+    sprintf(buffer, "PORTAL INFO:");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "pos: (%f, %f)",
+    sprintf(buffer, "pos: (%f, %f)",
                  (portal)->body.pos.x, (portal)->body.pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "dim: (%f, %f)",
+    sprintf(buffer, "dim: (%f, %f)",
                  (portal)->body.dim.x, (portal)->body.dim.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "type: %s",
+    sprintf(buffer, "type: %s",
                  get_portal_type_name((portal)->type));
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "enable_effect: %s",
+    sprintf(buffer, "enable_effect: %s",
                  (portal)->enable_effect ? "true" : "false");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
@@ -5324,29 +5325,29 @@ inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
 
 inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
     char buffer[99];
-    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
-    std::sprintf(buffer, "BOOST INFO:");
+    sprintf(buffer, "BOOST INFO:");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "pos: (%f, %f)",
+    sprintf(buffer, "pos: (%f, %f)",
                  (boost)->body.pos.x, (boost)->body.pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "dim: (%f, %f)",
+    sprintf(buffer, "dim: (%f, %f)",
                  (boost)->body.dim.x, (boost)->body.dim.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "angle: %f",
+    sprintf(buffer, "angle: %f",
                  (boost)->body.angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "boost_angle: %f",
+    sprintf(buffer, "boost_angle: %f",
                  (boost)->boost_angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "boost_power: %f",
+    sprintf(buffer, "boost_power: %f",
                  (boost)->boost_power);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
@@ -5354,29 +5355,29 @@ inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
 
 inline void obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty) {
     char buffer[99];
-    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
-    std::sprintf(buffer, "OBSTACLE INFO:");
+    sprintf(buffer, "OBSTACLE INFO:");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "pos: (%f, %f)",
+    sprintf(buffer, "pos: (%f, %f)",
                  (obstacle)->body.pos.x, (obstacle)->body.pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "dim: (%f, %f)",
+    sprintf(buffer, "dim: (%f, %f)",
                  (obstacle)->body.dim.x, (obstacle)->body.dim.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "angle: %f",
+    sprintf(buffer, "angle: %f",
                  (obstacle)->body.angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "collide_plane: %s",
+    sprintf(buffer, "collide_plane: %s",
                  (obstacle)->collide_plane ? "true" : "false");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "collide_rider: %s",
+    sprintf(buffer, "collide_rider: %s",
                  (obstacle)->collide_rider ? "true" : "false");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
@@ -5384,17 +5385,17 @@ inline void obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty) {
 
 inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
     char buffer[99];
-    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
-    std::sprintf(buffer, "GOAL LINE INFO:");
+    sprintf(buffer, "GOAL LINE INFO:");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "pos: (%f, %f)",
+    sprintf(buffer, "pos: (%f, %f)",
                  rect->pos.x, rect->pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "dim: (%f, %f)",
+    sprintf(buffer, "dim: (%f, %f)",
                  rect->dim.x, rect->dim.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
@@ -5403,25 +5404,25 @@ inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
 inline void start_pos_render_info(PR_Rect *rect, vec2f vel,
                                   float tx, float ty) {
     char buffer[99];
-    std::memset((void *)buffer, 0x00, sizeof(buffer));
+    memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
     float spacing = OBJECT_INFO_FONT_SIZE;
-    std::sprintf(buffer, "START POS INFO:");
+    sprintf(buffer, "START POS INFO:");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "pos: (%f, %f)",
+    sprintf(buffer, "pos: (%f, %f)",
                  rect->pos.x, rect->pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    // std::sprintf(buffer, "dim: (%f, %f)",
+    // sprintf(buffer, "dim: (%f, %f)",
     //              rect->dim.x, rect->dim.y);
     // renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
     //                         &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "vel: (%f, %f)",
+    sprintf(buffer, "vel: (%f, %f)",
                  vel.x, vel.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    std::sprintf(buffer, "angle: %f",
+    sprintf(buffer, "angle: %f",
                  rect->angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
@@ -5493,10 +5494,15 @@ inline void apply_air_resistances(PR_Plane* p) {
     p->acc.y += horizontal_lift;
     p->acc.x += horizontal_drag;
 
-    /* std::cout << "VL: " << vertical_lift << */
-    /*             ",  VD: " << vertical_drag << */
-    /*             ",  HL: " << horizontal_lift << */
-    /*             ",  HD: " << horizontal_drag << std::endl; */
+    /*
+    printf("VL: %f, VD: %f, HL: %f, HD: %f\n",
+           vertical_lift,
+           vertical_drag,
+           horizontal_lift,
+           horizontal_drag);
+*/
+
+
 }
 
 inline void lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center) {
@@ -5634,7 +5640,7 @@ void button_edit_del_to_lb(PR_Button *reference,
     edit->body.triangle = false;
     edit->col = EDIT_BUTTON_DEFAULT_COLOR;
     edit->from_center = false;
-    std::snprintf(edit->text, std::strlen("EDIT")+1, "EDIT");
+    snprintf(edit->text, strlen("EDIT")+1, "EDIT");
 
     del->body.pos.x = reference->body.pos.x +
                         reference->body.dim.x * 0.5f;
@@ -5646,7 +5652,7 @@ void button_edit_del_to_lb(PR_Button *reference,
     del->body.triangle = false;
     del->col = DEL_BUTTON_DEFAULT_COLOR;
     del->from_center = true;
-    std::snprintf(del->text, std::strlen("-")+1, "-");
+    snprintf(del->text, strlen("-")+1, "-");
 }
 
 void set_portal_option_buttons(PR_Button *buttons) {
@@ -5671,28 +5677,28 @@ void set_portal_option_buttons(PR_Button *buttons) {
 
         switch(option_button_index) {
             case 0:
-                std::snprintf(button->text,
-                              std::strlen("WIDTH")+1,
+                snprintf(button->text,
+                              strlen("WIDTH")+1,
                               "WIDTH");
                 break;
             case 1:
-                std::snprintf(button->text,
-                              std::strlen("HEIGHT")+1,
+                snprintf(button->text,
+                              strlen("HEIGHT")+1,
                               "HEIGHT");
                 break;
             case 2:
-                std::snprintf(button->text,
-                              std::strlen("TYPE")+1,
+                snprintf(button->text,
+                              strlen("TYPE")+1,
                               "TYPE");
                 break;
             case 3:
-                std::snprintf(button->text,
-                              std::strlen("ENABLE_EFFECT")+1,
+                snprintf(button->text,
+                              strlen("ENABLE_EFFECT")+1,
                               "ENABLE_EFFECT");
                 break;
             default:
-                std::snprintf(button->text,
-                              std::strlen("UNDEFINED")+1,
+                snprintf(button->text,
+                              strlen("UNDEFINED")+1,
                               "UNDEFINED");
                 break;
         }
@@ -5724,38 +5730,38 @@ void set_boost_option_buttons(PR_Button *buttons) {
 
         switch(option_button_index) {
             case 0:
-                std::snprintf(button->text,
-                              std::strlen("WIDTH")+1,
+                snprintf(button->text,
+                              strlen("WIDTH")+1,
                               "WIDTH");
                 break;
             case 1:
-                std::snprintf(button->text,
-                              std::strlen("HEIGHT")+1,
+                snprintf(button->text,
+                              strlen("HEIGHT")+1,
                               "HEIGHT");
                 break;
             case 2:
-                std::snprintf(button->text,
-                              std::strlen("ANGLE")+1,
+                snprintf(button->text,
+                              strlen("ANGLE")+1,
                               "ANGLE");
                 break;
             case 3:
-                std::snprintf(button->text,
-                              std::strlen("TRIANGLE")+1,
+                snprintf(button->text,
+                              strlen("TRIANGLE")+1,
                               "TRIANGLE");
                 break;
             case 4:
-                std::snprintf(button->text,
-                              std::strlen("BOOST_ANGLE")+1,
+                snprintf(button->text,
+                              strlen("BOOST_ANGLE")+1,
                               "BOOST_ANGLE");
                 break;
             case 5:
-                std::snprintf(button->text,
-                              std::strlen("BOOST_POWER")+1,
+                snprintf(button->text,
+                              strlen("BOOST_POWER")+1,
                               "BOOST_POWER");
                 break;
             default:
-                std::snprintf(button->text,
-                              std::strlen("UNDEFINED")+1,
+                snprintf(button->text,
+                              strlen("UNDEFINED")+1,
                               "UNDEFINED");
                 break;
         }
@@ -5785,38 +5791,38 @@ void set_obstacle_option_buttons(PR_Button *buttons) {
 
         switch(option_button_index) {
             case 0:
-                std::snprintf(button->text,
-                              std::strlen("WIDTH")+1,
+                snprintf(button->text,
+                              strlen("WIDTH")+1,
                               "WIDTH");
                 break;
             case 1:
-                std::snprintf(button->text,
-                              std::strlen("HEIGHT")+1,
+                snprintf(button->text,
+                              strlen("HEIGHT")+1,
                               "HEIGHT");
                 break;
             case 2:
-                std::snprintf(button->text,
-                              std::strlen("ANGLE")+1,
+                snprintf(button->text,
+                              strlen("ANGLE")+1,
                               "ANGLE");
                 break;
             case 3:
-                std::snprintf(button->text,
-                              std::strlen("TRIANGLE")+1,
+                snprintf(button->text,
+                              strlen("TRIANGLE")+1,
                               "TRIANGLE");
                 break;
             case 4:
-                std::snprintf(button->text,
-                              std::strlen("COLLIDE_PLANE")+1,
+                snprintf(button->text,
+                              strlen("COLLIDE_PLANE")+1,
                               "COLLIDE_PLANE");
                 break;
             case 5:
-                std::snprintf(button->text,
-                              std::strlen("COLLIDE_RIDER")+1,
+                snprintf(button->text,
+                              strlen("COLLIDE_RIDER")+1,
                               "COLLIDE_RIDER");
                 break;
             default:
-                std::snprintf(button->text,
-                              std::strlen("UNDEFINED")+1,
+                snprintf(button->text,
+                              strlen("UNDEFINED")+1,
                               "UNDEFINED");
                 break;
         }
@@ -5843,23 +5849,23 @@ void set_start_pos_option_buttons(PR_Button *buttons) {
 
         switch(option_button_index) {
             case 0:
-                std::snprintf(button->text,
-                              std::strlen("ANGLE")+1,
+                snprintf(button->text,
+                              strlen("ANGLE")+1,
                               "ANGLE");
                 break;
             case 1:
-                std::snprintf(button->text,
-                              std::strlen("VEL X")+1,
+                snprintf(button->text,
+                              strlen("VEL X")+1,
                               "VEL X");
                 break;
             case 2:
-                std::snprintf(button->text,
-                              std::strlen("VEL Y")+1,
+                snprintf(button->text,
+                              strlen("VEL Y")+1,
                               "VEL Y");
                 break;
             default:
-                std::snprintf(button->text,
-                              std::strlen("UNDEFINED")+1,
+                snprintf(button->text,
+                              strlen("UNDEFINED")+1,
                               "UNDEFINED");
                 break;
         }
@@ -5902,7 +5908,7 @@ inline PR_Rect rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam) {
 }
 
 void level_activate_edit_mode(PR_Level *level) {
-    std::cout << "Activating edit mode!" << std::endl;
+    printf("Activating edit mode!\n");
     level->editing_now = true;
     level->game_over = false;
     if (level->plane.inverse) {
@@ -5926,7 +5932,7 @@ void level_activate_edit_mode(PR_Level *level) {
 }
 
 void level_deactivate_edit_mode(PR_Level *level) {
-    std::cout << "Deactivating edit mode!" << std::endl;
+    printf("Deactivating edit mode!\n");
     level->selected = NULL;
     level->editing_now = false;
     // animation_reset(&level->plane.anim);
@@ -6291,26 +6297,26 @@ void options_menu_update_bindings(PR_OptionsMenu *opt, PR_InputAction *actions) 
         PR_Button *gp2 = &opt->change_gp_binds2[bind_index];
 
         const char *kb1_name = get_key_name(action->kb_binds[0].bind_index);
-        std::strncpy(kb1->text,
+        strncpy(kb1->text,
                      (kb1_name != NULL) ? kb1_name : "...",
                      ARR_LEN(kb1->text)-1);
 
         const char *kb2_name = get_key_name(action->kb_binds[1].bind_index);
-        std::strncpy(kb2->text,
+        strncpy(kb2->text,
                      (kb2_name != NULL) ? kb2_name : "...",
                      ARR_LEN(kb2->text)-1);
 
         const char *gp1_name =
             get_gamepad_button_name(action->gp_binds[0].bind_index,
                                     action->gp_binds[0].type);
-        std::strncpy(gp1->text,
+        strncpy(gp1->text,
                      (gp1_name != NULL) ? gp1_name : "...",
                      ARR_LEN(gp1->text)-1);
 
         const char *gp2_name =
             get_gamepad_button_name(action->gp_binds[1].bind_index,
                                     action->gp_binds[1].type);
-        std::strncpy(gp2->text,
+        strncpy(gp2->text,
                      (gp2_name != NULL) ? gp2_name : "...",
                      ARR_LEN(gp2->text)-1);
     }

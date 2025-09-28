@@ -1,14 +1,13 @@
 #ifndef PR_GAME_H
 #define PR_GAME_H
 
-#include "../include/glm/trigonometric.hpp"
 #include "pr_globals.h"
 
 #define CHANGE_CASE_TO_LEVEL(map_path, level_name, edit, is_new, ret)  do {\
     PR_Level t_level = glob->current_level;\
     level_set_to_null(&t_level);\
     t_level.editing_available = (edit);\
-    std::snprintf(t_level.name, std::strlen((level_name))+1,\
+    snprintf(t_level.name, strlen((level_name))+1,\
                   "%s", (level_name));\
     int preparation_result = level_prepare(&t_level, (map_path), (is_new));\
     if (preparation_result == 0) {\
@@ -21,9 +20,8 @@
         glob->state.current_case = PR_LEVEL;\
         return(ret);\
     } else {\
-        std::cout << "[ERROR] Could not prepare the level: "\
-                  << (level_name)\
-                  << std::endl;\
+        fprintf(stderr, "[ERROR] Could not prepare the level: %s\n",\
+                (level_name));\
     }\
 } while(0)
 
@@ -41,8 +39,7 @@
         glob->state.current_case = PR_PLAY_MENU;\
         return(ret);\
     } else {\
-        std::cout << "[ERROR] Could not prepare the play menu"\
-                  << std::endl;\
+        fprintf(stderr, "[ERROR] Could not prepare the play menu\n");\
     }\
 } while(0)
 
@@ -60,8 +57,7 @@
         glob->state.current_case = PR_START_MENU;\
         return(ret);\
     } else {\
-        std::cout << "[ERROR] Could not prepare the start menu"\
-                  << std::endl;\
+        fprintf(stderr, "[ERROR] Could not prepare the start menu\n");\
     }\
 } while(0)
 
@@ -79,8 +75,7 @@
         glob->state.current_case = PR_OPTIONS_MENU;\
         return(ret);\
     } else {\
-        std::cout << "[ERROR] Could not prepare the options menu"\
-                  << std::endl;\
+        fprintf(stderr, "[ERROR] Could not prepare the options menu\n");\
     }\
 } while(0)
 

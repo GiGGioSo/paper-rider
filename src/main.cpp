@@ -1,6 +1,6 @@
-#include <iostream>
-#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <time.h>
 
 #include "glad/glad.h"
@@ -31,9 +31,9 @@ int fps_counter;
 float time_from_last_fps_update;
 
 int main() {
-    std::srand(std::time(nullptr));
+    srand(time(nullptr));
 
-    glob = (PR *) std::malloc(sizeof(PR));
+    glob = (PR *) malloc(sizeof(PR));
     glob->window.title = "Paper Rider";
     glob->window.display_mode = PR_WINDOWED;
     // These values are used only if display_mode == PR_WINDOWED
@@ -265,7 +265,7 @@ int glob_init(void) {
     f1->font_height = DEFAULT_FONT_SIZE;
     f1->bitmap_width = 512;
     f1->bitmap_height = 512;
-    f1->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
+    f1->char_data = (stbtt_bakedchar*) malloc(sizeof(stbtt_bakedchar) *
                                                    f1->num_chars);
     error = renderer_create_font_atlas(f1);
     if (error) {
@@ -280,7 +280,7 @@ int glob_init(void) {
     f2->font_height = OBJECT_INFO_FONT_SIZE;
     f2->bitmap_width = 512;
     f2->bitmap_height = 512;
-    f2->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
+    f2->char_data = (stbtt_bakedchar*) malloc(sizeof(stbtt_bakedchar) *
                                                    f2->num_chars);
     error = renderer_create_font_atlas(f2);
     if (error) {
@@ -295,7 +295,7 @@ int glob_init(void) {
     f3->font_height = ACTION_NAME_FONT_SIZE;
     f3->bitmap_width = 512;
     f3->bitmap_height = 512;
-    f3->char_data = (stbtt_bakedchar*) std::malloc(sizeof(stbtt_bakedchar) *
+    f3->char_data = (stbtt_bakedchar*) malloc(sizeof(stbtt_bakedchar) *
                                                    f3->num_chars);
     error = renderer_create_font_atlas(f3);
     if (error) {
@@ -306,14 +306,14 @@ int glob_init(void) {
     // # Array textures initialization
     PR_ArrayTexture *at1 = &glob->rend_res.array_textures[0];
     at1->elements_len = PR_LAST_TEX1 + 1;
-    at1->elements = (PR_TextureElement *) std::malloc(sizeof(PR_TextureElement) * at1->elements_len);
+    at1->elements = (PR_TextureElement *) malloc(sizeof(PR_TextureElement) * at1->elements_len);
     // Elements initialization
     at1->elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at1);
 
     PR_ArrayTexture *at2 = &glob->rend_res.array_textures[1];
     at2->elements_len = PR_LAST_TEX2 + 1;
-    at2->elements = (PR_TextureElement *) std::malloc(sizeof(PR_TextureElement) * at2->elements_len);
+    at2->elements = (PR_TextureElement *) malloc(sizeof(PR_TextureElement) * at2->elements_len);
     // Elements initialization
     at2->elements[PR_TEX2_PLANE] = { .filename = "res/test_images/plane.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at2);
@@ -494,14 +494,14 @@ void glob_free(void) {
     for(size_t font_index = 0;
         font_index < ARR_LEN(glob->rend_res.fonts);
         ++font_index) {
-        std::free(glob->rend_res.fonts[font_index].char_data);
+        free(glob->rend_res.fonts[font_index].char_data);
     }
     for(size_t array_texture_index = 0;
         array_texture_index < ARR_LEN(glob->rend_res.array_textures);
         ++array_texture_index) {
-        std::free(glob->rend_res.array_textures[array_texture_index].elements);
+        free(glob->rend_res.array_textures[array_texture_index].elements);
     }
-    std::free(glob);
+    free(glob);
 }
 
 void callback_gamepad(int gamepad_id, int event) {

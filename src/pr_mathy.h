@@ -201,6 +201,9 @@ vec2f_len(vec2f v);
 vec2f
 vec2f_normalize(vec2f v);
 
+mat4f
+orthographic(float left, float right, float bottom, float top, float near, float far);
+
 vec4f
 mat4f_x_vec4f(mat4f m, vec4f v);
 
@@ -366,6 +369,19 @@ vec2f vec2f_normalize(vec2f v) {
     float magnitude = vec2f_len(v);
     result.x = v.x / magnitude;
     result.y = v.y / magnitude;
+
+    return result;
+}
+
+mat4f orthographic(float left, float right, float bottom, float top, float near, float far) {
+    mat4f result = {
+        .m = {
+            { 2.f/(right-left), 0, 0, -(right+left)/(right-left)},
+            { 0, 2.f/(top-bottom), 0, -(top+bottom)/(top-bottom)},
+            { 0, 0, -2.f/(near-far),  -(far+near)/(far-near)},
+            { 0, 0, 0, 1},
+        }
+    };
 
     return result;
 }
