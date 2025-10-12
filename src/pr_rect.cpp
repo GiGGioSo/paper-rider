@@ -138,14 +138,6 @@ bool rect_are_colliding(const PR_Rect r1, const PR_Rect r2, float *cx, float *cy
                 (r1.pos.x + r1.dim.x - center_x1) * sin_r1 +
                 (r1.pos.y + r1.dim.y - center_y1) * cos_r1;
 
-    //std::cout << "----------------------"
-    //          << "\nx0: " << x0 << ", y0: " << y0
-    //          << "\nx1: " << x1 << ", y1: " << y1
-    //          << "\nx2: " << x2 << ", y2: " << y2
-    //          << "\nx3: " << x3 << ", y3: " << y3
-    //          << std::endl;
-
-
     float center_x2 = r2.pos.x + r2.dim.x * 0.5f;
     float center_y2 = r2.pos.y + r2.dim.y * 0.5f;
     float r2_angle = radiansf(-r2.angle);
@@ -180,18 +172,6 @@ bool rect_are_colliding(const PR_Rect r1, const PR_Rect r2, float *cx, float *cy
     float t3 = center_y2 +
                 (r2.pos.x + r2.dim.x - center_x2) * sin_r2 +
                 (r2.pos.y + r2.dim.y - center_y2) * cos_r2;
-
-
-    /* std::cout << "---------------------\n" */
-    /*         << "x0: " << (int)x0 */
-    /*         << ", y0: " << (int)y0 */
-    /*         << ", x1: " << (int)x1 */
-    /*         << ", y1: " << (int)y1 */
-    /*         << "\ns0: " << (int)s0 */
-    /*         << ", t0: " << (int)t0 */
-    /*         << ", s1: " << (int)s1 */
-    /*         << ", t1: " << (int)t1 */
-    /*         << std::endl; */
 
     // NOTE: line x0,y0:x1,y1 collision with all r2 lines
     if (lines_are_colliding(

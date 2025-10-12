@@ -1,7 +1,7 @@
 #include "pr_window.h"
 
 void display_mode_update(PR_WinInfo *win, PR_DisplayMode dm) {
-    std::cout << "New display mode: " << dm << std::endl;
+    printf("New display mode: %d\n", dm);
 
     GLFWmonitor* main_monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(main_monitor);
@@ -25,7 +25,7 @@ void display_mode_update(PR_WinInfo *win, PR_DisplayMode dm) {
                              windowed_w, windowed_h,
                              GLFW_DONT_CARE);
     } else {
-        std::cout << "[ERROR] Unknown window mode: " << dm << std::endl;
+        printf("[ERROR] Unknown window mode: %d\n", dm);
     }
 }
 
@@ -48,7 +48,7 @@ PR_WindowResolution window_resolution_prev(PR_WindowResolution res) {
         case PR_R400x300: return PR_R320x240;
         case PR_R320x240: return PR_R320x240;
         default:
-            std::cout << "Unknown window resolution: " << res << std::endl;
+            printf("Unknown window resolution: %d\n", res);
             return PR_R_NONE;
     }
 }
@@ -63,7 +63,7 @@ PR_WindowResolution window_resolution_next(PR_WindowResolution res) {
         case PR_R400x300: return PR_R640x480;
         case PR_R320x240: return PR_R400x300;
         default:
-            std::cout << "Unknown window resolution: " << res << std::endl;
+            printf("Unknown window resolution: %d\n", res);
             return PR_R_NONE;
     }
 }

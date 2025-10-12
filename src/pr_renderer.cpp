@@ -30,13 +30,6 @@ PR_TexCoords texcoords_in_texture_space(size_t x, size_t y,
         res.th = (float)h / tex.height;
     }
 
-    /*std::cout << "--------------------"
-              << "\ntx: " << res.tx
-              << "\ntw: " << res.tw
-              << "\nty: " << res.ty
-              << "\nth: " << res.th
-              << std::endl;*/
-    
     return res;
 }
 
@@ -165,9 +158,8 @@ void renderer_add_queue_uni(float x, float y,
     size_t vertices_number = triangle ? 3 : 6;
     if (renderer->uni_vertex_count + vertices_number >=
             PR_MAX_UNICOLOR_VERTICES) {
-        std::cout << "[ERROR] Cannot display more than "
-                  << PR_MAX_UNICOLOR_VERTICES << " unicolored vertices."
-                  << std::endl;
+        printf("[ERROR] Cannot display more than %d unicolored vertices.\n",
+                PR_MAX_UNICOLOR_VERTICES);
         return;
     }
     float vertices[] = {
@@ -251,7 +243,8 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
         uint8_t *image_data = stbi_load(new_image->path,
                                         &new_image->width, &new_image->height,
                                         &new_image->nr_channels, 0);
-        std::cout << "Loading image (" << at->elements[image_index].filename << ") data from file" << std::endl;
+        printf("Loading image (%s) data from file\n",
+                at->elements[image_index].filename);
 
         if (new_image->width > max_width) max_width = new_image->width;
         if (new_image->height > max_height) max_height = new_image->height;
@@ -260,9 +253,8 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
         if (image_data) {
             new_image->data = image_data;
         } else {
-            std::cout << "[ERROR] Failed to load image: "
-                      << new_image->path
-                      << std::endl;
+            fprintf(stderr, "[ERROR] Failed to load image: %s\n",
+                    new_image->path);
             return;
         }
     }
@@ -274,27 +266,21 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_texture_layers);
 
     if (max_width > max_texture_size || max_height > max_texture_size) {
-        std::cout << "[ERROR] Failed to create array texture: max texture size ("
-                  << ((max_width > max_height) ? max_width : max_height)
-                  << ") is bigger than GL_MAX_TEXTURE_SIZE ("
-                  << max_texture_size
-                  << ")"
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Failed to create array texture: max texture size (%d) is bigger than GL_MAX_TEXTURE_SIZE (%d)\n",
+                ((max_width > max_height) ? max_width : max_height),
+                max_texture_size);
         return;
     }
 
     if ((int)images.count > max_array_texture_layers) {
-        std::cout << "[ERROR] Failed to create array texture: number of textures ("
-                  << images.count
-                  << ") is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS ("
-                  << max_array_texture_layers
-                  << ")"
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Failed to create array texture: number of textures (%zu) is bigger than GL_MAX_ARRAY_TEXTURE_LAYERS (%d)\n",
+                images.count,
+                max_array_texture_layers);
         return;
     }
 
     at->elements = (PR_TextureElement *)
-        std::malloc(sizeof(PR_TextureElement) * images.count);
+        malloc(sizeof(PR_TextureElement) * images.count);
 
     glGenTextures(1, &at->id);
     glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
@@ -323,7 +309,8 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
             .th = (float) t_element->height / max_height,
         };
 
-        std::cout << "Loading image (" << image->path << ") data into the texture" << std::endl;
+        printf("Loading image (%s) data into the texture\n",
+                image->path);
 
         glTexSubImage3D(
             GL_TEXTURE_2D_ARRAY, // GLenum target
@@ -374,9 +361,7 @@ void renderer_create_texture(PR_Texture* t, const char* filepath) {
                      0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        std::cout << "[ERROR] Failed to load texture: "
-                  << filepath
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Failed to load texture: %s\n", filepath);
     }
     // remove image data, not needed anymore because it's already in the texture
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -402,9 +387,8 @@ void renderer_add_queue_tex(float x, float y,
 
     if (renderer->tex_vertex_count + 6 >=
             PR_MAX_TEXTURED_VERTICES) {
-        std::cout << "[ERROR] Cannot display more than "
-                  << PR_MAX_TEXTURED_VERTICES << " textured vertices."
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Cannot display more than %d textured vertices.\n",
+                PR_MAX_TEXTURED_VERTICES);
         return;
     }
     float vertices[] = {
@@ -477,9 +461,10 @@ void renderer_add_queue_array_tex(PR_ArrayTexture at,
                                     float r, bool centered,
                                     int layer) {
     if (layer >= at.elements_len) {
-        std::cout << "[ERROR] Layer " << layer << " out of index."
-                  << " ArrayTexture with id " << at.id << " has " << at.elements_len << "layers."
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Layer %d out of index. ArrayTexture with id %d has %d layers.\n",
+                layer,
+                at.id,
+                at.elements_len);
         return;
     }
 
@@ -491,9 +476,8 @@ void renderer_add_queue_array_tex(PR_ArrayTexture at,
     }
     if (renderer->array_tex_vertex_count + 6 >=
             PR_MAX_TEXTURED_VERTICES) {
-        std::cout << "[ERROR] Cannot display more than "
-                  << PR_MAX_TEXTURED_VERTICES << " textured (with array textures) vertices."
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Cannot display more than %d textured (with array textures) vertices.\n",
+                PR_MAX_TEXTURED_VERTICES);
         return;
     }
 
@@ -573,18 +557,18 @@ int renderer_create_font_atlas(PR_Font* font) {
         // disable byte-alignment restrictions
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-        ttf_buffer = (uint8_t *) std::malloc(sizeof(uint8_t) * 1<<20);
+        ttf_buffer = (uint8_t *) malloc(sizeof(uint8_t) * 1<<20);
         if (ttf_buffer == NULL) return_defer(1);
-        bitmap_buffer = (uint8_t *) std::malloc(sizeof(uint8_t) *
+        bitmap_buffer = (uint8_t *) malloc(sizeof(uint8_t) *
                                                 font->bitmap_width *
                                                 font->bitmap_height);
         if (bitmap_buffer == NULL) return_defer(2);
 
-        font_file = std::fopen(font->filename, "rb");
+        font_file = fopen(font->filename, "rb");
         if (font_file == NULL) return_defer(3);
 
-        std::fread(ttf_buffer, sizeof(*ttf_buffer), 1<<20, font_file);
-        if (std::ferror(font_file)) return_defer(4);
+        fread(ttf_buffer, sizeof(*ttf_buffer), 1<<20, font_file);
+        if (ferror(font_file)) return_defer(4);
 
         stbtt_BakeFontBitmap(ttf_buffer, 0,
                              font->font_height, bitmap_buffer,
@@ -601,9 +585,9 @@ int renderer_create_font_atlas(PR_Font* font) {
     }
 
     defer:
-    if (font_file) std::fclose(font_file);
-    if (ttf_buffer) std::free(ttf_buffer);
-    if (ttf_buffer) std::free(bitmap_buffer);
+    if (font_file) fclose(font_file);
+    if (ttf_buffer) free(ttf_buffer);
+    if (ttf_buffer) free(bitmap_buffer);
     return result;
 }
 
@@ -617,9 +601,8 @@ void renderer_add_queue_text(float x, float y,
 
     if (renderer->text_vertex_count + length*6 >=
             PR_MAX_TEXT_VERTICES) {
-        std::cout << "[ERROR] Cannot display more than "
-                  << PR_MAX_TEXT_VERTICES << " text vertices."
-                  << std::endl;
+        fprintf(stderr, "[ERROR] Cannot display more than %d text vertices.\n",
+                PR_MAX_TEXT_VERTICES);
         return;
     }
 
@@ -746,7 +729,7 @@ void renderer_add_queue_text(float x, float y,
             vertices[i*6 + 5][6] = c.b;
             vertices[i*6 + 5][7] = c.a;
         } else {
-            std::cout << "Unexpected char: " << text[i] << std::endl;
+            fprintf(stderr, "Unexpected char: %c\n", text[i]);
             return;
         }
     }

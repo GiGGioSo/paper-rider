@@ -10,8 +10,8 @@ void animation_init(PR_Animation *a, PR_Texture tex,
     a->frame_stop = frame_number - 1;
     a->frame_duration = frame_duration;
 
-    if (a->tc) std::free(a->tc);
-    a->tc = (PR_TexCoords *) std::malloc(sizeof(PR_TexCoords) * frame_number);
+    if (a->tc) free(a->tc);
+    a->tc = (PR_TexCoords *) malloc(sizeof(PR_TexCoords) * frame_number);
 
     for(size_t i = 0; i < frame_number; ++i) {
         a->tc[i] = texcoords_in_texture_space(start_x + (step_x * i),

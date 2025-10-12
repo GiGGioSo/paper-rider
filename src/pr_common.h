@@ -20,7 +20,7 @@ do {                                                                      \
     if ((da)->count >= (da)->capacity) {                                  \
         (da)->capacity = ((da)->capacity == 0) ?                          \
             DA_INITIAL_CAPACITY : (da)->capacity*2;                       \
-        (da)->items = (T *) std::realloc((da)->items,                     \
+        (da)->items = (T *) realloc((da)->items,                          \
                               (da)->capacity*sizeof(T));                  \
         assert((da)->items != NULL && "Buy more RAM lol");                \
     }                                                                     \
@@ -30,7 +30,7 @@ do {                                                                      \
 #define da_remove(da, index)                                              \
 do {                                                                      \
     size_t type_size = sizeof(*(da)->items);                              \
-    std::memmove((uint8_t *)((da)->items) + (index) * type_size,          \
+    memmove((uint8_t *)((da)->items) + (index) * type_size,               \
                  (uint8_t *)((da)->items) + ((index)+1) * type_size,      \
                  ((da)->count - (index) - 1) * type_size);                \
     (da)->count--;                                                        \
@@ -38,7 +38,7 @@ do {                                                                      \
 
 #define da_clear(da)                                                      \
 do {                                                                      \
-    if ((da)->items) std::free((da)->items);                              \
+    if ((da)->items) free((da)->items);                                   \
     (da)->items = NULL;                                                   \
     (da)->count = 0;                                                      \
     (da)->capacity = 0;                                                   \
@@ -47,10 +47,10 @@ do {                                                                      \
 #define da_swap(da, i, j, T)                                              \
 do {                                                                      \
     if (i >= (da)->count || j >= (da)->count) {                           \
-        std::cout << "[ERROR] Accessing element "                         \
-                  << ((i > j) ? i : j)                                    \
-                  << "from dymanic array of length " << (da)->count       \
-                  << std::endl;                                           \
+        fprintf(stderr,                                                   \
+                "[ERROR] Accessing element %zu from dymanic array of length %zu\n",\
+                ((i > j) ? i : j),                                        \
+                (da)->count);                                             \
     }                                                                     \
     T tmp = (da)->items[i];                                               \
     (da)->items[i] = (da)->items[j];                                      \
