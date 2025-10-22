@@ -13,7 +13,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
     int32 result = 0;
 
     {
-        vshader_code = read_whole_file(vertex_path);
+        vshader_code = (char *) read_whole_file(vertex_path);
         if (vshader_code == NULL) {
             fprintf(stderr,
                     "ERROR::SHADER::VERTEX::CODE_LOADING_FAILED (%s)\n",
@@ -21,7 +21,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
             return_defer(1);
         }
 
-        fshader_code = read_whole_file(fragment_path);
+        fshader_code = (char *) read_whole_file(fragment_path);
         if (fshader_code == NULL) {
             fprintf(stderr,
                     "ERROR::SHADER::FRAGMENT::CODE_LOADING_FAILED (%s)\n",
@@ -36,7 +36,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
 
         // vertex shader
         vertex = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertex, 1, &vshader_code, NULL);
+        glShaderSource(vertex, 1, (const char **) &vshader_code, NULL);
         glCompileShader(vertex);
         // print compile errors if any
         glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
@@ -53,7 +53,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
 
         // fragment shader
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragment, 1, &fshader_code, NULL);
+        glShaderSource(fragment, 1, (const char **) &fshader_code, NULL);
         glCompileShader(fragment);
         //print compile errors if any
         glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);

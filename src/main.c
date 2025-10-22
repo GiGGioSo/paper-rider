@@ -319,14 +319,14 @@ int32 glob_init(void) {
     at1->elements_len = PR_LAST_TEX1 + 1;
     at1->elements = (PR_TextureElement *) malloc(sizeof(PR_TextureElement) * at1->elements_len);
     // Elements initialization
-    at1->elements[PR_TEX1_FRECCIA] = { .filename = "res/test_images/freccia.png", .width = 0, .height = 0, .tex_coords = {} };
+    at1->elements[PR_TEX1_FRECCIA] = (PR_TextureElement) { .filename = "res/test_images/freccia.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at1);
 
     PR_ArrayTexture *at2 = &glob->rend_res.array_textures[1];
     at2->elements_len = PR_LAST_TEX2 + 1;
     at2->elements = (PR_TextureElement *) malloc(sizeof(PR_TextureElement) * at2->elements_len);
     // Elements initialization
-    at2->elements[PR_TEX2_PLANE] = { .filename = "res/test_images/plane.png", .width = 0, .height = 0, .tex_coords = {} };
+    at2->elements[PR_TEX2_PLANE] = (PR_TextureElement) { .filename = "res/test_images/plane.png", .width = 0, .height = 0, .tex_coords = {} };
     renderer_create_array_texture(at2);
 
     // # GPU resources allocation
@@ -481,7 +481,7 @@ int32 glob_init(void) {
     level_set_to_null(&glob->current_level);
 
     glob->current_start_menu.selection = PR_START_BUTTON_PLAY;
-    CHANGE_CASE_TO_START_MENU(0);
+    CHANGE_CASE_TO_START_MENU_RET(0);
 
     return 0;
 }

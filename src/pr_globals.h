@@ -1,6 +1,8 @@
 #ifndef PR_GLOBALS_H
 #define PR_GLOBALS_H
 
+#include <stdbool.h>
+
 #include "glfw3.h"
 #include "miniaudio.h"
 
@@ -32,13 +34,13 @@
 #define OBJECT_INFO_FONT_SIZE (24.f)
 #define ACTION_NAME_FONT_SIZE (40.f)
 
-enum PR_DisplayMode {
+typedef enum PR_DisplayMode {
     PR_FULLSCREEN = 0,
     PR_BORDERLESS = 1,
     PR_WINDOWED = 2,
-};
+} PR_DisplayMode;
 
-enum PR_WindowResolution {
+typedef enum PR_WindowResolution {
     PR_R1440x1080 = 4320,
     PR_R1280X960 = 3840,
     PR_R1200x900 = 3600,
@@ -48,7 +50,7 @@ enum PR_WindowResolution {
     PR_R400x300 = 1200,
     PR_R320x240 = 960,
     PR_R_NONE = 0,
-};
+} PR_WindowResolution;
 
 typedef struct PR_Animation {
     bool active;
@@ -62,11 +64,11 @@ typedef struct PR_Animation {
     PR_TexCoords *tc;
 } PR_Animation;
 
-enum PR_PlaneAnimationState {
+typedef enum PR_PlaneAnimationState {
     PR_PLANE_IDLE_ACC = 0,
     PR_PLANE_UPWARDS_ACC = 1,
     PR_PLANE_DOWNWARDS_ACC = 2
-};
+} PR_PlaneAnimationState;
 
 typedef struct PR_Plane {
     PR_Rect body;
@@ -88,7 +90,7 @@ typedef struct PR_Plane {
 
     float mass;
     float alar_surface;
-} Plane;
+} PR_Plane;
 
 typedef struct PR_Rider {
     PR_Rect body;
@@ -118,12 +120,12 @@ typedef struct PR_Rider {
     bool second_jump;
 } PR_Rider;
 
-enum PR_ObstacleColorIndex {
+typedef enum PR_ObstacleColorIndex {
     PR_RED = 0,
     PR_WHITE = 1,
     PR_BLUE = 2,
     PR_GRAY = 3,
-};
+} PR_ObstacleColorIndex;
 
 typedef struct PR_Obstacle {
     PR_Rect body;
@@ -135,10 +137,10 @@ typedef struct PR_BoostPad {
     float boost_angle;
     float boost_power;
 } PR_BoostPad;
-enum PR_PortalType {
+typedef enum PR_PortalType {
     PR_INVERSE = 0,
     PR_SHUFFLE_COLORS = 1,
-};
+} PR_PortalType;
 typedef struct PR_Portal {
     PR_Rect body;
     PR_PortalType type;
@@ -221,11 +223,11 @@ typedef struct PR_MenuCamera {
     bool follow_selection;
 } PR_MenuCamera;
 
-enum PR_StartMenuSelection {
+typedef enum PR_StartMenuSelection {
     PR_START_BUTTON_PLAY,
     PR_START_BUTTON_OPTIONS,
     PR_START_BUTTON_QUIT
-};
+} PR_StartMenuSelection;
 
 typedef struct PR_StartMenu {
     PR_StartMenuSelection selection;
@@ -235,14 +237,14 @@ typedef struct PR_StartMenu {
     PR_Button quit;
 } PR_StartMenu;
 
-enum PR_OptionsMenuSelection {
+typedef enum PR_OptionsMenuSelection {
     PR_OPTION_NONE,
     PR_OPTION_MASTER_VOLUME,
     PR_OPTION_SFX_VOLUME,
     PR_OPTION_MUSIC_VOLUME,
     PR_OPTION_DISPLAY_MODE,
     PR_OPTION_RESOLUTION,
-};
+} PR_OptionsMenuSelection;
 typedef struct PR_OptionSlider {
     PR_Rect background;
     char label[256];
@@ -283,10 +285,10 @@ typedef struct PR_OptionsMenu {
     int selected_column;
 } PR_OptionsMenu;
 
-enum PR_DeleteButtonChoice {
+typedef enum PR_DeleteButtonChoice {
     PR_BUTTON_YES,
     PR_BUTTON_NO,
-};
+} PR_DeleteButtonChoice;
 
 typedef struct PR_PlayMenu {
     PR_MenuCamera camera;
@@ -313,13 +315,13 @@ typedef struct PR_PlayMenu {
     PR_Rect deleting_frame;
 } PR_PlayMenu;
 
-enum PR_ObjectType {
+typedef enum PR_ObjectType {
     PR_PORTAL_TYPE = 0,
     PR_BOOST_TYPE = 1,
     PR_OBSTACLE_TYPE = 2,
     PR_GOAL_LINE_TYPE = 3,
     PR_P_START_POS_TYPE = 4,
-};
+} PR_ObjectType;
 typedef struct PR_Obstacles {
     PR_Obstacle *items;
     size_t count;
@@ -329,24 +331,23 @@ typedef struct PR_BoostPads {
     PR_BoostPad *items;
     size_t count;
     size_t capacity;
-} BoostPads;
+} PR_BoostPads;
 typedef struct PR_Portals {
     PR_Portal *items;
     size_t count;
     size_t capacity;
 } PR_Portals;
 
-enum PR_GameMenuChoice {
+typedef enum PR_GameMenuChoice {
     PR_BUTTON_RESUME,
     PR_BUTTON_RESTART,
     PR_BUTTON_QUIT,
-};
+} PR_GameMenuChoice;
 
 typedef struct PR_Level {
     char file_path[99];
     char name[99];
     bool is_new;
-
     PR_Plane plane;
     PR_Camera camera;
 
@@ -428,12 +429,12 @@ typedef struct PR_RenderResources {
     PR_ArrayTexture array_textures[2];
 } PR_RenderResources;
 
-enum PR_GameCase {
+typedef enum PR_GameCase {
     PR_START_MENU = 0,
     PR_PLAY_MENU = 1,
     PR_OPTIONS_MENU = 2,
     PR_LEVEL = 3,
-};
+} PR_GameCase;
 typedef struct PR_GameState {
     float delta_time;
     PR_GameCase current_case;

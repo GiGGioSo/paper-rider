@@ -1,6 +1,8 @@
 #ifndef PP_RECT_H
 #define PP_RECT_H
 
+#include <stdbool.h>
+
 #include "pr_mathy.h"
 
 typedef struct PR_Rect {

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
@@ -60,7 +61,7 @@ do {                                                                      \
 #define da_last(da) ((da)->items[(da)->count-1])
 
 
-char *read_whole_file(const char *path);
+unsigned char *read_whole_file(const char *path);
 
 
 #endif // PR_COMMON_H

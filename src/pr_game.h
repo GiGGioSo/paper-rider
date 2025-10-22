@@ -3,7 +3,7 @@
 
 #include "pr_globals.h"
 
-#define CHANGE_CASE_TO_LEVEL(map_path, level_name, edit, is_new, ret)  do {\
+#define CHANGE_CASE_TO_LEVEL_RET(map_path, level_name, edit, is_new, ret)  do {\
     PR_Level t_level = glob->current_level;\
     level_set_to_null(&t_level);\
     t_level.editing_available = (edit);\
@@ -18,10 +18,50 @@
                 &glob->current_options_menu);\
         glob->current_level = t_level;\
         glob->state.current_case = PR_LEVEL;\
-        return(ret);\
+        return ret;\
     } else {\
         fprintf(stderr, "[ERROR] Could not prepare the level: %s\n",\
                 (level_name));\
+    }\
+} while(0)
+
+#define CHANGE_CASE_TO_LEVEL(map_path, level_name, edit, is_new)  do {\
+    PR_Level t_level = glob->current_level;\
+    level_set_to_null(&t_level);\
+    t_level.editing_available = (edit);\
+    snprintf(t_level.name, strlen((level_name))+1,\
+                  "%s", (level_name));\
+    int preparation_result = level_prepare(&t_level, (map_path), (is_new));\
+    if (preparation_result == 0) {\
+        free_all_cases(\
+                &glob->current_play_menu,\
+                &glob->current_level,\
+                &glob->current_start_menu,\
+                &glob->current_options_menu);\
+        glob->current_level = t_level;\
+        glob->state.current_case = PR_LEVEL;\
+        return;\
+    } else {\
+        fprintf(stderr, "[ERROR] Could not prepare the level: %s\n",\
+                (level_name));\
+    }\
+} while(0)
+
+#define CHANGE_CASE_TO_PLAY_MENU_RET(ret) do {\
+    PR_PlayMenu t_menu = glob->current_play_menu;\
+    play_menu_set_to_null(&t_menu);\
+    int preparation_result = play_menu_prepare(&t_menu);\
+    if (preparation_result == 0) {\
+        free_all_cases(\
+                &glob->current_play_menu,\
+                &glob->current_level,\
+                &glob->current_start_menu,\
+                &glob->current_options_menu);\
+        glob->current_play_menu = t_menu;\
+        glob->state.current_case = PR_PLAY_MENU;\
+        return;\
+    } else {\
+        fprintf(stderr, "[ERROR] Could not prepare the play menu\n");\
     }\
 } while(0)
 
@@ -37,9 +77,27 @@
                 &glob->current_options_menu);\
         glob->current_play_menu = t_menu;\
         glob->state.current_case = PR_PLAY_MENU;\
-        return(ret);\
+        return ret;\
     } else {\
         fprintf(stderr, "[ERROR] Could not prepare the play menu\n");\
+    }\
+} while(0)
+
+#define CHANGE_CASE_TO_START_MENU_RET(ret) do {\
+    PR_StartMenu t_start = glob->current_start_menu;\
+    start_menu_set_to_null(&t_start);\
+    int preparation_result = start_menu_prepare(&t_start);\
+    if (preparation_result == 0) {\
+        free_all_cases(\
+                &glob->current_play_menu,\
+                &glob->current_level,\
+                &glob->current_start_menu,\
+                &glob->current_options_menu);\
+        glob->current_start_menu = t_start;\
+        glob->state.current_case = PR_START_MENU;\
+        return ret;\
+    } else {\
+        fprintf(stderr, "[ERROR] Could not prepare the start menu\n");\
     }\
 } while(0)
 
@@ -55,13 +113,13 @@
                 &glob->current_options_menu);\
         glob->current_start_menu = t_start;\
         glob->state.current_case = PR_START_MENU;\
-        return(ret);\
+        return;\
     } else {\
         fprintf(stderr, "[ERROR] Could not prepare the start menu\n");\
     }\
 } while(0)
 
-#define CHANGE_CASE_TO_OPTIONS_MENU(ret) do {\
+#define CHANGE_CASE_TO_OPTIONS_MENU_RET(ret) do {\
     PR_OptionsMenu t_options = glob->current_options_menu;\
     options_menu_set_to_null(&t_options);\
     int preparation_result = options_menu_prepare(&t_options);\
@@ -73,7 +131,25 @@
                 &glob->current_options_menu);\
         glob->current_options_menu = t_options;\
         glob->state.current_case = PR_OPTIONS_MENU;\
-        return(ret);\
+        return ret;\
+    } else {\
+        fprintf(stderr, "[ERROR] Could not prepare the options menu\n");\
+    }\
+} while(0)
+
+#define CHANGE_CASE_TO_OPTIONS_MENU() do {\
+    PR_OptionsMenu t_options = glob->current_options_menu;\
+    options_menu_set_to_null(&t_options);\
+    int preparation_result = options_menu_prepare(&t_options);\
+    if (preparation_result == 0) {\
+        free_all_cases(\
+                &glob->current_play_menu,\
+                &glob->current_level,\
+                &glob->current_start_menu,\
+                &glob->current_options_menu);\
+        glob->current_options_menu = t_options;\
+        glob->state.current_case = PR_OPTIONS_MENU;\
+        return;\
     } else {\
         fprintf(stderr, "[ERROR] Could not prepare the options menu\n");\
     }\

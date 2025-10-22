@@ -197,13 +197,13 @@ void free_all_cases(PR_PlayMenu *menu, PR_Level *level,
 }
 
 void play_menu_set_to_null(PR_PlayMenu *menu) {
-    menu->custom_buttons = {NULL, 0, 0};
+    menu->custom_buttons = (PR_CustomLevelButtons) {NULL, 0, 0};
 }
 
 void level_set_to_null(PR_Level *level) {
-    level->portals = {NULL, 0, 0};
-    level->obstacles = {NULL, 0, 0};
-    level->boosts = {NULL, 0, 0};
+    level->portals = (PR_Portals) {NULL, 0, 0};
+    level->obstacles = (PR_Obstacles) {NULL, 0, 0};
+    level->boosts = (PR_BoostPads) {NULL, 0, 0};
     for(size_t ps_index = 0;
         ps_index < ARR_LEN(level->particle_systems);
         ++ps_index) {
@@ -529,7 +529,7 @@ int load_custom_buttons_from_dir(const char *dir_path,
             return_defer(1);
         }
 
-        dirent *dp = NULL;
+        struct dirent *dp = NULL;
         while ((dp = readdir(dir))) {
 
             const char *extension = strrchr(dp->d_name, '.');
@@ -660,7 +660,7 @@ int start_menu_prepare(PR_StartMenu *start) {
         .text = "PLAY"
     };
 
-    start->options = {
+    start->options = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
@@ -672,7 +672,7 @@ int start_menu_prepare(PR_StartMenu *start) {
         .text = "OPTIONS"
     };
 
-    start->quit = {
+    start->quit = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.8f),
@@ -766,7 +766,7 @@ void start_menu_update() {
         glob->current_play_menu.showing_campaign_buttons = true;
         ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
         ma_sound_start(&sound->click_selected);
-        CHANGE_CASE_TO_PLAY_MENU(void());
+        CHANGE_CASE_TO_PLAY_MENU();
     }
     // # OPTIONS #
     if ((ACTION_CLICKED(PR_MENU_CLICK) &&
@@ -777,7 +777,7 @@ void start_menu_update() {
                                 start->options.from_center))) {
         ma_sound_seek_to_pcm_frame(&sound->click_selected, 0);
         ma_sound_start(&sound->click_selected);
-        CHANGE_CASE_TO_OPTIONS_MENU(void());
+        CHANGE_CASE_TO_OPTIONS_MENU();
     }
     // # QUIT #
     if ((ACTION_CLICKED(PR_MENU_CLICK) &&
@@ -804,7 +804,7 @@ void start_menu_update() {
         .angle = 0.f,
         .triangle = false,
     };
-    renderer_add_queue_uni(
+    renderer_add_queue_uni_rect(
             full_screen,
             _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
@@ -829,7 +829,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     PR_MenuCamera *cam = &opt->camera;
     PR_WinInfo *win = &glob->window;
 
-    opt->to_start_menu = {
+    opt->to_start_menu = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
@@ -842,7 +842,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     };
 
     opt->showing_general_pane = true;
-    opt->to_general_pane = {
+    opt->to_general_pane = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * 0.3f, GAME_HEIGHT * 0.1f),
@@ -853,7 +853,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         .col = LEVEL_BUTTON_SELECTED_COLOR,
         .text = "GENERAL\0",
     };
-    opt->to_controls_pane = {
+    opt->to_controls_pane = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * 0.7f, GAME_HEIGHT * 0.1f),
@@ -866,7 +866,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     };
 
     // # Master volume slider initialization #
-    opt->master_volume = {
+    opt->master_volume = (PR_OptionSlider) {
         .background = {
             .pos = _vec2f(GAME_WIDTH * 0.75f,
                              GAME_HEIGHT * (0.2f + (0.f + 0.4f) / 5.f)),
@@ -884,7 +884,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     option_slider_init_selection(&opt->master_volume, 0.1f);
 
     // # Sfx volume slider initialization #
-    opt->sfx_volume = {
+    opt->sfx_volume = (PR_OptionSlider) {
         .background = {
             .pos = _vec2f(GAME_WIDTH * 0.75f,
                              GAME_HEIGHT * (0.2f + (0.8f + 0.4f) / 5.f)),
@@ -902,7 +902,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     option_slider_init_selection(&opt->sfx_volume, 0.1f);
 
     // # Music volume slider initialization #
-    opt->music_volume = {
+    opt->music_volume = (PR_OptionSlider) {
         .background = {
             .pos = _vec2f(GAME_WIDTH * 0.75f,
                              GAME_HEIGHT * (0.2f + (1.6f + 0.4f) / 5.f)),
@@ -920,7 +920,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     option_slider_init_selection(&opt->music_volume, 0.1f);
 
     // # Display mode buttons initialization #
-    opt->display_mode_fullscreen = {
+    opt->display_mode_fullscreen = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * (0.5f + 1.f/12.f), 
@@ -933,7 +933,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                 OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "FULLSCREEN\0",
     };
-    opt->display_mode_borderless = {
+    opt->display_mode_borderless = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * (0.5f + 3.f/12.f), 
@@ -946,7 +946,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                 OPTION_BUTTON_SELECTED_COLOR : OPTION_BUTTON_DEFAULT_COLOR,
         .text = "BORDERLESS\0",
     };
-    opt->display_mode_windowed = {
+    opt->display_mode_windowed = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * (0.5f + 5.f/12.f), 
@@ -961,7 +961,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
     };
 
     // # Resolution button initialization
-    opt->resolution_up = {
+    opt->resolution_up = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * (0.5f + 0.4f), 
@@ -973,7 +973,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
         .col = OPTION_BUTTON_DEFAULT_COLOR,
         .text = ">\0",
     };
-    opt->resolution_down = {
+    opt->resolution_down = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * (0.5f + 0.1f), 
@@ -1010,7 +1010,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                     ((float)GAME_HEIGHT / 12);
         int h = GAME_HEIGHT * 0.125f; //   / 8
 
-        *kb1 = {
+        *kb1 = (PR_Button) {
             .from_center = true,
             .body = {
                 .pos =
@@ -1027,7 +1027,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                      (kb1_name != NULL) ? kb1_name : "...",
                      ARR_LEN(kb1->text)-1);
 
-        *kb2 = {
+        *kb2 = (PR_Button) {
             .from_center = true,
             .body = {
                 .pos =
@@ -1044,7 +1044,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                      (kb2_name != NULL) ? kb2_name : "...",
                      ARR_LEN(kb2->text)-1);
 
-        *gp1 = {
+        *gp1 = (PR_Button) {
             .from_center = true,
             .body = {
                 .pos =
@@ -1063,7 +1063,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
                      (gp1_name != NULL) ? gp1_name : "...",
                      ARR_LEN(gp1->text)-1);
 
-        *gp2 = {
+        *gp2 = (PR_Button) {
             .from_center = true,
             .body = {
                 .pos =
@@ -1107,7 +1107,7 @@ void options_menu_update() {
         button_clicked(input, opt->to_start_menu)) {
         ma_sound_seek_to_pcm_frame(&sound->to_start_menu, 0);
         ma_sound_start(&sound->to_start_menu);
-        CHANGE_CASE_TO_START_MENU(void());
+        CHANGE_CASE_TO_START_MENU();
     }
     // # Check if changing options pane #
     if (!opt->showing_general_pane &&
@@ -1587,7 +1587,7 @@ void options_menu_update() {
         .angle = 0.f,
         .triangle = false,
     };
-    renderer_add_queue_uni(
+    renderer_add_queue_uni_rect(
             full_screen,
             _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
@@ -1737,7 +1737,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     //          starting the level
     //menu->showing_campaign_buttons = true;
 
-    menu->to_start_menu = {
+    menu->to_start_menu = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH / 30.f, GAME_HEIGHT / 22.5f),
@@ -1792,7 +1792,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
 
         lb->is_new_level = false;
 
-        int size = snprintf(nullptr, 0, "LEVEL %zu", levelbutton_index+1);
+        int size = snprintf(NULL, 0, "LEVEL %zu", levelbutton_index+1);
         assert((size+1 <= ARR_LEN(lb->button.text))
                 && "Text buffer is too little!");
         snprintf(lb->button.text, size+1,
@@ -1835,7 +1835,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     cam->speed_multiplier = 6.f;
     cam->goal_position = cam->pos.y;
 
-    menu->deleting_frame = {
+    menu->deleting_frame = (PR_Rect) {
         .pos = _vec2f(GAME_WIDTH * 0.5f, GAME_HEIGHT * 0.5f),
         .dim = _vec2f(GAME_WIDTH * 0.6f, GAME_HEIGHT * 0.6f),
         .angle = 0.f,
@@ -1843,7 +1843,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     };
 
     PR_Button *yes = &menu->delete_yes;
-    *yes = {
+    *yes = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * 0.35f, GAME_HEIGHT * 0.6f),
@@ -1857,7 +1857,7 @@ int play_menu_prepare(PR_PlayMenu *menu) {
     snprintf(yes->text, strlen("YES")+1, "%s", "YES");
 
     PR_Button *no = &menu->delete_no;
-    *no = {
+    *no = (PR_Button) {
         .from_center = true,
         .body = {
             .pos = _vec2f(GAME_WIDTH * 0.65f, GAME_HEIGHT * 0.6f),
@@ -2011,7 +2011,7 @@ void play_menu_update(void) {
                                          lb->button.from_center))) {
                     CHANGE_CASE_TO_LEVEL(
                             lb->mapfile_path, lb->button.text,
-                            false, lb->is_new_level, void());
+                            false, lb->is_new_level);
                 }
             } else {
                 lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -2178,7 +2178,7 @@ void play_menu_update(void) {
                     if (input->mouse_left.clicked) {
                         CHANGE_CASE_TO_LEVEL(
                                 lb->mapfile_path, lb->button.text,
-                                true, lb->is_new_level, void());
+                                true, lb->is_new_level);
                     }
                 } else {
                     edit_lb->col = EDIT_BUTTON_DEFAULT_COLOR;
@@ -2213,7 +2213,7 @@ void play_menu_update(void) {
 
                         CHANGE_CASE_TO_LEVEL(
                                 lb->mapfile_path, lb->button.text,
-                                false, lb->is_new_level, void());
+                                false, lb->is_new_level);
                     } else if (ACTION_CLICKED(PR_MENU_LEVEL_DELETE)){
                         menu->deleting_level = true;
                         menu->deleting_index = custombutton_index;
@@ -2221,7 +2221,7 @@ void play_menu_update(void) {
                     } else if (ACTION_CLICKED(PR_MENU_LEVEL_EDIT)) {
                         CHANGE_CASE_TO_LEVEL(
                                 lb->mapfile_path, lb->button.text,
-                                true, lb->is_new_level, void());
+                                true, lb->is_new_level);
                     }
                 } else {
                     lb->button.col = LEVEL_BUTTON_DEFAULT_COLOR;
@@ -2259,7 +2259,7 @@ void play_menu_update(void) {
                     do {
                         found = true;
                         map_name_size =
-                            snprintf(nullptr, 0, "map_%zu", map_number);
+                            snprintf(NULL, 0, "map_%zu", map_number);
                         snprintf(map_name, map_name_size+1,
                                       "map_%zu", map_number);
                         for(size_t lb_index = 0;
@@ -2288,7 +2288,7 @@ void play_menu_update(void) {
 
                         // Level map file path
                         int path_size =
-                            snprintf(nullptr, 0,
+                            snprintf(NULL, 0,
                                           "./custom_maps/map%zu-%.06u.prmap",
                                           map_number, random_id);
                         assert((path_size+1 <=
@@ -2408,7 +2408,7 @@ void play_menu_update(void) {
         .angle = 0.f,
         .triangle = false,
     };
-    renderer_add_queue_uni(
+    renderer_add_queue_uni_rect(
             full_screen,
             _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
@@ -2446,7 +2446,7 @@ void play_menu_update(void) {
 
             PR_Rect button_rend_rect = rect_in_menu_camera_space(lb.button.body, cam);
 
-            renderer_add_queue_uni(button_rend_rect,
+            renderer_add_queue_uni_rect(button_rend_rect,
                                    lb.button.col,
                                    lb.button.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x,
@@ -2456,7 +2456,7 @@ void play_menu_update(void) {
 
             button_rend_rect = rect_in_menu_camera_space(lb.edit.body, cam);
 
-            renderer_add_queue_uni(button_rend_rect,
+            renderer_add_queue_uni_rect(button_rend_rect,
                                    lb.edit.col,
                                    lb.edit.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x+
@@ -2468,7 +2468,7 @@ void play_menu_update(void) {
 
             button_rend_rect = rect_in_menu_camera_space(lb.del.body, cam);
 
-            renderer_add_queue_uni(button_rend_rect,
+            renderer_add_queue_uni_rect(button_rend_rect,
                                    lb.del.col,
                                    lb.del.from_center);
             renderer_add_queue_text(button_rend_rect.pos.x,
@@ -2480,7 +2480,7 @@ void play_menu_update(void) {
         // NOTE: Drawing the button to add a level
         PR_Button add_level = menu->add_custom_button;
         PR_Rect button_rend_rect = rect_in_menu_camera_space(add_level.body, cam);
-        renderer_add_queue_uni(button_rend_rect,
+        renderer_add_queue_uni_rect(button_rend_rect,
                                add_level.col,
                                add_level.from_center);
         renderer_add_queue_text(button_rend_rect.pos.x,
@@ -2497,7 +2497,7 @@ void play_menu_update(void) {
     renderer_draw_text(&glob->rend_res.fonts[0], glob->rend_res.shaders[2]);
 
     if (menu->deleting_level) {
-        renderer_add_queue_uni(menu->deleting_frame,
+        renderer_add_queue_uni_rect(menu->deleting_frame,
                                _vec4f(0.9f, 0.9f, 0.9f, 1.f), true);
         button_render(menu->delete_yes, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[0]);
@@ -2635,9 +2635,9 @@ int level_prepare(PR_Level *level,
     if (strcmp(mapfile_path, "")) {
 
         if (is_new_level) {
-            level->portals = {NULL, 0, 0};
-            level->obstacles = {NULL, 0, 0};
-            level->boosts = {NULL, 0, 0};
+            level->portals = (PR_Portals) {NULL, 0, 0};
+            level->obstacles = (PR_Obstacles) {NULL, 0, 0};
+            level->boosts = (PR_BoostPads) {NULL, 0, 0};
             level->start_pos.pos.x = 0.f;
             level->start_pos.pos.y = GAME_HEIGHT * 0.5f;
             level->start_vel = _diag_vec2f(0.f);
@@ -2892,7 +2892,7 @@ void level_update(void) {
         .angle = 0.f,
         .triangle = false,
     };
-    renderer_add_queue_uni(
+    renderer_add_queue_uni_rect(
             full_screen,
             _vec4f(0.3f, 0.8f, 0.9f, 1.0f),
             false);
@@ -3415,7 +3415,7 @@ void level_update(void) {
 
             set_start_pos_option_buttons(level->selected_options_buttons);
         }
-        renderer_add_queue_uni(rect_in_camera_space(level->start_pos, cam),
+        renderer_add_queue_uni_rect(rect_in_camera_space(level->start_pos, cam),
                                _vec4f(0.9f, 0.3f, 0.7f, 1.f), false);
 
         if (ACTION_CLICKED(PR_EDIT_OBJ_CREATE)) {
@@ -3728,7 +3728,7 @@ void level_update(void) {
     }
 
     // NOTE: Rendering goal line
-    renderer_add_queue_uni(rect_in_camera_space(level->goal_line, cam),
+    renderer_add_queue_uni_rect(rect_in_camera_space(level->goal_line, cam),
                            _diag_vec4f(1.0f), false);
 
     // Actually issuing the render calls
@@ -3818,7 +3818,7 @@ void level_update(void) {
     //                        false);
 
     // NOTE: Rendering the rider
-    renderer_add_queue_uni(rect_in_camera_space(rid->render_zone, cam),
+    renderer_add_queue_uni_rect(rect_in_camera_space(rid->render_zone, cam),
                           _vec4f(0.0f, 0.0f, 1.0f, 1.f),
                           false);
     // NOTE: Issuing draw call for plane/rider and particles
@@ -4213,7 +4213,7 @@ void level_update(void) {
                                     break;
                             }
                         }
-                        renderer_add_queue_uni(button->body,
+                        renderer_add_queue_uni_rect(button->body,
                                                button->col,
                                                button->from_center);
                         // TODO: Selected an appropriate font for this
@@ -4845,7 +4845,7 @@ void level_update(void) {
                                     b_restart.from_center))) {
             CHANGE_CASE_TO_LEVEL(
                     level->file_path, level->name,
-                    level->editing_available, level->is_new, void());
+                    level->editing_available, level->is_new);
         }
         // ## QUIT
         if (ACTION_CLICKED(PR_PLAY_QUIT) ||
@@ -4855,7 +4855,7 @@ void level_update(void) {
                 rect_contains_point(b_quit.body,
                                     input->mouseX, input->mouseY,
                                     b_quit.from_center))) {
-            CHANGE_CASE_TO_PLAY_MENU(void());
+            CHANGE_CASE_TO_PLAY_MENU();
         }
 
         // ### Highlight selection ###
@@ -4881,7 +4881,7 @@ void level_update(void) {
             renderer_draw_text(&glob->rend_res.fonts[0],
                                glob->rend_res.shaders[3]);
             char time_recap[99];
-            int size = snprintf(nullptr, 0,
+            int size = snprintf(NULL, 0,
                                      "You finished the level in %.3f seconds!",
                                      level->finish_time);
             snprintf(time_recap, size+1,
@@ -4894,14 +4894,14 @@ void level_update(void) {
             renderer_draw_text(&glob->rend_res.fonts[1],
                                glob->rend_res.shaders[2]);
         }
-        renderer_add_queue_uni(b_restart.body,
+        renderer_add_queue_uni_rect(b_restart.body,
                                b_restart.col,
                                b_restart.from_center);
         renderer_add_queue_text(b_restart.body.pos.x,
                                 b_restart.body.pos.y,
                                 b_restart.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
-        renderer_add_queue_uni(b_quit.body,
+        renderer_add_queue_uni_rect(b_quit.body,
                                b_quit.col,
                                b_quit.from_center);
         renderer_add_queue_text(b_quit.body.pos.x,
@@ -5018,7 +5018,7 @@ void level_update(void) {
                                     b_restart.from_center))) {
             CHANGE_CASE_TO_LEVEL(
                     level->file_path, level->name,
-                    level->editing_available, level->is_new, void());
+                    level->editing_available, level->is_new);
         }
         // ## QUIT
         if (ACTION_CLICKED(PR_PLAY_QUIT) ||
@@ -5028,7 +5028,7 @@ void level_update(void) {
                 rect_contains_point(b_quit.body,
                                     input->mouseX, input->mouseY,
                                     b_quit.from_center))) {
-            CHANGE_CASE_TO_PLAY_MENU(void());
+            CHANGE_CASE_TO_PLAY_MENU();
         }
 
         // ### Highlight selection ###
@@ -5048,21 +5048,21 @@ void level_update(void) {
             b_restart.col = LEVEL_BUTTON_DEFAULT_COLOR;
         }
 
-        renderer_add_queue_uni(b_resume.body,
+        renderer_add_queue_uni_rect(b_resume.body,
                                b_resume.col,
                                b_resume.from_center);
         renderer_add_queue_text(b_resume.body.pos.x,
                                 b_resume.body.pos.y,
                                 b_resume.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
-        renderer_add_queue_uni(b_restart.body,
+        renderer_add_queue_uni_rect(b_restart.body,
                                b_restart.col,
                                b_restart.from_center);
         renderer_add_queue_text(b_restart.body.pos.x,
                                 b_restart.body.pos.y,
                                 b_restart.text, _diag_vec4f(1.0f),
                                 &glob->rend_res.fonts[0], true);
-        renderer_add_queue_uni(b_quit.body,
+        renderer_add_queue_uni_rect(b_quit.body,
                                b_quit.col,
                                b_quit.from_center);
         renderer_add_queue_text(b_quit.body.pos.x,
@@ -5187,7 +5187,7 @@ inline void portal_render(PR_Portal *portal) {
         q1.triangle = false;
         q1.pos = b.pos;
         q1.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni(
+        renderer_add_queue_uni_rect(
             rect_in_camera_space(q1, cam),
             glob->colors[glob->current_level.current_gray],
             false);
@@ -5198,7 +5198,7 @@ inline void portal_render(PR_Portal *portal) {
         q2.pos.x = b.pos.x + b.dim.x*0.5f;
         q2.pos.y = b.pos.y;
         q2.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni(
+        renderer_add_queue_uni_rect(
             rect_in_camera_space(q2, cam),
             glob->colors[glob->current_level.current_white],
             false);
@@ -5209,7 +5209,7 @@ inline void portal_render(PR_Portal *portal) {
         q3.pos.x = b.pos.x;
         q3.pos.y = b.pos.y + b.dim.y*0.5f;
         q3.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni(
+        renderer_add_queue_uni_rect(
             rect_in_camera_space(q3, cam),
             glob->colors[glob->current_level.current_blue],
             false);
@@ -5220,12 +5220,12 @@ inline void portal_render(PR_Portal *portal) {
         q4.pos.x = b.pos.x + b.dim.x*0.5f;
         q4.pos.y = b.pos.y + b.dim.y*0.5f;
         q4.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni(
+        renderer_add_queue_uni_rect(
             rect_in_camera_space(q4, cam),
             glob->colors[glob->current_level.current_red],
             false);
     } else {
-        renderer_add_queue_uni(rect_in_camera_space(portal->body, cam),
+        renderer_add_queue_uni_rect(rect_in_camera_space(portal->body, cam),
                                get_portal_color(portal),
                                false);
     }
@@ -5244,7 +5244,7 @@ inline void boostpad_render(PR_BoostPad *pad) {
             ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
     ) return;
 
-    renderer_add_queue_uni(pad_in_cam_pos,
+    renderer_add_queue_uni_rect(pad_in_cam_pos,
                           _vec4f(0.f, 1.f, 0.f, 1.f),
                           false);
     
@@ -5259,7 +5259,7 @@ inline void boostpad_render(PR_BoostPad *pad) {
         pad_in_cam_pos.dim = vec2f_mult(pad_in_cam_pos.dim, 0.5f);
     }
     pad_in_cam_pos.angle = pad->boost_angle;
-    renderer_add_queue_tex(pad_in_cam_pos,
+    renderer_add_queue_tex_rect(pad_in_cam_pos,
                            texcoords_in_texture_space(
                                0, 8, 96, 32,
                                glob->rend_res.global_sprite, false),
@@ -5278,13 +5278,13 @@ inline void obstacle_render(PR_Obstacle *obs) {
             ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
     ) return;
 
-    renderer_add_queue_uni(obs_in_cam_pos,
+    renderer_add_queue_uni_rect(obs_in_cam_pos,
                           get_obstacle_color(obs),
                           false);
 }
 
 inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
-    renderer_add_queue_uni(but.body, but.col, but.from_center);
+    renderer_add_queue_uni_rect(but.body, but.col, but.from_center);
     renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
                             but.text, col, font, true);
 }
@@ -5292,7 +5292,7 @@ inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
 inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam) {
 
     PR_Rect in_cam_rect = rect_in_menu_camera_space(but.body, cam);
-    renderer_add_queue_uni(in_cam_rect, but.col, but.from_center);
+    renderer_add_queue_uni_rect(in_cam_rect, but.col, but.from_center);
     renderer_add_queue_text(in_cam_rect.pos.x, in_cam_rect.pos.y,
                             but.text, col, font, true);
 }
@@ -6056,7 +6056,7 @@ void update_particle_plane_boost(PR_ParticleSystem *ps,
 void draw_particle_plane_boost(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
     UNUSED(ps);
-    renderer_add_queue_uni(rect_in_camera_space(particle->body,
+    renderer_add_queue_uni_rect(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
                             particle->color, true);
 }
@@ -6112,7 +6112,7 @@ void update_particle_plane_crash(PR_ParticleSystem *ps,
 void draw_particle_plane_crash(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
     UNUSED(ps);
-    renderer_add_queue_tex(rect_in_camera_space(particle->body,
+    renderer_add_queue_tex_rect(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
                            texcoords_in_texture_space(
                                 730, 315, 90, 80,
@@ -6175,7 +6175,7 @@ void update_particle_rider_crash(PR_ParticleSystem *ps,
 void draw_particle_rider_crash(PR_ParticleSystem *ps,
                                  PR_Particle *particle) {
     UNUSED(ps);
-    renderer_add_queue_uni(rect_in_camera_space(particle->body,
+    renderer_add_queue_uni_rect(rect_in_camera_space(particle->body,
                                                 &glob->current_level.camera),
                             particle->color, true);
 }
@@ -6236,9 +6236,9 @@ void option_slider_handle_mouse(PR_OptionSlider *slider,
     }
 }
 void option_slider_render(PR_OptionSlider *slider, vec4f color) {
-    renderer_add_queue_uni(slider->background,
+    renderer_add_queue_uni_rect(slider->background,
                            _vec4f(0.f, 0.f, 0.f, 1.f), true);
-    renderer_add_queue_uni(slider->selection,
+    renderer_add_queue_uni_rect(slider->selection,
                            color, false);
     renderer_add_queue_text(
             slider->background.pos.x -

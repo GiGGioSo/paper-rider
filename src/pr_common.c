@@ -1,8 +1,8 @@
 #include "pr_common.h"
 
-char *read_whole_file(const char *path) {
+unsigned char *read_whole_file(const char *path) {
     FILE *file = NULL;
-    char *file_content = NULL;
+    unsigned char *file_content = NULL;
     int32 result = 0; // if != 0, there was an error
 
     {
@@ -13,11 +13,18 @@ char *read_whole_file(const char *path) {
         int64 file_length = ftell(file);
         if (file_length == -1L) return_defer(3);
 
-        file_content = (char *) malloc(file_length + 1);
-        if (file_content == NULL) return_defer(4);
+        if (fseek(file, 0, SEEK_SET)) return_defer(4);
 
-        if (fread(file_content, sizeof(char), file_length, file) != (uint64) file_length) {
-            return_defer(5);
+        printf("file_length(%lld); ", file_length);
+
+        file_content = (unsigned char *) malloc(file_length + 1);
+        if (file_content == NULL) return_defer(5);
+    
+        uint64 read_length =
+            fread(file_content, sizeof(char), file_length, file);
+        printf("read_length(%zu); ", read_length);
+        if (read_length != (uint64) file_length) {
+            return_defer(6);
         }
         file_content[file_length] = '\0';
     }
@@ -25,6 +32,7 @@ char *read_whole_file(const char *path) {
     defer:
     if (file) fclose(file);
     if (result != 0 && file_content != NULL) {
+        printf("read_whole_file(%s): %d\n", path, result);
         free(file_content);
         file_content = NULL;
     }

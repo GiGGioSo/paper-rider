@@ -1,15 +1,16 @@
 #ifndef PP_INPUT_H
 #define PP_INPUT_H
 
+#include <stdbool.h>
+
 #include "glfw3.h"
-#include "glm/vec2.hpp"
 
 #define ACTION_PRESSED(action) (input->actions[(action)].key.pressed)
 #define ACTION_CLICKED(action) (input->actions[(action)].key.clicked)
 #define ACTION_VALUE(action) (input->actions[(action)].value)
 
 // TODO: Put this as an option_slider to be modified in the keybindings pane
-#define PR_GAMEPAD_DEADZONE (0.5f)
+#define PR_GAMEPAD_DEADZONE (0.3f)
 
 // Global actions
 #define PR_EXIT_GAME 0
@@ -70,11 +71,11 @@ typedef struct PR_Key {
     bool pressed;
 } PR_Key;
 
-enum PR_GamepadBindingType {
+typedef enum PR_GamepadBindingType {
     PR_BUTTON = 0,
     PR_AXIS_POSITIVE = 1,
     PR_AXIS_NEGATIVE = 2,
-};
+} PR_GamepadBindingType;
 typedef struct PR_GamepadBinding {
     int bind_index;
     PR_GamepadBindingType type;

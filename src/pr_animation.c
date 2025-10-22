@@ -54,7 +54,7 @@ void animation_queue_render(PR_Rect b, PR_Animation *a, bool inverse) {
         tc.ty += tc.th;
         tc.th = -tc.th;
     }
-    renderer_add_queue_tex(b, tc, false);
+    renderer_add_queue_tex_rect(b, tc, false);
 }
 
 void animation_reset(PR_Animation *a) {

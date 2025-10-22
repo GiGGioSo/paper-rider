@@ -51,6 +51,6 @@ void parallax_update_n_queue_render(PR_Parallax *px, float current_x) {
                 px->reference_point + piece->body.dim.x * 2.f) {
             piece->base_pos_x -= piece->body.dim.x * 3.f;
         }
-        renderer_add_queue_tex(piece->body, px->tex_coords, false);
+        renderer_add_queue_tex_rect(piece->body, px->tex_coords, false);
     }
 }

@@ -6,9 +6,10 @@
 #include "pr_globals.h"
 #include "pr_shaderer.h"
 
-#include <cstring>
-#include <iostream>
 #include <math.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 // TODO: Render using a `Rect`, so is more convenient
 //          to draw the plane and the obstacles
@@ -302,7 +303,7 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
         PR_TextureElement *t_element = &(at->elements[image_index]);
         t_element->width = image->width;
         t_element->height = image->height;
-        t_element->tex_coords = {
+        t_element->tex_coords = (PR_TexCoords) {
             .tx = 0,
             .ty = 0,
             .tw = (float) t_element->width / max_width,

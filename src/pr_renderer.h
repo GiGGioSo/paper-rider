@@ -2,11 +2,12 @@
 #define PR_RENDERER_H
 
 #include "../include/stb_truetype.h"
+
 #include "pr_rect.h"
 #include "pr_shaderer.h"
 #include "pr_mathy.h"
 
-#include <iostream>
+#include "stdio.h"
 
 #define PR_TEX1_FRECCIA 0
 #define PR_LAST_TEX1 PR_TEX1_FRECCIA
@@ -106,7 +107,7 @@ void
 renderer_add_queue_uni(float x, float y, float w, float h, float r, vec4f c, bool triangle, bool centered);
 
 inline void
-renderer_add_queue_uni(PR_Rect rec, vec4f c, bool centered) {
+renderer_add_queue_uni_rect(PR_Rect rec, vec4f c, bool centered) {
     renderer_add_queue_uni(rec.pos.x, rec.pos.y,
                           rec.dim.x, rec.dim.y, rec.angle,
                           c, rec.triangle, centered);
@@ -125,7 +126,7 @@ void
 renderer_add_queue_tex(float x, float y, float w, float h, float r, bool centered, float tx, float ty, float tw, float th);
 
 inline void
-renderer_add_queue_tex(PR_Rect rec, PR_TexCoords t, bool centered) {
+renderer_add_queue_tex_rect(PR_Rect rec, PR_TexCoords t, bool centered) {
     renderer_add_queue_tex(rec.pos.x, rec.pos.y,
                            rec.dim.x, rec.dim.y,
                            rec.angle, centered,

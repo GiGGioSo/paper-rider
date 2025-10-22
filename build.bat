@@ -1,26 +1,38 @@
 @echo off
 SetLocal EnableDelayedExpansion
 
+REM === CONFIGURAZIONE COMPILAZIONE ===
 IF "%1"=="release" (
-    SET CFLAGS=-O3 -Wall -Wextra
+    SET CFLAGS=-O3 -Wall -Wextra -D_CRT_SECURE_NO_WARNINGS
 ) ELSE (
-    SET CFLAGS=-ggdb -Wall -Wextra
+    SET CFLAGS=-ggdb -Wall -Wextra -D_CRT_SECURE_NO_WARNINGS
 )
-SET LIBS=-LC:\dev\paper-rider\lib -lUser32.lib -lGdi32.lib -lShell32.lib -lmsvcrt.lib -lopengl32.lib -lglfw3.lib
+
+REM === PATH LIBRERIE E INCLUDE ===
+SET LIBS=-LC:\dev\paper-rider\lib -lUser32 -lGdi32 -lShell32 -lopengl32 -lglfw3 -lmsvcrt
 SET INCLUDES=-IC:\dev\paper-rider\include
-SET PREPROCESSOR_DEFINITIONS=-D _CRT_SECURE_NO_WARNINGS
 
 SET EXE=.\bin\paper.exe
 
+REM === RACCOLTA FILE SORGENTI .C ===
 SET SRCS_FILES=
-FOR /f %%f in ('dir /b /s src\*.c src\*.cpp') do (
+FOR /f %%f in ('dir /b /s src\*.c') do (
     SET SRCS_FILES=!SRCS_FILES! %%f
 )
 
-RMDIR /s /q bin
+REM === PULIZIA E CREAZIONE CARTELLE ===
+RMDIR /s /q bin 2>nul
 MKDIR bin 
 
 ECHO Compiling the following sources:
 ECHO %SRCS_FILES%
 
-clang++ %PREPROCESSOR_DEFINITIONS% %SRCS_FILES% %CFLAGS% -o %EXE% %INCLUDES% %LIBS%
+REM === COMPILAZIONE ===
+clang %SRCS_FILES% %CFLAGS% -std=c11 -o %EXE% %INCLUDES% %LIBS% -Wl,/NODEFAULTLIB:libcmt
+
+IF %ERRORLEVEL% NEQ 0 (
+    ECHO Build failed!
+    EXIT /B %ERRORLEVEL%
+)
+
+ECHO Build succeeded!

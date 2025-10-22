@@ -1,9 +1,7 @@
 #include "pr_rect.h"
 
-#include "glm/glm.hpp"
-
-#include <math.h>
-#include <iostream>
+#include "pr_mathy.h"
+#include "stdbool.h"
 
 // NOTE: Returns true the lines intersect, otherwise false. In addition, if the lines 
 //       intersect the intersection point may be stored in the floats x and y.
