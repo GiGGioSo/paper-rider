@@ -1,5 +1,5 @@
-#ifndef PP_INPUT_H
-#define PP_INPUT_H
+#ifndef PR_INPUT_H
+#define PR_INPUT_H
 
 #include <stdbool.h>
 

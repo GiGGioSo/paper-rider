@@ -1,5 +1,5 @@
-#ifndef _RC_MATHY_H_
-#define _RC_MATHY_H_
+#ifndef _PR_MATHY_H_
+#define _PR_MATHY_H_
 
 ///
 ////////////////////////////////////
@@ -411,4 +411,4 @@ mat4f mat4f_x_mat4f(mat4f m1, mat4f m2) {
 
 #endif //PR_MATHY_IMPLEMENTATION
 
-#endif //_RC_MATHY_H_
+#endif //_PR_MATHY_H_
