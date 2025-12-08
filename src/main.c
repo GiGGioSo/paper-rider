@@ -19,8 +19,8 @@ void callback_gamepad(int32 gamepad_id, int32 event);
 
 // Initializing global structure
 PR *glob = NULL;
-int32 glob_init();
-void glob_free();
+int32 glob_init(void);
+void glob_free(void);
 
 float last_frame = 0.f;
 float this_frame = 0.f;
@@ -29,7 +29,7 @@ int32 fps_to_display;
 int32 fps_counter;
 float time_from_last_fps_update;
 
-int main() {
+int main(void) {
     srand(time(NULL));
 
     glob = (PR *) malloc(sizeof(PR));

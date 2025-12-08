@@ -178,12 +178,12 @@ void start_menu_update(void);
 int options_menu_prepare(PR_OptionsMenu *opt);
 void options_menu_update(void);
 
-inline float lerp(float x1, float x2, float t) {
+static inline float lerp(float x1, float x2, float t) {
     float result = (1.f - t) * x1 + t * x2;
     return result;
 }
 
-inline vec2f lerp_v2(vec2f x1, vec2f x2, float t) {
+static inline vec2f lerp_v2(vec2f x1, vec2f x2, float t) {
     vec2f result;
     result.x = lerp(x1.x, x2.x, t);
     result.y = lerp(x1.y, x2.y, t);
@@ -196,31 +196,31 @@ inline vec2f lerp_v2(vec2f x1, vec2f x2, float t) {
 
 // TODO: Maybe modify there coefficients to make them feel better?
 
-inline
+static inline
 float vertical_lift_coefficient(float angle) {
     float result = 1.f - (float) cos(radiansf(180.f - 2.f * angle));
     return result;
 }
 
-inline
+static inline
 float vertical_drag_coefficient(float angle) {
     float result = (float) sin(radiansf(180.f - 2.f * angle));
     return result;
 }
 
-inline
+static inline
 float horizontal_lift_coefficient(float angle) {
     float result = (float) sin(radiansf(2.f * angle));
     return result;
 }
 
-inline
+static inline
 float horizontal_drag_coefficient(float angle) {
     float result = 1.f - (float) cos(radiansf(2.f * angle));
     return result;
 }
 
-inline
+static inline
 const char *get_case_name(PR_GameCase c) {
     switch (c) {
         case PR_START_MENU:
@@ -237,7 +237,7 @@ const char *get_case_name(PR_GameCase c) {
     return "";
 }
 
-inline
+static inline
 const char *get_portal_type_name(PR_PortalType t) {
     switch (t) {
         case PR_INVERSE:

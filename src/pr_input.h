@@ -125,14 +125,14 @@ typedef struct PR_InputController {
     bool was_mouse_moved;
 } PR_InputController;
 
-inline
+static inline
 void key_reset(PR_Key *key) {
     key->old = key->pressed;
     key->pressed = false;
     key->clicked = false;
 }
 
-inline
+static inline
 void key_pressed(PR_Key *key) {
     key->pressed = true;
     if (key->old == false) {

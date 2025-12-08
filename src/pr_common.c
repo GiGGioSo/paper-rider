@@ -15,7 +15,7 @@ unsigned char *read_whole_file(const char *path) {
 
         if (fseek(file, 0, SEEK_SET)) return_defer(4);
 
-        printf("file_length(%lld); ", file_length);
+        printf("file_length(%ld); ", file_length);
 
         file_content = (unsigned char *) malloc(file_length + 1);
         if (file_content == NULL) return_defer(5);

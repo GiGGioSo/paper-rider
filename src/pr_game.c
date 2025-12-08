@@ -14,6 +14,7 @@
 #include "pr_animation.h"
 #include "pr_parallax.h"
 #include "pr_ui.h"
+#include "pr_obstacle.h"
 
 #ifdef _WIN32
 #    define MINIRENT_IMPLEMENTATION
@@ -70,35 +71,31 @@
 #define OPTION_BUTTON_SELECTED_COLOR (_vec4f(0.4f, 0.4f, 0.4f, 1.0f))
 
 // Utilities functions for code reuse
-inline void
+static inline void
 portal_render(PR_Portal *portal);
-inline void
+static inline void
 boostpad_render(PR_BoostPad *pad);
-inline void
-obstacle_render(PR_Obstacle *obs);
-inline void
+static inline void
 button_render(PR_Button but, vec4f col, PR_Font *font);
-inline void
+static inline void
 button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam);
-inline void
+static inline void
 portal_render_info(PR_Portal *portal, float tx, float ty);
-inline void
+static inline void
 boostpad_render_info(PR_BoostPad *boost, float tx, float ty);
-inline void
-obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty);
-inline void
+static inline void
 goal_line_render_info(PR_Rect *rect, float tx, float ty);
-inline void
+static inline void
 start_pos_render_info(PR_Rect *rect, vec2f vel, float tx, float ty);
-inline void
+static inline void
 plane_update_animation(PR_Plane *p);
-inline void
+static inline void
 plane_activate_crash_animation(PR_Plane *p);
-inline void
+static inline void
 level_reset_colors(PR_Level *);
-inline void
+static inline void
 level_shuffle_colors(PR_Level *level);
-inline PR_Rect
+static inline PR_Rect
 *get_selected_body(void *selected, PR_ObjectType selected_type);
 void
 button_set_position(PR_Button *button, size_t index);
@@ -112,9 +109,7 @@ void
 set_obstacle_option_buttons(PR_Button *buttons);
 void
 set_start_pos_option_buttons(PR_Button *buttons);
-inline PR_Rect
-rect_in_camera_space(PR_Rect r, PR_Camera *cam);
-inline PR_Rect
+static inline PR_Rect
 rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam);
 void
 level_deactivate_edit_mode(PR_Level *level);
@@ -123,13 +118,13 @@ level_activate_edit_mode(PR_Level *level);
 void
 update_plane_physics_n_boost_collisions(PR_Level *level);
 
-inline void
+static inline void
 apply_air_resistances(PR_Plane* p);
-inline void
+static inline void
 lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center);
-inline void
+static inline void
 move_rider_to_plane(PR_Rider *rid, PR_Plane *p);
-inline void
+static inline void
 rider_jump_from_plane(PR_Rider *rid, PR_Plane *p);
 
 // Particle system functions
@@ -272,7 +267,7 @@ int load_map_from_file(const char *file_path,
             // TODO: You cannot check feof on the obstacles
             //       because after them there are the boosts
             if (feof(map_file)) {
-                printf("[WARNING] Found only %zu obstacles in the map file",
+                printf("[WARNING] Found only %zu obstacles in the map file\n",
                         obstacle_index);
                 return_defer(1);
             }
@@ -290,7 +285,7 @@ int load_map_from_file(const char *file_path,
 
             da_append(obstacles, obs, PR_Obstacle);
 
-            printf("x: %f y: %f w: %f h: %f r: %f tr: %d cp: %d cr: %d",
+            printf("x: %f y: %f w: %f h: %f r: %f tr: %d cp: %d cr: %d\n",
                     x, y, w, h, r,
                     triangle, collide_plane, collide_rider);
 
@@ -312,7 +307,7 @@ int load_map_from_file(const char *file_path,
             float x, y, w, h, r, ba, bp;
 
             fscanf(map_file,
-                        " %i %f %f %f %f %f %f %f",
+                        " %i %f %f %f %f %f %f %f\n",
                         &triangle, &x, &y, &w, &h, &r, &ba, &bp);
 
             if (ferror(map_file)) return_defer(1);
@@ -358,7 +353,7 @@ int load_map_from_file(const char *file_path,
             int enable;
 
             fscanf(map_file,
-                        " %i %i %f %f %f %f",
+                        " %i %i %f %f %f %f\n",
                         &type, &enable, &x, &y, &w, &h);
             if (ferror(map_file)) return_defer(1);
             if (feof(map_file)) {
@@ -397,7 +392,7 @@ int load_map_from_file(const char *file_path,
 
             da_append(portals, portal, PR_Portal);
 
-            printf("x: %f y: %f w: %f h: %f type: %d enable: %d",
+            printf("x: %f y: %f w: %f h: %f type: %d enable: %d\n",
                     x, y, w, h, type, enable);
         }
 
@@ -405,10 +400,10 @@ int load_map_from_file(const char *file_path,
         if (ferror(map_file)) return_defer(1);
         *goal_line = *goal_line;
         
-        printf("[LOADING] goal_line set at: %f",
+        printf("[LOADING] goal_line set at: %f\n",
                 *goal_line);
 
-        fscanf(map_file, " %f %f %f %f %f",
+        fscanf(map_file, " %f %f %f %f %f\n",
                     start_x, start_y, start_vel_x, start_vel_y, start_angle);
         if (ferror(map_file)) return_defer(1);
         *start_x = *start_x;
@@ -498,7 +493,7 @@ int save_map_to_file(const char *file_path,
 
         // Player start position
         fprintf(map_file,
-                     "%f %f %f %f %f",
+                     "%f %f %f %f %f\n",
                      level->start_pos.pos.x,
                      level->start_pos.pos.y,
                      level->start_vel.x, level->start_vel.y,
@@ -613,20 +608,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
     return result;
 }
 
-vec4f get_obstacle_color(PR_Obstacle *obs) {
-    if (obs->collide_rider && obs->collide_plane) {
-        return glob->colors[glob->current_level.current_red];
-    } else
-    if (obs->collide_rider) {
-        return glob->colors[glob->current_level.current_white];
-    } else
-    if (obs->collide_plane) {
-        return glob->colors[glob->current_level.current_blue];
-    } else {
-        return glob->colors[glob->current_level.current_gray];
-    }
-}
-
 vec4f get_portal_color(PR_Portal *portal) {
     switch(portal->type) {
         case PR_INVERSE:
@@ -695,7 +676,7 @@ int start_menu_prepare(PR_StartMenu *start) {
 
     return 0;
 }
-void start_menu_update() {
+void start_menu_update(void) {
     PR_StartMenu *start = &glob->current_start_menu;
     PR_InputController *input = &glob->input;
     PR_Sound *sound = &glob->sound;
@@ -1094,7 +1075,7 @@ int options_menu_prepare(PR_OptionsMenu *opt) {
 
     return 0;
 }
-void options_menu_update() {
+void options_menu_update(void) {
     PR_OptionsMenu *opt = &glob->current_options_menu;
     PR_Sound *sound = &glob->sound;
     PR_MenuCamera *cam = &opt->camera;
@@ -2917,6 +2898,8 @@ void level_update(void) {
 
     // Global stuff
     PR_InputController *input = &glob->input;
+    vec2f mouse_world = screen_to_world(
+        _vec2f(input->mouseX, input->mouseY), cam);
     float dt = glob->state.delta_time;
 
     level->old_selected = level->selected;
@@ -3377,8 +3360,7 @@ void level_update(void) {
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
                 !level->adding_now &&
-                rect_contains_point(rect_in_camera_space(obs->body, cam),
-                                    input->mouseX, input->mouseY, false)) {
+                obstacle_contains_point(obs, mouse_world)) {
 
                 level->selected = (void *) obs;
                 level->selected_type = PR_OBSTACLE_TYPE;
@@ -3548,9 +3530,7 @@ void level_update(void) {
             obstacle_render(obs);
 
             if (!p->crashed && obs->collide_plane &&
-                rect_are_colliding(p->body, obs->body,
-                                   &p->crash_position.x,
-                                   &p->crash_position.y)) {
+                obstacle_collides_with_plane(obs, p, &p->crash_position)) {
                 // NOTE: Plane colliding with an obstacle
 
                 if (rid->attached) {
@@ -3566,9 +3546,7 @@ void level_update(void) {
                         obstacle_index);
             }
             if (!rid->crashed && obs->collide_rider &&
-                rect_are_colliding(rid->body, obs->body,
-                                   &rid->crash_position.x,
-                                   &rid->crash_position.y)) {
+                obstacle_collides_with_rider(obs, rid, &rid->crash_position)) {
                 // NOTE: Rider colliding with an obstacle
 
                 if (level->editing_available) {
@@ -5105,7 +5083,7 @@ void level_update(void) {
 }
 
 // Utilities
-inline void plane_update_animation(PR_Plane *p) {
+static inline void plane_update_animation(PR_Plane *p) {
     // NOTE: Animation based on the accelleration
     if (p->animation_countdown < 0) {
         if (ABS(p->acc.y) < 20.f) {
@@ -5138,7 +5116,7 @@ inline void plane_update_animation(PR_Plane *p) {
     }
 }
 
-inline void plane_activate_crash_animation(PR_Plane *p) {
+static inline void plane_activate_crash_animation(PR_Plane *p) {
     p->anim.active = true;
     p->anim.current = 1;
     float speed = vec2f_len(p->vel);
@@ -5177,7 +5155,7 @@ inline void plane_activate_crash_animation(PR_Plane *p) {
     }
 }
 
-inline void portal_render(PR_Portal *portal) {
+static inline void portal_render(PR_Portal *portal) {
     PR_Camera *cam = &glob->current_level.camera;
     if (portal->type == PR_SHUFFLE_COLORS) {
         PR_Rect b = portal->body;
@@ -5231,7 +5209,7 @@ inline void portal_render(PR_Portal *portal) {
     }
 }
 
-inline void boostpad_render(PR_BoostPad *pad) {
+static inline void boostpad_render(PR_BoostPad *pad) {
     PR_Camera *cam = &glob->current_level.camera;
 
     PR_Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
@@ -5266,30 +5244,13 @@ inline void boostpad_render(PR_BoostPad *pad) {
                            true);
 }
 
-inline void obstacle_render(PR_Obstacle *obs) {
-    PR_Camera *cam = &glob->current_level.camera;
-    PR_Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
-
-    if (ABS(obs_in_cam_pos.pos.x) >
-            ABS(obs_in_cam_pos.dim.x) + ABS(obs_in_cam_pos.dim.y) +
-            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
-     || ABS(obs_in_cam_pos.pos.y) >
-            ABS(obs_in_cam_pos.dim.x) + ABS(obs_in_cam_pos.dim.y) +
-            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
-    ) return;
-
-    renderer_add_queue_uni_rect(obs_in_cam_pos,
-                          get_obstacle_color(obs),
-                          false);
-}
-
-inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
+static inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
     renderer_add_queue_uni_rect(but.body, but.col, but.from_center);
     renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
                             but.text, col, font, true);
 }
 
-inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam) {
+static inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam) {
 
     PR_Rect in_cam_rect = rect_in_menu_camera_space(but.body, cam);
     renderer_add_queue_uni_rect(in_cam_rect, but.col, but.from_center);
@@ -5297,7 +5258,7 @@ inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font
                             but.text, col, font, true);
 }
 
-inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
+static inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
     char buffer[99];
     memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5323,7 +5284,7 @@ inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
+static inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
     char buffer[99];
     memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5353,37 +5314,7 @@ inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty) {
-    char buffer[99];
-    memset((void *)buffer, 0x00, sizeof(buffer));
-    size_t index = 1;
-    float spacing = OBJECT_INFO_FONT_SIZE;
-    sprintf(buffer, "OBSTACLE INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "pos: (%f, %f)",
-                 (obstacle)->body.pos.x, (obstacle)->body.pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "dim: (%f, %f)",
-                 (obstacle)->body.dim.x, (obstacle)->body.dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "angle: %f",
-                 (obstacle)->body.angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "collide_plane: %s",
-                 (obstacle)->collide_plane ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "collide_rider: %s",
-                 (obstacle)->collide_rider ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-}
-
-inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
+static inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
     char buffer[99];
     memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -5401,7 +5332,7 @@ inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void start_pos_render_info(PR_Rect *rect, vec2f vel,
+static inline void start_pos_render_info(PR_Rect *rect, vec2f vel,
                                   float tx, float ty) {
     char buffer[99];
     memset((void *)buffer, 0x00, sizeof(buffer));
@@ -5428,7 +5359,7 @@ inline void start_pos_render_info(PR_Rect *rect, vec2f vel,
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
-inline void apply_air_resistances(PR_Plane* p) {
+static inline void apply_air_resistances(PR_Plane* p) {
     PR_Atmosphere *air = &glob->current_level.air;
 
 
@@ -5505,7 +5436,7 @@ inline void apply_air_resistances(PR_Plane* p) {
 
 }
 
-inline void lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center) {
+static inline void lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center) {
     // NOTE: Making the camera move to the plane
     PR_Level *level = &glob->current_level;
     float dest_x = center ?
@@ -5520,7 +5451,7 @@ inline void lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool center) {
     }
 }
 
-inline void move_rider_to_plane(PR_Rider *rid, PR_Plane *p) {
+static inline void move_rider_to_plane(PR_Rider *rid, PR_Plane *p) {
     // NOTE: Making the rider stick to the plane
     rid->body.angle = p->body.angle;
     rid->body.pos.x =
@@ -5539,7 +5470,7 @@ inline void move_rider_to_plane(PR_Rider *rid, PR_Plane *p) {
             sin(radiansf(rid->body.angle));
 }
 
-inline void rider_jump_from_plane(PR_Rider *rid, PR_Plane *p) {
+static inline void rider_jump_from_plane(PR_Rider *rid, PR_Plane *p) {
     rid->attached = false;
     rid->second_jump = true;
     rid->base_velocity = p->vel.x;
@@ -5549,14 +5480,14 @@ inline void rider_jump_from_plane(PR_Rider *rid, PR_Plane *p) {
     rid->jump_time_elapsed = 0.f;
 }
 
-inline void level_reset_colors(PR_Level *level) {
+static inline void level_reset_colors(PR_Level *level) {
     level->current_red = PR_RED;
     level->current_blue = PR_BLUE;
     level->current_gray = PR_GRAY;
     level->current_white = PR_WHITE;
 }
 
-inline void level_shuffle_colors(PR_Level *level) {
+static inline void level_shuffle_colors(PR_Level *level) {
     int8_t shuffled_colors[] = {-1, -1, -1, -1};
     for(size_t i = 0;
         i < ARR_LEN(shuffled_colors);
@@ -5588,7 +5519,7 @@ inline void level_shuffle_colors(PR_Level *level) {
         shuffled_colors[3];
 }
 
-inline PR_Rect *get_selected_body(void *selected, PR_ObjectType selected_type) {
+static inline PR_Rect *get_selected_body(void *selected, PR_ObjectType selected_type) {
     PR_Rect *b;
     switch(selected_type) {
         case PR_PORTAL_TYPE:
@@ -5873,23 +5804,7 @@ void set_start_pos_option_buttons(PR_Button *buttons) {
     }
 }
 
-inline PR_Rect rect_in_camera_space(PR_Rect r, PR_Camera *cam) {
-    PR_Rect res;
-
-    res.pos =
-        vec2f_sum(
-            vec2f_diff(
-                r.pos,
-                cam->pos),
-            _vec2f(GAME_WIDTH*0.5f, GAME_HEIGHT*0.5f));
-    res.dim = r.dim;
-    res.angle = r.angle;
-    res.triangle = r.triangle;
-
-    return res;
-}
-
-inline PR_Rect rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam) {
+static inline PR_Rect rect_in_menu_camera_space(PR_Rect r, PR_MenuCamera *cam) {
     PR_Rect res;
 
     // NOTE(gio): works

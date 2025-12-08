@@ -106,7 +106,7 @@ renderer_init(PR_Renderer *renderer);
 void
 renderer_add_queue_uni(float x, float y, float w, float h, float r, vec4f c, bool triangle, bool centered);
 
-inline void
+static inline void
 renderer_add_queue_uni_rect(PR_Rect rec, vec4f c, bool centered) {
     renderer_add_queue_uni(rec.pos.x, rec.pos.y,
                           rec.dim.x, rec.dim.y, rec.angle,
@@ -125,7 +125,7 @@ renderer_create_texture(PR_Texture* t, const char* filename);
 void
 renderer_add_queue_tex(float x, float y, float w, float h, float r, bool centered, float tx, float ty, float tw, float th);
 
-inline void
+static inline void
 renderer_add_queue_tex_rect(PR_Rect rec, PR_TexCoords t, bool centered) {
     renderer_add_queue_tex(rec.pos.x, rec.pos.y,
                            rec.dim.x, rec.dim.y,

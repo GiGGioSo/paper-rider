@@ -10,6 +10,11 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifndef PR_ASSERT
+    #include <assert.h>
+    #define PR_ASSERT(x) assert(x)
+#endif
+
 #define return_defer(ret) do { result = ret; goto defer; } while(0)
 
 #define UNUSED(expr) (void)(expr)

@@ -1,43 +1,42 @@
-#!/bin/sh
+#!/bin/bash
 
-CFLAGS="-ggdb"
-# CFLAGS="${CFLAGS} -Werror"
- CFLAGS="${CFLAGS} -Wall"
- CFLAGS="${CFLAGS} -Wextra"
-# CFLAGS="${CFLAGS} -Waggregate-return"
-# CFLAGS="${CFLAGS} -Wbad-function-cast"
-# CFLAGS="${CFLAGS} -Wcast-align"
-# CFLAGS="${CFLAGS} -Wcast-qual"
-# CFLAGS="${CFLAGS} -Wdeclaration-after-statement"
-# CFLAGS="${CFLAGS} -Wfloat-equal"
-# CFLAGS="${CFLAGS} -Wformat=2"
-# CFLAGS="${CFLAGS} -Wlogical-op"
-# CFLAGS="${CFLAGS} -Wmissing-declarations"
-# CFLAGS="${CFLAGS} -Wmissing-include-dirs"
-# CFLAGS="${CFLAGS} -Wmissing-prototypes"
-# CFLAGS="${CFLAGS} -Wnested-externs"
-# CFLAGS="${CFLAGS} -Wpointer-arith"
-# CFLAGS="${CFLAGS} -Wredundant-decls"
-# CFLAGS="${CFLAGS} -Wsequence-point"
-# CFLAGS="${CFLAGS} -Wshadow"
-# CFLAGS="${CFLAGS} -Wstrict-prototypes"
-# CFLAGS="${CFLAGS} -Wswitch"
-# CFLAGS="${CFLAGS} -Wundef"
-# CFLAGS="${CFLAGS} -Wunreachable-code"
-# CFLAGS="${CFLAGS} -Wunused-but-set-parameter"
-# CFLAGS="${CFLAGS} -Wwrite-strings"
-LIBS="-lglfw -ldl -lpthread -lm -lGL"
+# === FLAG COMUNI PER DEBUG E RELEASE ===
+COMMON_CFLAGS="
+    -Wall
+    -Wextra
+    -Wswitch
+    -Wstrict-prototypes
+"
+
+# === CONFIGURAZIONE COMPILAZIONE ===
+if [[ "$1" == "release" ]]; then
+    CFLAGS="-O3 $COMMON_CFLAGS"
+else
+    CFLAGS="-ggdb $COMMON_CFLAGS"
+fi
+
+# === PATH LIBRERIE E INCLUDE (ADATTALI A LINUX!) ===
+LIBS="-lGL -lglfw -lm"
+INCLUDES="-I./include"
 
 EXE="./bin/paper"
 
-SRCS_FILES=$(find ./src/ -name "*.cpp" -or -name "*.c")
-INCLUDES="-I./include"
+# === RACCOLTA FILE SORGENTI .C ===
+SRCS_FILES=$(find src -type f -name "*.c")
 
-rm -r bin
-mkdir bin
+# === PULIZIA E CREAZIONE CARTELLE ===
+rm -rf bin
+mkdir -p bin
 
-echo "Compiling the sources..."
-echo $SRCS_FILES
+echo "Compiling the following sources:"
+echo "$SRCS_FILES"
 
-clang++ $SRCS_FILES $CFLAGS -o $EXE $LIBS $INCLUDES
+# === COMPILAZIONE ===
+clang $SRCS_FILES $CFLAGS -std=c11 -o "$EXE" $INCLUDES $LIBS
 
+if [[ $? -ne 0 ]]; then
+    echo "Build failed!"
+    exit 1
+fi
+
+echo "Build succeeded!"
