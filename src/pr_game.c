@@ -4451,15 +4451,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.pos.x -= one * 0.5f;
-                                        obs->body.dim.x += one;
+                                        obstacle_translate(obs, _vec2f(-(one * 0.5f), 0.f));
+                                        obstacle_resize(obs, _vec2f(one, 0));
                                         break;
                                     case 1:
-                                        obs->body.pos.y -= one * 0.5f;
-                                        obs->body.dim.y += one;
+                                        obstacle_translate(obs, _vec2f(0.f, -(one * 0.5f));
+                                        obstacle_resize(obs, _vec2f(0, one);
                                         break;
                                     case 2:
-                                        obs->body.angle += one;
+                                        obstacle_rotate(obs, one);
                                         break;
                                     default:
                                         break;
@@ -4471,15 +4471,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.pos.x -= five * 0.5f;
-                                        obs->body.dim.x += five;
+                                        obstacle_translate(obs, _vec2f(-(five * 0.5f), 0.f));
+                                        obstacle_resize(obs, _vec2f(five, 0));
                                         break;
                                     case 1:
-                                        obs->body.pos.y -= five * 0.5f;
-                                        obs->body.dim.y += five;
+                                        obstacle_translate(obs, _vec2f(0.f, -(five * 0.5f));
+                                        obstacle_resize(obs, _vec2f(0, five);
                                         break;
                                     case 2:
-                                        obs->body.angle += five;
+                                        obstacle_rotate(obs, five);
                                         break;
                                     default:
                                         break;
@@ -4491,15 +4491,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.pos.x += one * 0.5f;
-                                        obs->body.dim.x -= one;
+                                        obstacle_translate(obs, _vec2f(one * 0.5f, 0.f));
+                                        obstacle_resize(obs, _vec2f(-one, 0));
                                         break;
                                     case 1:
-                                        obs->body.pos.y += one * 0.5f;
-                                        obs->body.dim.y -= one;
+                                        obstacle_translate(obs, _vec2f(0.f, one * 0.5f);
+                                        obstacle_resize(obs, _vec2f(0, -one);
                                         break;
                                     case 2:
-                                        obs->body.angle -= one;
+                                        obstacle_rotate(obs, -one);
                                         break;
                                     default:
                                         break;
@@ -4511,15 +4511,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        obs->body.pos.x += five * 0.5f;
-                                        obs->body.dim.x -= five;
+                                        obstacle_translate(obs, _vec2f(five * 0.5f, 0.f));
+                                        obstacle_resize(obs, _vec2f(-five, 0));
                                         break;
                                     case 1:
-                                        obs->body.pos.y += five * 0.5f;
-                                        obs->body.dim.y -= five;
+                                        obstacle_translate(obs, _vec2f(0.f, five * 0.5f);
+                                        obstacle_resize(obs, _vec2f(0, -five);
                                         break;
                                     case 2:
-                                        obs->body.angle -= five;
+                                        obstacle_rotate(obs, -five);
                                         break;
                                     default:
                                         break;

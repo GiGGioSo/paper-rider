@@ -1,6 +1,7 @@
 #include "pr_polygon.h"
 #include "pr_renderer.h"
 #include "pr_camera.h"
+#include "pr_common.h"
 
 #include "pr_globals.h"
 
@@ -79,5 +80,31 @@ void obstacle_render_info(PR_Obstacle *obstacle, float tx, float ty) {
                  (obstacle)->collide_rider ? "true" : "false");
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
+}
+
+// ##############
+// ### MODIFY ###
+// ##############
+void obstacle_translate(PR_Obstacle *obs, vec2f move) {
+    obs->body.pos = vec2f_sum(obs->body.pos, move);
+}
+
+void obstacle_rotate(PR_Obstacle *obs, vec2f angle) {
+    obs->body.angle += angle;
+}
+
+void obstacle_set_size(PR_Obstacle *obs, vec2f size) {
+    PR_ASSERT(size.x > 0 && size.y > 0);
+    obs->body.dim = size;
+}
+void obstacle_resize(PR_Obstacle *obs, vec2f delta) {
+    vec2f new_size = vec2f_sum(obs->body.dim, delta);
+    PR_ASSERT(new_size.x > 0 && new_size.y > 0);
+    obs->body.dim = new_size;
+}
+void obstacle_scale(PR_Obstacle *obs, vec2f factor) {
+    PR_ASSERT(factor.x > 0 && factor.y > 0);
+    obs->body.dim.x *= factor.x;
+    obs->body.dim.y *= factor.y;
 }
 
