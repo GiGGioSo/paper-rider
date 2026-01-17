@@ -19,6 +19,33 @@ typedef struct PR_TexCoords PR_TexCoords;
 // ### BASE TYPES ###
 // ##################
 
+// # BUTTONS
+typedef struct PR_Button {
+    bool from_center;
+    PR_Rect body;
+    vec4f col;
+    char text[256];
+} PR_Button;
+typedef struct PR_LevelButton {
+    PR_Button button;
+
+    char mapfile_path[99];
+    bool is_new_level;
+} PR_LevelButton;
+typedef struct PR_CustomLevelButton {
+    PR_Button button;
+    PR_Button edit;
+    PR_Button del;
+    char mapfile_path[99];
+    bool is_new_level;
+} PR_CustomLevelButton;
+typedef struct PR_CustomLevelButtons {
+    PR_CustomLevelButton *items;
+    size_t count;
+    size_t capacity;
+} PR_CustomLevelButtons;
+
+
 typedef enum PR_ObjectType {
     PR_PORTAL_TYPE = 0,
     PR_BOOST_TYPE = 1,
@@ -108,8 +135,9 @@ typedef struct PR_Obstacle {
     bool collide_rider;
 } PR_Obstacle;
 
+#define BoostpadPolygon Polygon4
 typedef struct PR_BoostPad {
-    Polygon4 poly;
+    BoostpadPolygon poly;
     PR_Rect body;
     float boost_angle;
     float boost_power;

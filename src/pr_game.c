@@ -15,6 +15,7 @@
 #include "pr_parallax.h"
 #include "pr_ui.h"
 #include "pr_obstacle.h"
+#include "pr_boostpad.h"
 
 #ifdef _WIN32
 #    define MINIRENT_IMPLEMENTATION
@@ -74,15 +75,11 @@
 static inline void
 portal_render(PR_Portal *portal);
 static inline void
-boostpad_render(PR_BoostPad *pad);
-static inline void
 button_render(PR_Button but, vec4f col, PR_Font *font);
 static inline void
 button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam);
 static inline void
 portal_render_info(PR_Portal *portal, float tx, float ty);
-static inline void
-boostpad_render_info(PR_BoostPad *boost, float tx, float ty);
 static inline void
 goal_line_render_info(PR_Rect *rect, float tx, float ty);
 static inline void
@@ -103,10 +100,6 @@ void
 button_edit_del_to_lb(PR_Button *reference, PR_Button *edit, PR_Button *del);
 void
 set_portal_option_buttons(PR_Button *buttons);
-void
-set_boost_option_buttons(PR_Button *buttons);
-void
-set_obstacle_option_buttons(PR_Button *buttons);
 void
 set_start_pos_option_buttons(PR_Button *buttons);
 static inline PR_Rect
@@ -3338,14 +3331,13 @@ void level_update(void) {
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
                 !level->adding_now &&
-                rect_contains_point(rect_in_camera_space(pad->body, cam),
-                                    input->mouseX, input->mouseY, false)) {
+                boostpad_contains_point(pad, mouse_world)) {
 
                 level->selected = (void *) pad;
                 level->selected_type = PR_BOOST_TYPE;
                 level->adding_now = false;
 
-                set_boost_option_buttons(level->selected_options_buttons);
+                boostpad_set_option_buttons(level->selected_options_buttons);
             }
 
             boostpad_render(pad);
@@ -3366,7 +3358,7 @@ void level_update(void) {
                 level->selected_type = PR_OBSTACLE_TYPE;
                 level->adding_now = false;
 
-                set_obstacle_option_buttons(level->selected_options_buttons);
+                obstacle_set_option_buttons(level->selected_options_buttons);
             }
 
             obstacle_render(obs);
@@ -3871,19 +3863,19 @@ void level_update(void) {
                                     add_boost.from_center)) {
 
                 PR_BoostPad pad;
-                pad.body.pos = cam->pos;
-                pad.body.dim.x = GAME_WIDTH * 0.2f;
-                pad.body.dim.y = GAME_HEIGHT * 0.2f;
-                pad.body.triangle = false;
-                pad.body.angle = 0.f;
-                pad.boost_angle = 0.f;
-                pad.boost_power = 0.f;
-
+                boostpad_init(
+                    &pad,
+                    cam->pos,
+                    _vec2f(
+                        GAME_WIDTH * 0.2f,
+                        GAME_HEIGHT * 0.2f),
+                    0.f
+                );
                 da_append(boosts, pad, PR_BoostPad);
 
                 level->selected = (void *) &da_last(boosts);
                 level->selected_type = PR_BOOST_TYPE;
-                set_boost_option_buttons(level->selected_options_buttons);
+                boostpad_set_option_buttons(level->selected_options_buttons);
 
             } else
             if (rect_contains_point(add_obstacle.body,
@@ -3891,24 +3883,24 @@ void level_update(void) {
                                     add_obstacle.from_center)) {
 
                 PR_Obstacle obs;
-                obs.body.pos = cam->pos;
-                obs.body.dim.x = GAME_WIDTH * 0.2f;
-                obs.body.dim.y = GAME_HEIGHT * 0.2f;
-                obs.body.triangle = false;
-                obs.body.angle = 0.f;
-                obs.collide_plane = false;
-                obs.collide_rider = false;
-
+                obstacle_init(
+                    &obs,
+                    cam->pos,
+                    _vec2f(
+                        GAME_WIDTH * 0.2f,
+                        GAME_HEIGHT * 0.2f),
+                    0.f
+                );
                 da_append(obstacles, obs, PR_Obstacle);
 
                 level->selected = (void *) &da_last(obstacles);
                 level->selected_type = PR_OBSTACLE_TYPE;
-                set_obstacle_option_buttons(level->selected_options_buttons);
+                obstacle_set_option_buttons(level->selected_options_buttons);
 
             }
         }
 
-        // TODO: Selected an appropriate font for this
+        // TODO: Select an appropriate font for this
         button_render(add_portal, _diag_vec4f(1.f),
                       &glob->rend_res.fonts[1]);
         button_render(add_boost, _diag_vec4f(1.f),
@@ -4257,16 +4249,15 @@ void level_update(void) {
                                                     input->mouseY, true)) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
-                                    case 0:
-                                        pad->body.pos.x -= one * 0.5f;
-                                        pad->body.dim.x += one;
+                                        boostpad_translate(pad, _vec2f(-(one * 0.5f), 0.f));
+                                        boostpad_resize(pad, _vec2f(one, 0));
                                         break;
                                     case 1:
-                                        pad->body.pos.y -= one * 0.5f;
-                                        pad->body.dim.y += one;
+                                        boostpad_translate(pad, _vec2f(0.f, -(one * 0.5f)));
+                                        boostpad_resize(pad, _vec2f(0, one));
                                         break;
                                     case 2:
-                                        pad->body.angle += one;
+                                        boostpad_rotate(pad, one);
                                         break;
                                     case 4:
                                         pad->boost_angle += one;
@@ -4284,15 +4275,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.pos.x -= five * 0.5f;
-                                        pad->body.dim.x += five;
+                                        boostpad_translate(pad, _vec2f(-(five * 0.5f), 0.f));
+                                        boostpad_resize(pad, _vec2f(five, 0));
                                         break;
                                     case 1:
-                                        pad->body.pos.y -= five * 0.5f;
-                                        pad->body.dim.y += five;
+                                        boostpad_translate(pad, _vec2f(0.f, -(five * 0.5f)));
+                                        boostpad_resize(pad, _vec2f(0, five));
                                         break;
                                     case 2:
-                                        pad->body.angle += five;
+                                        boostpad_rotate(pad, five);
                                         break;
                                     case 4:
                                         pad->boost_angle += five;
@@ -4310,15 +4301,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.pos.x += one * 0.5f;
-                                        pad->body.dim.x -= one;
+                                        boostpad_translate(pad, _vec2f(one * 0.5f, 0.f));
+                                        boostpad_resize(pad, _vec2f(-one, 0));
                                         break;
                                     case 1:
-                                        pad->body.pos.y += one * 0.5f;
-                                        pad->body.dim.y -= one;
+                                        boostpad_translate(pad, _vec2f(0.f, one * 0.5f));
+                                        boostpad_resize(pad, _vec2f(0, -one));
                                         break;
                                     case 2:
-                                        pad->body.angle -= one;
+                                        boostpad_rotate(pad, -one);
                                         break;
                                     case 4:
                                         pad->boost_angle -= one;
@@ -4336,15 +4327,15 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        pad->body.pos.x += five * 0.5f;
-                                        pad->body.dim.x -= five;
+                                        boostpad_translate(pad, _vec2f(five * 0.5f, 0.f));
+                                        boostpad_resize(pad, _vec2f(-five, 0));
                                         break;
                                     case 1:
-                                        pad->body.pos.y += five * 0.5f;
-                                        pad->body.dim.y -= five;
+                                        boostpad_translate(pad, _vec2f(0.f, five * 0.5f));
+                                        boostpad_resize(pad, _vec2f(0, -five));
                                         break;
                                     case 2:
-                                        pad->body.angle -= five;
+                                        boostpad_rotate(pad, -five);
                                         break;
                                     case 4:
                                         pad->boost_angle -= five;
@@ -4455,8 +4446,8 @@ void level_update(void) {
                                         obstacle_resize(obs, _vec2f(one, 0));
                                         break;
                                     case 1:
-                                        obstacle_translate(obs, _vec2f(0.f, -(one * 0.5f));
-                                        obstacle_resize(obs, _vec2f(0, one);
+                                        obstacle_translate(obs, _vec2f(0.f, -(one * 0.5f)));
+                                        obstacle_resize(obs, _vec2f(0, one));
                                         break;
                                     case 2:
                                         obstacle_rotate(obs, one);
@@ -4475,8 +4466,8 @@ void level_update(void) {
                                         obstacle_resize(obs, _vec2f(five, 0));
                                         break;
                                     case 1:
-                                        obstacle_translate(obs, _vec2f(0.f, -(five * 0.5f));
-                                        obstacle_resize(obs, _vec2f(0, five);
+                                        obstacle_translate(obs, _vec2f(0.f, -(five * 0.5f)));
+                                        obstacle_resize(obs, _vec2f(0, five));
                                         break;
                                     case 2:
                                         obstacle_rotate(obs, five);
@@ -4495,8 +4486,8 @@ void level_update(void) {
                                         obstacle_resize(obs, _vec2f(-one, 0));
                                         break;
                                     case 1:
-                                        obstacle_translate(obs, _vec2f(0.f, one * 0.5f);
-                                        obstacle_resize(obs, _vec2f(0, -one);
+                                        obstacle_translate(obs, _vec2f(0.f, one * 0.5f));
+                                        obstacle_resize(obs, _vec2f(0, -one));
                                         break;
                                     case 2:
                                         obstacle_rotate(obs, -one);
@@ -4515,8 +4506,8 @@ void level_update(void) {
                                         obstacle_resize(obs, _vec2f(-five, 0));
                                         break;
                                     case 1:
-                                        obstacle_translate(obs, _vec2f(0.f, five * 0.5f);
-                                        obstacle_resize(obs, _vec2f(0, -five);
+                                        obstacle_translate(obs, _vec2f(0.f, five * 0.5f));
+                                        obstacle_resize(obs, _vec2f(0, -five));
                                         break;
                                     case 2:
                                         obstacle_rotate(obs, -five);
@@ -5209,41 +5200,6 @@ static inline void portal_render(PR_Portal *portal) {
     }
 }
 
-static inline void boostpad_render(PR_BoostPad *pad) {
-    PR_Camera *cam = &glob->current_level.camera;
-
-    PR_Rect pad_in_cam_pos = rect_in_camera_space(pad->body, cam);
-
-    if (ABS(pad_in_cam_pos.pos.x) >
-            ABS(pad_in_cam_pos.dim.x) + ABS(pad_in_cam_pos.dim.y) +
-            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
-     || ABS(pad_in_cam_pos.pos.y) >
-            ABS(pad_in_cam_pos.dim.x) + ABS(pad_in_cam_pos.dim.y) +
-            ABS(GAME_WIDTH) + ABS(GAME_HEIGHT)
-    ) return;
-
-    renderer_add_queue_uni_rect(pad_in_cam_pos,
-                          _vec4f(0.f, 1.f, 0.f, 1.f),
-                          false);
-    
-    if (pad->body.triangle) {
-        pad_in_cam_pos.pos.x += pad_in_cam_pos.dim.x * 0.25f;
-        pad_in_cam_pos.pos.y += pad_in_cam_pos.dim.y * 0.5f;
-        pad_in_cam_pos.dim = vec2f_mult(pad_in_cam_pos.dim, 0.4f);
-    } else  {
-        pad_in_cam_pos.pos = vec2f_sum(
-                pad_in_cam_pos.pos,
-                vec2f_mult(pad_in_cam_pos.dim, 0.5f));
-        pad_in_cam_pos.dim = vec2f_mult(pad_in_cam_pos.dim, 0.5f);
-    }
-    pad_in_cam_pos.angle = pad->boost_angle;
-    renderer_add_queue_tex_rect(pad_in_cam_pos,
-                           texcoords_in_texture_space(
-                               0, 8, 96, 32,
-                               glob->rend_res.global_sprite, false),
-                           true);
-}
-
 static inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
     renderer_add_queue_uni_rect(but.body, but.col, but.from_center);
     renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
@@ -5280,36 +5236,6 @@ static inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "enable_effect: %s",
                  (portal)->enable_effect ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-}
-
-static inline void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
-    char buffer[99];
-    memset((void *)buffer, 0x00, sizeof(buffer));
-    size_t index = 1;
-    float spacing = OBJECT_INFO_FONT_SIZE;
-    sprintf(buffer, "BOOST INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "pos: (%f, %f)",
-                 (boost)->body.pos.x, (boost)->body.pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "dim: (%f, %f)",
-                 (boost)->body.dim.x, (boost)->body.dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "angle: %f",
-                 (boost)->body.angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "boost_angle: %f",
-                 (boost)->boost_angle);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "boost_power: %f",
-                 (boost)->boost_power);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
@@ -5639,128 +5565,6 @@ void set_portal_option_buttons(PR_Button *buttons) {
     }
 }
 
-void set_boost_option_buttons(PR_Button *buttons) {
-    // NOTE: Set up options buttons for the selected boost
-    for(size_t option_button_index = 0;
-        option_button_index < SELECTED_BOOST_OPTIONS;
-        ++option_button_index) {
-
-        assert((option_button_index <
-                    SELECTED_MAX_OPTIONS)
-                && "Selected options out of bounds for boosts");
-
-        PR_Button *button = buttons + option_button_index;
-
-        button->from_center = true;
-        button->body.triangle = false;
-        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
-                             (SELECTED_BOOST_OPTIONS+1);
-        button->body.pos.y = GAME_HEIGHT * 9 / 10;
-        button->body.dim.x = GAME_WIDTH / (SELECTED_BOOST_OPTIONS+2);
-        button->body.dim.y = GAME_HEIGHT / 10;
-
-        switch(option_button_index) {
-            case 0:
-                snprintf(button->text,
-                              strlen("WIDTH")+1,
-                              "WIDTH");
-                break;
-            case 1:
-                snprintf(button->text,
-                              strlen("HEIGHT")+1,
-                              "HEIGHT");
-                break;
-            case 2:
-                snprintf(button->text,
-                              strlen("ANGLE")+1,
-                              "ANGLE");
-                break;
-            case 3:
-                snprintf(button->text,
-                              strlen("TRIANGLE")+1,
-                              "TRIANGLE");
-                break;
-            case 4:
-                snprintf(button->text,
-                              strlen("BOOST_ANGLE")+1,
-                              "BOOST_ANGLE");
-                break;
-            case 5:
-                snprintf(button->text,
-                              strlen("BOOST_POWER")+1,
-                              "BOOST_POWER");
-                break;
-            default:
-                snprintf(button->text,
-                              strlen("UNDEFINED")+1,
-                              "UNDEFINED");
-                break;
-        }
-
-        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
-    }
-}
-
-void set_obstacle_option_buttons(PR_Button *buttons) {
-    // NOTE: Set up options buttons for the selected obstacle
-    for(size_t option_button_index = 0;
-        option_button_index < SELECTED_OBSTACLE_OPTIONS;
-        ++option_button_index) {
-        assert((option_button_index <
-                 SELECTED_MAX_OPTIONS)
-                && "Selected options out of bound for obstacle");
-
-        PR_Button *button = buttons + option_button_index;
-
-        button->from_center = true;
-        button->body.triangle = false;
-        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
-                             (SELECTED_OBSTACLE_OPTIONS+1);
-        button->body.pos.y = GAME_HEIGHT * 9 / 10;
-        button->body.dim.x = GAME_WIDTH / (SELECTED_OBSTACLE_OPTIONS+2);
-        button->body.dim.y = GAME_HEIGHT / 10;
-
-        switch(option_button_index) {
-            case 0:
-                snprintf(button->text,
-                              strlen("WIDTH")+1,
-                              "WIDTH");
-                break;
-            case 1:
-                snprintf(button->text,
-                              strlen("HEIGHT")+1,
-                              "HEIGHT");
-                break;
-            case 2:
-                snprintf(button->text,
-                              strlen("ANGLE")+1,
-                              "ANGLE");
-                break;
-            case 3:
-                snprintf(button->text,
-                              strlen("TRIANGLE")+1,
-                              "TRIANGLE");
-                break;
-            case 4:
-                snprintf(button->text,
-                              strlen("COLLIDE_PLANE")+1,
-                              "COLLIDE_PLANE");
-                break;
-            case 5:
-                snprintf(button->text,
-                              strlen("COLLIDE_RIDER")+1,
-                              "COLLIDE_RIDER");
-                break;
-            default:
-                snprintf(button->text,
-                              strlen("UNDEFINED")+1,
-                              "UNDEFINED");
-                break;
-        }
-        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
-    }
-}
-
 void set_start_pos_option_buttons(PR_Button *buttons) {
     for(size_t option_button_index = 0;
         option_button_index < SELECTED_START_POS_OPTIONS;
@@ -5874,7 +5678,7 @@ void update_plane_physics_n_boost_collisions(PR_Level *level) {
 
         PR_BoostPad pad = level->boosts.items[boost_index];
 
-        if (rect_are_colliding(p->body, pad.body, NULL, NULL)) {
+        if (boostpad_collides_with_plane(&pad, p, NULL)) {
 
             boost_ps->active = true;
             

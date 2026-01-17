@@ -97,31 +97,6 @@ typedef struct PR_Parallax {
     PR_TexCoords tex_coords;
 } PR_Parallax;
 
-typedef struct PR_Button {
-    bool from_center;
-    PR_Rect body;
-    vec4f col;
-    char text[256];
-} PR_Button;
-typedef struct PR_LevelButton {
-    PR_Button button;
-
-    char mapfile_path[99];
-    bool is_new_level;
-} PR_LevelButton;
-typedef struct PR_CustomLevelButton {
-    PR_Button button;
-    PR_Button edit;
-    PR_Button del;
-    char mapfile_path[99];
-    bool is_new_level;
-} PR_CustomLevelButton;
-typedef struct PR_CustomLevelButtons {
-    PR_CustomLevelButton *items;
-    size_t count;
-    size_t capacity;
-} PR_CustomLevelButtons;
-
 typedef struct PR_MenuCamera {
     vec2f pos;
     float speed_multiplier;

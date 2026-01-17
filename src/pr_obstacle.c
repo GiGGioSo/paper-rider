@@ -5,6 +5,72 @@
 
 #include "pr_globals.h"
 
+// ###############
+// ### SETTERS ###
+// ###############
+void obstacle_set_option_buttons(PR_Button *buttons) {
+    // NOTE: Set up options buttons for the selected obstacle
+    for(size_t option_button_index = 0;
+        option_button_index < SELECTED_OBSTACLE_OPTIONS;
+        ++option_button_index) {
+        assert((option_button_index <
+                 SELECTED_MAX_OPTIONS)
+                && "Selected options out of bound for obstacle");
+
+        PR_Button *button = buttons + option_button_index;
+
+        button->from_center = true;
+        button->body.triangle = false;
+        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
+                             (SELECTED_OBSTACLE_OPTIONS+1);
+        button->body.pos.y = GAME_HEIGHT * 9 / 10;
+        button->body.dim.x = GAME_WIDTH / (SELECTED_OBSTACLE_OPTIONS+2);
+        button->body.dim.y = GAME_HEIGHT / 10;
+
+        switch(option_button_index) {
+            case 0:
+                snprintf(button->text,
+                              strlen("WIDTH")+1,
+                              "WIDTH");
+                break;
+            case 1:
+                snprintf(button->text,
+                              strlen("HEIGHT")+1,
+                              "HEIGHT");
+                break;
+            case 2:
+                snprintf(button->text,
+                              strlen("ANGLE")+1,
+                              "ANGLE");
+                break;
+            case 3:
+                snprintf(button->text,
+                              strlen("TRIANGLE")+1,
+                              "TRIANGLE");
+                break;
+            case 4:
+                snprintf(button->text,
+                              strlen("COLLIDE_PLANE")+1,
+                              "COLLIDE_PLANE");
+                break;
+            case 5:
+                snprintf(button->text,
+                              strlen("COLLIDE_RIDER")+1,
+                              "COLLIDE_RIDER");
+                break;
+            default:
+                snprintf(button->text,
+                              strlen("UNDEFINED")+1,
+                              "UNDEFINED");
+                break;
+        }
+        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
+    }
+}
+
+// ###############
+// ### GETTERS ###
+// ###############
 vec4f obstacle_get_color(PR_Obstacle *obs) {
     if (obs->collide_rider && obs->collide_plane) {
         return glob->colors[glob->current_level.current_red];
@@ -19,22 +85,52 @@ vec4f obstacle_get_color(PR_Obstacle *obs) {
     }
 }
 
+// ##############
+// ### CREATE ###
+// ##############
+void obstacle_init(PR_Obstacle *obs, vec2f pos, vec2f dim, float angle) {
+    obs->body.pos = pos;
+    obs->body.dim = dim;
+    obs->body.angle = angle;
+    obs->body.triangle = false;
+    obs->collide_plane = false;
+    obs->collide_rider = false;
+}
+
+// ##################
+// ### COLLISIONS ###
+// ##################
 bool obstacle_contains_point(PR_Obstacle *o, vec2f p) {
     return rect_contains_point(o->body, p.x, p.y, false);
 }
 
 bool obstacle_collides_with_plane(PR_Obstacle *obs, PR_Plane *plane, vec2f *crash_pos) {
+    float *crash_pos_x = NULL;
+    float *crash_pos_y = NULL;
+    if (crash_pos) {
+        crash_pos_x = &crash_pos->x;
+        crash_pos_y = &crash_pos->y;
+    }
     return rect_are_colliding(
             plane->body, obs->body,
-            &crash_pos->x, &crash_pos->y);
+            crash_pos_x, crash_pos_y);
 }
 
 bool obstacle_collides_with_rider(PR_Obstacle *obs, PR_Rider *rid, vec2f *crash_pos) {
+    float *crash_pos_x = NULL;
+    float *crash_pos_y = NULL;
+    if (crash_pos) {
+        crash_pos_x = &crash_pos->x;
+        crash_pos_y = &crash_pos->y;
+    }
     return rect_are_colliding(
             rid->body, obs->body,
-            &crash_pos->x, &crash_pos->y);
+            crash_pos_x, crash_pos_y);
 }
 
+// #################
+// ### RENDERING ###
+// #################
 void obstacle_render(PR_Obstacle *obs) {
     PR_Camera *cam = &glob->current_level.camera;
     PR_Rect obs_in_cam_pos = rect_in_camera_space(obs->body, cam);
@@ -89,7 +185,7 @@ void obstacle_translate(PR_Obstacle *obs, vec2f move) {
     obs->body.pos = vec2f_sum(obs->body.pos, move);
 }
 
-void obstacle_rotate(PR_Obstacle *obs, vec2f angle) {
+void obstacle_rotate(PR_Obstacle *obs, float angle) {
     obs->body.angle += angle;
 }
 

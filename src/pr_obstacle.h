@@ -7,15 +7,29 @@
 #include "pr_mathy.h"
 #include "pr_rect.h"
 
+// ###############
+// ### SETTERS ###
+// ###############
+void
+obstacle_set_option_buttons(PR_Button *buttons);
+
+// ###############
+// ### GETTERS ###
+// ###############
 vec4f
 obstacle_get_color(PR_Obstacle *obs);
+
+// ##############
+// ### CREATE ###
+// ##############
+void
+obstacle_init(PR_Obstacle *obs, vec2f pos, vec2f dim, float angle);
 
 // ##################
 // ### COLLISIONS ###
 // ##################
 bool
 obstacle_contains_point(PR_Obstacle *o, vec2f p);
-
 bool
 obstacle_collides_with_plane(PR_Obstacle *obs, PR_Plane *plane, vec2f *crash_pos);
 bool
@@ -36,7 +50,7 @@ void
 obstacle_translate(PR_Obstacle *obs, vec2f move);
 
 void
-obstacle_rotate(PR_Obstacle *obs, vec2f angle);
+obstacle_rotate(PR_Obstacle *obs, float angle);
 
 void
 obstacle_set_size(PR_Obstacle *obs, vec2f size);
