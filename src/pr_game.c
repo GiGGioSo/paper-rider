@@ -16,6 +16,7 @@
 #include "pr_ui.h"
 #include "pr_obstacle.h"
 #include "pr_boostpad.h"
+#include "pr_portal.h"
 
 #ifdef _WIN32
 #    define MINIRENT_IMPLEMENTATION
@@ -73,13 +74,9 @@
 
 // Utilities functions for code reuse
 static inline void
-portal_render(PR_Portal *portal);
-static inline void
 button_render(PR_Button but, vec4f col, PR_Font *font);
 static inline void
 button_render_in_menu_camera(PR_Button but, vec4f col, PR_Font *font, PR_MenuCamera *cam);
-static inline void
-portal_render_info(PR_Portal *portal, float tx, float ty);
 static inline void
 goal_line_render_info(PR_Rect *rect, float tx, float ty);
 static inline void
@@ -98,8 +95,6 @@ void
 button_set_position(PR_Button *button, size_t index);
 void
 button_edit_del_to_lb(PR_Button *reference, PR_Button *edit, PR_Button *del);
-void
-set_portal_option_buttons(PR_Button *buttons);
 void
 set_start_pos_option_buttons(PR_Button *buttons);
 static inline PR_Rect
@@ -599,21 +594,6 @@ int load_custom_buttons_from_dir(const char *dir_path,
     }
 
     return result;
-}
-
-vec4f get_portal_color(PR_Portal *portal) {
-    switch(portal->type) {
-        case PR_INVERSE:
-        {
-            return _vec4f(0.f, 0.f, 0.f, 1.f);
-            break;
-        }
-        case PR_SHUFFLE_COLORS:
-        {
-            return _diag_vec4f(1.f);
-            break;
-        }
-    }
 }
 
 const char *campaign_levels_filepath[2] = {
@@ -3309,14 +3289,13 @@ void level_update(void) {
             if (input->mouse_left.clicked &&
                 level->selected == NULL &&
                 !level->adding_now &&
-                rect_contains_point(rect_in_camera_space(portal->body, cam),
-                                    input->mouseX, input->mouseY, false)) {
+                portal_contains_point(portal, mouse_world)) {
 
                 level->selected = (void *) portal;
                 level->selected_type = PR_PORTAL_TYPE;
                 level->adding_now = false;
 
-                set_portal_option_buttons(level->selected_options_buttons);
+                portal_set_option_buttons(level->selected_options_buttons);
             }
 
             portal_render(portal);
@@ -3843,19 +3822,19 @@ void level_update(void) {
                                 add_portal.from_center)) {
 
                 PR_Portal portal;
-                portal.body.pos = cam->pos;
-                portal.body.dim.x = GAME_WIDTH * 0.2f;
-                portal.body.dim.y = GAME_HEIGHT * 0.2f;
-                portal.body.triangle = false;
-                portal.body.angle = 0.f;
-                portal.type = PR_SHUFFLE_COLORS;
-                portal.enable_effect = true;
-
+                portal_init(
+                    &portal,
+                    cam->pos,
+                    _vec2f(
+                        GAME_WIDTH * 0.2f,
+                        GAME_HEIGHT * 0.2f),
+                    0.f
+                );
                 da_append(portals, portal, PR_Portal);
 
                 level->selected = (void *) &da_last(portals);
                 level->selected_type = PR_PORTAL_TYPE;
-                set_portal_option_buttons(level->selected_options_buttons);
+                portal_set_option_buttons(level->selected_options_buttons);
 
             } else
             if (rect_contains_point(add_boost.body,
@@ -5146,60 +5125,6 @@ static inline void plane_activate_crash_animation(PR_Plane *p) {
     }
 }
 
-static inline void portal_render(PR_Portal *portal) {
-    PR_Camera *cam = &glob->current_level.camera;
-    if (portal->type == PR_SHUFFLE_COLORS) {
-        PR_Rect b = portal->body;
-
-        PR_Rect q1;
-        q1.angle = 0.f;
-        q1.triangle = false;
-        q1.pos = b.pos;
-        q1.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni_rect(
-            rect_in_camera_space(q1, cam),
-            glob->colors[glob->current_level.current_gray],
-            false);
-
-        PR_Rect q2;
-        q2.angle = 0.f;
-        q2.triangle = false;
-        q2.pos.x = b.pos.x + b.dim.x*0.5f;
-        q2.pos.y = b.pos.y;
-        q2.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni_rect(
-            rect_in_camera_space(q2, cam),
-            glob->colors[glob->current_level.current_white],
-            false);
-
-        PR_Rect q3;
-        q3.angle = 0.f;
-        q3.triangle = false;
-        q3.pos.x = b.pos.x;
-        q3.pos.y = b.pos.y + b.dim.y*0.5f;
-        q3.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni_rect(
-            rect_in_camera_space(q3, cam),
-            glob->colors[glob->current_level.current_blue],
-            false);
-
-        PR_Rect q4;
-        q4.angle = 0.f;
-        q4.triangle = false;
-        q4.pos.x = b.pos.x + b.dim.x*0.5f;
-        q4.pos.y = b.pos.y + b.dim.y*0.5f;
-        q4.dim = vec2f_mult(b.dim, 0.5f);
-        renderer_add_queue_uni_rect(
-            rect_in_camera_space(q4, cam),
-            glob->colors[glob->current_level.current_red],
-            false);
-    } else {
-        renderer_add_queue_uni_rect(rect_in_camera_space(portal->body, cam),
-                               get_portal_color(portal),
-                               false);
-    }
-}
-
 static inline void button_render(PR_Button but, vec4f col, PR_Font *font) {
     renderer_add_queue_uni_rect(but.body, but.col, but.from_center);
     renderer_add_queue_text(but.body.pos.x, but.body.pos.y,
@@ -5212,32 +5137,6 @@ static inline void button_render_in_menu_camera(PR_Button but, vec4f col, PR_Fon
     renderer_add_queue_uni_rect(in_cam_rect, but.col, but.from_center);
     renderer_add_queue_text(in_cam_rect.pos.x, in_cam_rect.pos.y,
                             but.text, col, font, true);
-}
-
-static inline void portal_render_info(PR_Portal *portal, float tx, float ty) {
-    char buffer[99];
-    memset((void *)buffer, 0x00, sizeof(buffer));
-    size_t index = 1;
-    float spacing = OBJECT_INFO_FONT_SIZE;
-    sprintf(buffer, "PORTAL INFO:");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "pos: (%f, %f)",
-                 (portal)->body.pos.x, (portal)->body.pos.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "dim: (%f, %f)",
-                 (portal)->body.dim.x, (portal)->body.dim.y);
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "type: %s",
-                 get_portal_type_name((portal)->type));
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
-    sprintf(buffer, "enable_effect: %s",
-                 (portal)->enable_effect ? "true" : "false");
-    renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
-                            &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }
 
 static inline void goal_line_render_info(PR_Rect *rect, float tx, float ty) {
@@ -5510,59 +5409,6 @@ void button_edit_del_to_lb(PR_Button *reference,
     del->col = DEL_BUTTON_DEFAULT_COLOR;
     del->from_center = true;
     snprintf(del->text, strlen("-")+1, "-");
-}
-
-void set_portal_option_buttons(PR_Button *buttons) {
-    // NOTE: Set up options buttons for the selected portal
-    for(size_t option_button_index = 0;
-        option_button_index < SELECTED_PORTAL_OPTIONS;
-        ++option_button_index) {
-        assert((option_button_index <
-                 SELECTED_MAX_OPTIONS)
-                && "Selected options out of bound for portals");
-
-        PR_Button *button = buttons + option_button_index;
-
-        button->from_center = true;
-        button->body.triangle = false;
-        button->body.pos.x = GAME_WIDTH * (option_button_index+1) /
-                             (SELECTED_PORTAL_OPTIONS+1);
-        button->body.pos.y = GAME_HEIGHT * 9 / 10;
-        button->body.dim.x = GAME_WIDTH /
-                             (SELECTED_PORTAL_OPTIONS+2);
-        button->body.dim.y = GAME_HEIGHT / 10;
-
-        switch(option_button_index) {
-            case 0:
-                snprintf(button->text,
-                              strlen("WIDTH")+1,
-                              "WIDTH");
-                break;
-            case 1:
-                snprintf(button->text,
-                              strlen("HEIGHT")+1,
-                              "HEIGHT");
-                break;
-            case 2:
-                snprintf(button->text,
-                              strlen("TYPE")+1,
-                              "TYPE");
-                break;
-            case 3:
-                snprintf(button->text,
-                              strlen("ENABLE_EFFECT")+1,
-                              "ENABLE_EFFECT");
-                break;
-            default:
-                snprintf(button->text,
-                              strlen("UNDEFINED")+1,
-                              "UNDEFINED");
-                break;
-        }
-
-        button->col = _vec4f(0.5f, 0.5f, 0.5f, 1.f);
-
-    }
 }
 
 void set_start_pos_option_buttons(PR_Button *buttons) {

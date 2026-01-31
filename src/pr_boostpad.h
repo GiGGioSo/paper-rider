@@ -10,7 +10,8 @@
 // ###############
 // ### SETTERS ###
 // ###############
-void boostpad_set_option_buttons(PR_Button *buttons);
+void
+boostpad_set_option_buttons(PR_Button *buttons);
 
 // ##############
 // ### CREATE ###

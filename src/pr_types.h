@@ -143,12 +143,13 @@ typedef struct PR_BoostPad {
     float boost_power;
 } PR_BoostPad;
 
+#define PortalPolygon Polygon4
 typedef enum PR_PortalType {
     PR_INVERSE = 0,
     PR_SHUFFLE_COLORS = 1,
 } PR_PortalType;
 typedef struct PR_Portal {
-    Polygon4 poly;
+    PortalPolygon poly;
     PR_Rect body;
     PR_PortalType type;
     bool enable_effect;
