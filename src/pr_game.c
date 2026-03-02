@@ -3439,19 +3439,14 @@ void level_update(void) {
             portal_render(portal);
 
             if (!rid->crashed &&
-                (rect_are_colliding(rid->body, portal->body, NULL, NULL) ||
-                 (rid->attached && rect_are_colliding(p->body,
-                                                      portal->body,
-                                                      NULL, NULL)))) {
+                (portal_collides_with_rider(portal, rid, NULL) ||
+                (rid->attached &&
+                 portal_collides_with_plane(portal, p, NULL)))) {
                 // printf("------------------------\n"
                 //        "Collided with portal\n");
                 switch(portal->type) {
                     case PR_INVERSE:
                         // NOTE: Skip if the plane/rider already has the effect
-                        // printf("-------------------------\n"
-                        //        "p->inv: %d\n"
-                        //        "rid->inv: %d\n",
-                        //        p->inverse, rid->inverse);
                         if (p->inverse != portal->enable_effect &&
                             rid->inverse != portal->enable_effect) {
 
@@ -4020,10 +4015,12 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.dim.x += one;
+                                        portal_translate(portal, _vec2f(-(one * 0.5f), 0.f));
+                                        portal_resize(portal, _vec2f(one, 0.f));
                                         break;
                                     case 1:
-                                        portal->body.dim.y += one;
+                                        portal_translate(portal, _vec2f(0.f, -(one * 0.5f)));
+                                        portal_resize(portal, _vec2f(0.f, one));
                                         break;
                                     default:
                                         break;
@@ -4035,12 +4032,12 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.pos.x -= five * 0.5f;
-                                        portal->body.dim.x += five;
+                                        portal_translate(portal, _vec2f(-(five * 0.5f), 0.f));
+                                        portal_resize(portal, _vec2f(five, 0));
                                         break;
                                     case 1:
-                                        portal->body.pos.y -= five * 0.5f;
-                                        portal->body.dim.y += five;
+                                        portal_translate(portal, _vec2f(0.f, -(five * 0.5f)));
+                                        portal_resize(portal, _vec2f(0, five));
                                         break;
                                     default:
                                         break;
@@ -4052,12 +4049,12 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.pos.x += one * 0.5f;
-                                        portal->body.dim.x -= one;
+                                        portal_translate(portal, _vec2f(one * 0.5f, 0.f));
+                                        portal_resize(portal, _vec2f(-one, 0));
                                         break;
                                     case 1:
-                                        portal->body.pos.y += one * 0.5f;
-                                        portal->body.dim.y -= one;
+                                        portal_translate(portal, _vec2f(0.f, one * 0.5f));
+                                        portal_resize(portal, _vec2f(0, -one));
                                         break;
                                     default:
                                         break;
@@ -4069,12 +4066,12 @@ void level_update(void) {
                                 set_selected_to_null = false;
                                 switch(option_button_index) {
                                     case 0:
-                                        portal->body.pos.x += five * 0.5f;
-                                        portal->body.dim.x -= five;
+                                        portal_translate(portal, _vec2f(five * 0.5f, 0.f));
+                                        portal_resize(portal, _vec2f(-five, 0));
                                         break;
                                     case 1:
-                                        portal->body.pos.y += five * 0.5f;
-                                        portal->body.dim.y -= five;
+                                        portal_translate(portal, _vec2f(0.f, five * 0.5f));
+                                        portal_resize(portal, _vec2f(0, -five));
                                         break;
                                     default:
                                         break;

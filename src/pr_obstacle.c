@@ -1,3 +1,5 @@
+#include "pr_obstacle.h"
+
 #include "pr_polygon.h"
 #include "pr_renderer.h"
 #include "pr_camera.h"

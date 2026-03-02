@@ -1,3 +1,5 @@
+#include "pr_portal.h"
+
 #include "pr_polygon.h"
 #include "pr_renderer.h"
 #include "pr_camera.h"
@@ -64,7 +66,7 @@ void portal_set_option_buttons(PR_Button *buttons) {
 // ###############
 // ### GETTERS ###
 // ###############
-vec4f get_portal_color(PR_Portal *portal) {
+vec4f portal_get_color(PR_Portal *portal) {
     switch(portal->type) {
         case PR_INVERSE:
         {
@@ -77,6 +79,17 @@ vec4f get_portal_color(PR_Portal *portal) {
             break;
         }
     }
+}
+const char *portal_get_type_name(PR_PortalType t) {
+    switch (t) {
+        case PR_INVERSE:
+            return "INVERSE";
+        case PR_SHUFFLE_COLORS:
+            return "SHUFFLE_COLORS";
+        default:
+            return "UNKNOWN";
+    }
+    return "";
 }
 
 // ##############
@@ -98,10 +111,28 @@ portal_init(PR_Portal *portal, vec2f pos, vec2f dim, float angle) {
 bool portal_contains_point(PR_Portal *portal, vec2f p) {
     return rect_contains_point(portal->body, p.x, p.y, false);
 }
-bool
-portal_collides_with_plane(PR_Portal *portal, PR_Plane *plane, vec2f *crash_pos);
-bool
-portal_collides_with_rider(PR_Portal *portal, PR_Rider *rid, vec2f *crash_pos);
+bool portal_collides_with_plane(PR_Portal *portal, PR_Plane *plane, vec2f *crash_pos) {
+    float *crash_pos_x = NULL;
+    float *crash_pos_y = NULL;
+    if (crash_pos) {
+        crash_pos_x = &crash_pos->x;
+        crash_pos_y = &crash_pos->y;
+    }
+    return rect_are_colliding(
+            plane->body, portal->body,
+            crash_pos_x, crash_pos_y);
+}
+bool portal_collides_with_rider(PR_Portal *portal, PR_Rider *rid, vec2f *crash_pos) {
+    float *crash_pos_x = NULL;
+    float *crash_pos_y = NULL;
+    if (crash_pos) {
+        crash_pos_x = &crash_pos->x;
+        crash_pos_y = &crash_pos->y;
+    }
+    return rect_are_colliding(
+            rid->body, portal->body,
+            crash_pos_x, crash_pos_y);
+}
 
 // #################
 // ### RENDERING ###
@@ -155,7 +186,7 @@ void portal_render(PR_Portal *portal) {
             false);
     } else {
         renderer_add_queue_uni_rect(rect_in_camera_space(portal->body, cam),
-                               get_portal_color(portal),
+                               portal_get_color(portal),
                                false);
     }
 }
@@ -177,7 +208,7 @@ void portal_render_info(PR_Portal *portal, float tx, float ty) {
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "type: %s",
-                 get_portal_type_name((portal)->type));
+                 portal_get_type_name((portal)->type));
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
                             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "enable_effect: %s",
@@ -189,17 +220,27 @@ void portal_render_info(PR_Portal *portal, float tx, float ty) {
 // ##############
 // ### MODIFY ###
 // ##############
-void
-portal_translate(PR_Portal *obs, vec2f move);
+void portal_translate(PR_Portal *portal, vec2f move) {
+    portal->body.pos = vec2f_sum(portal->body.pos, move);
+}
 
-void
-portal_rotate(PR_Portal *obs, float angle);
+void portal_rotate(PR_Portal *portal, float angle) {
+    portal->body.angle += angle;
+}
 
-void
-portal_set_size(PR_Portal *obs, vec2f size);
-void
-portal_resize(PR_Portal *obs, vec2f delta);
-void
-portal_scale(PR_Portal *obs, vec2f factor);
+void portal_set_size(PR_Portal *portal, vec2f size) {
+    PR_ASSERT(size.x > 0 && size.y > 0);
+    portal->body.dim = size;
+}
 
-#endif//_PR_PORTAL_H_
+void portal_resize(PR_Portal *portal, vec2f delta) {
+    vec2f new_size = vec2f_sum(portal->body.dim, delta);
+    PR_ASSERT(new_size.x > 0 && new_size.y > 0);
+    portal->body.dim = new_size;
+}
+
+void portal_scale(PR_Portal *portal, vec2f factor) {
+    PR_ASSERT(factor.x > 0 && factor.y > 0);
+    portal->body.dim.x *= factor.x;
+    portal->body.dim.y *= factor.y;
+}

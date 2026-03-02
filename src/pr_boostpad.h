@@ -36,22 +36,22 @@ void
 boostpad_render(PR_BoostPad *pad);
 
 void
-boostpad_render_info(PR_BoostPad *boost, float tx, float ty);
+boostpad_render_info(PR_BoostPad *pad, float tx, float ty);
 
 // ##############
 // ### MODIFY ###
 // ##############
 void
-boostpad_translate(PR_BoostPad *obs, vec2f move);
+boostpad_translate(PR_BoostPad *pad, vec2f move);
 
 void
-boostpad_rotate(PR_BoostPad *obs, float angle);
+boostpad_rotate(PR_BoostPad *pad, float angle);
 
 void
-boostpad_set_size(PR_BoostPad *obs, vec2f size);
+boostpad_set_size(PR_BoostPad *pad, vec2f size);
 void
-boostpad_resize(PR_BoostPad *obs, vec2f delta);
+boostpad_resize(PR_BoostPad *pad, vec2f delta);
 void
-boostpad_scale(PR_BoostPad *obs, vec2f factor);
+boostpad_scale(PR_BoostPad *pad, vec2f factor);
 
 #endif//_PR_BOOSTPAD_H_

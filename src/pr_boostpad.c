@@ -1,3 +1,5 @@
+#include "pr_boostpad.h"
+
 #include "pr_polygon.h"
 #include "pr_renderer.h"
 #include "pr_camera.h"
@@ -149,7 +151,7 @@ void boostpad_render(PR_BoostPad *pad) {
                            true);
 }
 
-void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
+void boostpad_render_info(PR_BoostPad *pad, float tx, float ty) {
     char buffer[99];
     memset((void *)buffer, 0x00, sizeof(buffer));
     size_t index = 1;
@@ -158,23 +160,23 @@ void boostpad_render_info(PR_BoostPad *boost, float tx, float ty) {
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "pos: (%f, %f)",
-            (boost)->body.pos.x, (boost)->body.pos.y);
+            (pad)->body.pos.x, (pad)->body.pos.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "dim: (%f, %f)",
-            (boost)->body.dim.x, (boost)->body.dim.y);
+            (pad)->body.dim.x, (pad)->body.dim.y);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "angle: %f",
-            (boost)->body.angle);
+            (pad)->body.angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "boost_angle: %f",
-            (boost)->boost_angle);
+            (pad)->boost_angle);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
     sprintf(buffer, "boost_power: %f",
-            (boost)->boost_power);
+            (pad)->boost_power);
     renderer_add_queue_text(tx, ty+(spacing*index++), buffer, _diag_vec4f(1.f),
             &glob->rend_res.fonts[OBJECT_INFO_FONT], false);
 }

@@ -17,7 +17,10 @@ portal_set_option_buttons(PR_Button *buttons);
 // ### GETTERS ###
 // ###############
 vec4f
-get_portal_color(PR_Portal *portal);
+portal_get_color(PR_Portal *portal);
+
+const char *
+portal_get_type_name(PR_PortalType t);
 
 // ##############
 // ### CREATE ###
@@ -48,16 +51,16 @@ portal_render_info(PR_Portal *boost, float tx, float ty);
 // ### MODIFY ###
 // ##############
 void
-portal_translate(PR_Portal *obs, vec2f move);
+portal_translate(PR_Portal *portal, vec2f move);
 
 void
-portal_rotate(PR_Portal *obs, float angle);
+portal_rotate(PR_Portal *portal, float angle);
 
 void
-portal_set_size(PR_Portal *obs, vec2f size);
+portal_set_size(PR_Portal *portal, vec2f size);
 void
-portal_resize(PR_Portal *obs, vec2f delta);
+portal_resize(PR_Portal *portal, vec2f delta);
 void
-portal_scale(PR_Portal *obs, vec2f factor);
+portal_scale(PR_Portal *portal, vec2f factor);
 
 #endif//_PR_PORTAL_H_

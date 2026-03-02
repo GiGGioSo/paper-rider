@@ -237,17 +237,4 @@ const char *get_case_name(PR_GameCase c) {
     return "";
 }
 
-static inline
-const char *get_portal_type_name(PR_PortalType t) {
-    switch (t) {
-        case PR_INVERSE:
-            return "INVERSE";
-        case PR_SHUFFLE_COLORS:
-            return "SHUFFLE_COLORS";
-        default:
-            return "UNKNOWN";
-    }
-    return "";
-}
-
 #endif
