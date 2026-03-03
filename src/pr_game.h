@@ -178,19 +178,6 @@ void start_menu_update(void);
 int options_menu_prepare(PR_OptionsMenu *opt);
 void options_menu_update(void);
 
-static inline float lerp(float x1, float x2, float t) {
-    float result = (1.f - t) * x1 + t * x2;
-    return result;
-}
-
-static inline vec2f lerp_v2(vec2f x1, vec2f x2, float t) {
-    vec2f result;
-    result.x = lerp(x1.x, x2.x, t);
-    result.y = lerp(x1.y, x2.y, t);
-
-    return result;
-}
-
 // NOTE: Vertical lift and horizontal drag are identical,
 //       because falling is just like moving right.
 

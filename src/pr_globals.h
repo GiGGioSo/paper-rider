@@ -62,30 +62,6 @@ typedef struct PR_Atmosphere {
     float density;
 } PR_Atmosphere;
 
-typedef struct PR_Particle {
-    PR_Rect body;
-    vec2f vel;
-    vec4f color;
-    bool active;
-} PR_Particle;
-typedef struct PR_ParticleSystem {
-    PR_Particle *particles;
-    size_t particles_number;
-
-    size_t current_particle;
-
-    bool frozen;
-    bool active;
-    bool all_inactive;
-
-    void (*create_particle)(struct PR_ParticleSystem *, PR_Particle *);
-    void (*update_particle)(struct PR_ParticleSystem *, PR_Particle *);
-    void (*draw_particle)(struct PR_ParticleSystem *, PR_Particle *);
-
-    float time_between_particles;
-    float time_elapsed;
-} PR_ParticleSystem;
-
 typedef struct PR_ParallaxPiece {
     float base_pos_x;
     PR_Rect body;

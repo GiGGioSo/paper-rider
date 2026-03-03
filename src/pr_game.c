@@ -17,6 +17,7 @@
 #include "pr_obstacle.h"
 #include "pr_boostpad.h"
 #include "pr_portal.h"
+#include "pr_particlesystem.h"
 
 #ifdef _WIN32
 #    define MINIRENT_IMPLEMENTATION
@@ -115,27 +116,6 @@ move_rider_to_plane(PR_Rider *rid, PR_Plane *p);
 static inline void
 rider_jump_from_plane(PR_Rider *rid, PR_Plane *p);
 
-// Particle system functions
-void
-create_particle_plane_boost(PR_ParticleSystem *ps, PR_Particle *particle);
-void
-update_particle_plane_boost(PR_ParticleSystem *ps, PR_Particle *particle);
-void
-draw_particle_plane_boost(PR_ParticleSystem *ps, PR_Particle *particle);
-
-void
-create_particle_plane_crash(PR_ParticleSystem *ps, PR_Particle *particle);
-void
-update_particle_plane_crash(PR_ParticleSystem *ps, PR_Particle *particle);
-void
-draw_particle_plane_crash(PR_ParticleSystem *ps, PR_Particle *particle);
-
-void
-create_particle_rider_crash(PR_ParticleSystem *ps, PR_Particle *particle);
-void
-update_particle_rider_crash(PR_ParticleSystem *ps, PR_Particle *particle);
-void
-draw_particle_rider_crash(PR_ParticleSystem *ps, PR_Particle *particle);
 
 // UI OptionSlider funcionts
 void
@@ -1530,7 +1510,7 @@ void options_menu_update(void) {
                 cam->follow_selection = true;
             }
         }
-        cam->pos.y = lerp(cam->pos.y, cam->goal_position,
+        cam->pos.y = lerpf(cam->pos.y, cam->goal_position,
                 glob->state.delta_time * cam->speed_multiplier);
     }
 
@@ -2341,7 +2321,7 @@ void play_menu_update(void) {
             cam->follow_selection = true;
         }
     }
-    cam->pos.y = lerp(cam->pos.y, cam->goal_position,
+    cam->pos.y = lerpf(cam->pos.y, cam->goal_position,
          glob->state.delta_time * cam->speed_multiplier);
 
     // # Check if going back to the start menu #
@@ -2719,90 +2699,30 @@ int level_prepare(PR_Level *level,
         */
     }
 
+    // creating particle systems
     PR_ParticleSystem *boost_ps = &level->particle_systems[0];
-    boost_ps->particles_number = 200;
-    if (boost_ps->particles_number) {
-        boost_ps->particles =
-            (PR_Particle *) malloc(sizeof(PR_Particle) *
-                                         boost_ps->particles_number);
-        if (boost_ps->particles == NULL) {
-            printf("Buy more RAM!\n");
-            return 1;
-        }
-    }
-    boost_ps->current_particle = 0;
-    boost_ps->time_between_particles = 0.01f;
-    boost_ps->time_elapsed = 0.f;
-    boost_ps->frozen = false;
-    boost_ps->active = false;
-    boost_ps->all_inactive = true;
-    boost_ps->create_particle = create_particle_plane_boost;
-    boost_ps->update_particle = update_particle_plane_boost;
-    boost_ps->draw_particle = draw_particle_plane_boost;
-    for(size_t particle_index = 0;
-        particle_index < boost_ps->particles_number;
-        ++particle_index) {
-
-        PR_Particle *particle = boost_ps->particles + particle_index;
-        (boost_ps->create_particle)(boost_ps, particle);
-    }
+    particlesystem_init(boost_ps,
+        200, 0.01f,
+        particle_create_plane_boost,
+        particle_update_plane_boost,
+        particle_draw_plane_boost);
+    particlesystem_create_particles(boost_ps);
 
     PR_ParticleSystem *plane_crash_ps = &level->particle_systems[1];
-    plane_crash_ps->particles_number = 100;
-    if (plane_crash_ps->particles_number) {
-        plane_crash_ps->particles =
-            (PR_Particle *) malloc(sizeof(PR_Particle) *
-                                         plane_crash_ps->particles_number);
-        if (plane_crash_ps->particles == NULL) {
-            printf("Buy more RAM!\n");
-            return 1;
-        }
-    }
-    plane_crash_ps->current_particle = 0;
-    plane_crash_ps->time_between_particles = 0.02f;
-    plane_crash_ps->time_elapsed = 0.f;
-    plane_crash_ps->frozen = false;
-    plane_crash_ps->active = false;
-    plane_crash_ps->all_inactive = true;
-    plane_crash_ps->create_particle = create_particle_plane_crash;
-    plane_crash_ps->update_particle = update_particle_plane_crash;
-    plane_crash_ps->draw_particle = draw_particle_plane_crash;
-    for(size_t particle_index = 0;
-        particle_index < plane_crash_ps->particles_number;
-        ++particle_index) {
-
-        PR_Particle *particle = plane_crash_ps->particles + particle_index;
-        (plane_crash_ps->create_particle)(plane_crash_ps, particle);
-    }
+    particlesystem_init(plane_crash_ps,
+        100, 0.02f,
+        particle_create_plane_crash,
+        particle_update_plane_crash,
+        particle_draw_plane_crash);
+    particlesystem_create_particles(plane_crash_ps);
 
     PR_ParticleSystem *rider_crash_ps = &level->particle_systems[2];
-    rider_crash_ps->particles_number = 100;
-    if (rider_crash_ps->particles_number) {
-        rider_crash_ps->particles =
-            (PR_Particle *) malloc(sizeof(PR_Particle) *
-                                     rider_crash_ps->particles_number);
-        if (rider_crash_ps->particles == NULL) {
-            printf("Buy more RAM!\n");
-            return 1;
-        }
-    }
-    rider_crash_ps->current_particle = 0;
-    rider_crash_ps->time_between_particles = 0.02f;
-    rider_crash_ps->time_elapsed = 0.f;
-    rider_crash_ps->frozen = false;
-    rider_crash_ps->active = false;
-    rider_crash_ps->all_inactive = true;
-    rider_crash_ps->create_particle = create_particle_rider_crash;
-    rider_crash_ps->update_particle = update_particle_rider_crash;
-    rider_crash_ps->draw_particle = draw_particle_rider_crash;
-    for(size_t particle_index = 0;
-        particle_index < rider_crash_ps->particles_number;
-        ++particle_index) {
-
-        PR_Particle *particle = rider_crash_ps->particles +
-                                 particle_index;
-        (rider_crash_ps->create_particle)(rider_crash_ps, particle);
-    }
+    particlesystem_init(rider_crash_ps,
+        100, 0.02f,
+        particle_create_rider_crash,
+        particle_update_rider_crash,
+        particle_draw_rider_crash);
+    particlesystem_create_particles(rider_crash_ps);
 
     // Initializing the parallaxes
     parallax_init(&level->parallaxs[0], 0.9f,
@@ -2931,9 +2851,9 @@ void level_update(void) {
     #endif
 
     // It will be set to true once the boost key is pressed
-    boost_ps->active = false;
-    plane_crash_ps->active = false;
-    rider_crash_ps->active = false;
+    particlesystem_set_active(boost_ps, false);
+    particlesystem_set_active(plane_crash_ps, false);
+    particlesystem_set_active(rider_crash_ps, false);
 
     float rider_left_right =
         ACTION_VALUE(PR_PLAY_RIDER_RIGHT) - ACTION_VALUE(PR_PLAY_RIDER_LEFT);
@@ -3181,13 +3101,13 @@ void level_update(void) {
         }
     }
 
-    if (p->crashed) plane_crash_ps->active = true;
-    if (rid->crashed) rider_crash_ps->active = true;
+    if (p->crashed) particlesystem_set_active(plane_crash_ps, true);
+    if (rid->crashed) particlesystem_set_active(rider_crash_ps, true);
 
     // After the crash animation, the plane falls on the floor
     if (p->crashed && p->anim.finished &&
             p->anim.current == p->anim.frame_number-1) {
-        plane_crash_ps->active = false;
+        particlesystem_set_active(plane_crash_ps, false);
         p->body.angle = 0.f;
         p->render_zone.angle = 0.f;
         if (ABS(p->render_zone.pos.y +
@@ -3683,8 +3603,9 @@ void level_update(void) {
 
     // NOTE: Updating and rendering all the particle systems
     // Set the time_between_particles for the boost based on the velocity
-    glob->current_level.particle_systems[0].time_between_particles =
-        lerp(0.02f, 0.01f, vec2f_len(p->vel)/PLANE_VELOCITY_LIMIT);
+    particlesystem_set_time_between_particles(
+        boost_ps,
+        lerpf(0.02f, 0.01f, vec2f_len(p->vel)/PLANE_VELOCITY_LIMIT));
     for(size_t ps_index = 0;
         ps_index < ARR_LEN(glob->current_level.particle_systems);
         ++ps_index) {
@@ -3692,56 +3613,7 @@ void level_update(void) {
         PR_ParticleSystem *ps =
             &glob->current_level.particle_systems[ps_index];
 
-        if (ps->particles_number == 0) continue;
-
-        if (ps->active) ps->all_inactive = false;
-
-        if (!ps->active && !ps->all_inactive) {
-
-            ps->all_inactive = true;
-            for(size_t particle_index = 0;
-                particle_index < ps->particles_number;
-                ++particle_index) {
-
-                PR_Particle *particle = ps->particles +
-                                         particle_index;
-
-                if (particle->active) {
-                    ps->all_inactive = false;
-                    break;
-                }
-            }
-        }
-
-        if (ps->all_inactive) {
-            continue;
-        }
-
-        if (!ps->frozen) {
-            ps->time_elapsed += dt;
-            while(ps->time_elapsed > ps->time_between_particles) {
-                ps->time_elapsed -= ps->time_between_particles;
-
-                PR_Particle *particle = ps->particles +
-                                         ps->current_particle;
-                ps->current_particle = (ps->current_particle + 1) %
-                                             ps->particles_number;
-
-                (ps->create_particle)(ps, particle);
-            }
-        }
-        for (size_t particle_index = 0;
-             particle_index < ps->particles_number;
-             ++particle_index) {
-
-            PR_Particle *particle = ps->particles + particle_index;
-
-            if (!ps->frozen) {
-                (ps->update_particle)(ps, particle);
-            }
-
-            (ps->draw_particle)(ps, particle);
-        }
+        particlesystem_update_and_draw(ps, dt);
     }
     // NOTE: Rendering the plane hitbox
     // renderer_add_queue_uni(rect_in_camera_space(p->body, cam),
@@ -5265,7 +5137,7 @@ static inline void lerp_camera_x_to_rect(PR_Camera *cam, PR_Rect *rec, bool cent
                    rec->pos.x + rec->dim.x*0.5f :
                    rec->pos.x;
     if (level->editing_now || dest_x > cam->pos.x) {
-        cam->pos.x = lerp(cam->pos.x,
+        cam->pos.x = lerpf(cam->pos.x,
                           dest_x,
                           level->editing_now ? 1.f :
                                                glob->state.delta_time *
@@ -5523,7 +5395,7 @@ void update_plane_physics_n_boost_collisions(PR_Level *level) {
 
         if (boostpad_collides_with_plane(&pad, p, NULL)) {
 
-            boost_ps->active = true;
+            particlesystem_set_active(boost_ps, true);
             
             p->acc.x += pad.boost_power *
                         cos(radiansf(pad.boost_angle));
@@ -5563,183 +5435,6 @@ void update_plane_physics_n_boost_collisions(PR_Level *level) {
             vec2f_sum(
                 vec2f_mult(p->vel, dt),
                 vec2f_mult(p->acc, POW2(dt) * 0.5f)));
-}
-
-// Particle systems
-void create_particle_plane_boost(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    if (ps->active) {
-        PR_Plane *p = &glob->current_level.plane;
-        particle->body.pos = vec2f_sum(
-                p->body.pos,
-                vec2f_mult(p->body.dim, 0.5f));
-        particle->body.dim.x = 10.f;
-        particle->body.dim.y = 10.f;
-        particle->body.triangle = false;
-        particle->color.r = 1.0f;
-        particle->color.g = 1.0f;
-        particle->color.b = 1.0f;
-        particle->color.a = 1.0f;
-        float movement_angle = radiansf(p->body.angle);
-        particle->vel.x =
-            (vec2f_len(p->vel) - 400.f) * cos(movement_angle) +
-            (float)((rand() % 101) - 50);
-        particle->vel.y =
-            -(vec2f_len(p->vel) - 400.f) * sin(movement_angle) +
-            (float)((rand() % 101) - 50);
-        particle->active = true;
-    } else {
-        // NOTE: If the particle system is not active,
-        //       the new particles should just delete the old ones
-        particle->body.pos.x = 0.f;
-        particle->body.pos.y = 0.f;
-        particle->body.dim.x = 0.f;
-        particle->body.dim.y = 0.f;
-        particle->body.triangle = false;
-        particle->vel.x = 0.f;
-        particle->vel.y = 0.f;
-        particle->color.r = 0.0f;
-        particle->color.g = 0.0f;
-        particle->color.b = 0.0f;
-        particle->color.a = 0.0f;
-        particle->active = false;
-    }
-}
-void update_particle_plane_boost(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    UNUSED(ps);
-    float dt = glob->state.delta_time;
-    particle->vel = vec2f_mult(particle->vel, (1.f - dt)); 
-    particle->color.a -= particle->color.a * dt * 3.0f;
-    particle->body.pos = vec2f_sum(
-            particle->body.pos,
-            vec2f_mult(particle->vel, dt));
-}
-void draw_particle_plane_boost(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    UNUSED(ps);
-    renderer_add_queue_uni_rect(rect_in_camera_space(particle->body,
-                                                &glob->current_level.camera),
-                            particle->color, true);
-}
-
-void create_particle_plane_crash(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    if (ps->active) {
-        PR_Plane *p = &glob->current_level.plane;
-        //particle->body.pos = p->body.pos + p->body.dim*0.5f;
-        particle->body.dim.x = 15.f;
-        particle->body.dim.y = 15.f;
-        particle->body.pos = vec2f_diff(
-                p->crash_position,
-                vec2f_mult(particle->body.dim, 0.5f));
-        particle->body.angle = 0.f;
-        particle->body.triangle = false;
-        particle->vel.x = (float)((rand() % 301) - 150.f);
-        particle->vel.y = -150.f + (float)((rand() % 131) - 130.f);
-        particle->color.r = 1.0f;
-        particle->color.g = 0.0f;
-        particle->color.b = 0.0f;
-        particle->color.a = 1.0f;
-        particle->active = true;
-    } else {
-        particle->body.pos.x = 0.f;
-        particle->body.pos.y = 0.f;
-        particle->body.dim.x = 0.f;
-        particle->body.dim.y = 0.f;
-        particle->body.triangle = false;
-        particle->vel.x = 0.f;
-        particle->vel.y = 0.f;
-        particle->color.r = 0.0f;
-        particle->color.g = 0.0f;
-        particle->color.b = 0.0f;
-        particle->color.a = 0.0f;
-        particle->active = false;
-    }
-}
-void update_particle_plane_crash(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    UNUSED(ps);
-    float dt = glob->state.delta_time;
-    particle->color.a -= particle->color.a * dt * 2.0f;
-    particle->vel.y += 400.f * dt;
-    particle->vel.x *= (1.f - dt);
-    particle->body.pos = vec2f_sum(
-            particle->body.pos,
-            vec2f_mult(particle->vel, dt));
-    particle->body.angle -=
-        SIGN(particle->vel.x) *
-        lerp(0.f, 720.f, ABS(particle->vel.x)/150.f) * dt;
-}
-void draw_particle_plane_crash(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    UNUSED(ps);
-    renderer_add_queue_tex_rect(rect_in_camera_space(particle->body,
-                                                &glob->current_level.camera),
-                           texcoords_in_texture_space(
-                                730, 315, 90, 80,
-                                glob->rend_res.global_sprite, false),
-                           false);
-    // renderer_add_queue_uni(rect_in_camera_space(particle->body,
-    //                                             &glob->current_level.camera),
-    //                         particle->color, true);
-}
-
-void create_particle_rider_crash(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    if (ps->active) {
-        PR_Rider *rid = &glob->current_level.rider;
-        //particle->body.pos = rid->body.pos + rid->body.dim*0.5f;
-        particle->body.dim.x = 15.f;
-        particle->body.dim.y = 15.f;
-        particle->body.pos = vec2f_diff(
-                rid->crash_position,
-                vec2f_mult(particle->body.dim, 0.5f));
-        particle->body.angle = 0.f;
-        particle->body.triangle = false;
-        particle->vel.x = (float)((rand() % 301) - 150.f);
-        particle->vel.y = -150.f + (float)((rand() % 131) - 130.f);
-        particle->color.r = 0.0f;
-        particle->color.g = 0.5f;
-        particle->color.b = 0.5f;
-        particle->color.a = 1.0f;
-        particle->active = true;
-    } else {
-        particle->body.pos.x = 0.f;
-        particle->body.pos.y = 0.f;
-        particle->body.dim.x = 0.f;
-        particle->body.dim.y = 0.f;
-        particle->body.angle = 0.f;
-        particle->body.triangle = false;
-        particle->vel.x = 0.f;
-        particle->vel.y = 0.f;
-        particle->color.r = 0.0f;
-        particle->color.g = 0.0f;
-        particle->color.b = 0.0f;
-        particle->color.a = 0.0f;
-        particle->active = false;
-    }
-}
-void update_particle_rider_crash(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    UNUSED(ps);
-    float dt = glob->state.delta_time;
-    particle->color.a -= particle->color.a * dt * 2.0f;
-    particle->vel.y += 400.f * dt;
-    particle->vel.x *= (1.f - dt);
-    particle->body.pos = vec2f_sum(
-            particle->body.pos,
-            vec2f_mult(particle->vel, dt));
-    particle->body.angle -=
-        SIGN(particle->vel.x) *
-        lerp(0.f, 720.f, ABS(particle->vel.x)/150.f) * dt;
-}
-void draw_particle_rider_crash(PR_ParticleSystem *ps,
-                                 PR_Particle *particle) {
-    UNUSED(ps);
-    renderer_add_queue_uni_rect(rect_in_camera_space(particle->body,
-                                                &glob->current_level.camera),
-                            particle->color, true);
 }
 
 // UI OptionSlider functions

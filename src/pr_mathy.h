@@ -141,6 +141,15 @@ typedef struct mat4f {
 } mat4f;
 
 double
+lerp(double a, double b, double f);
+
+float
+lerpf(float a, float b, float f);
+
+vec2f
+vec2f_lerp(vec2f a, vec2f b, float f);
+
+double
 radians(double x);
 
 float
@@ -205,6 +214,21 @@ mat4f_x_mat4f(mat4f m1, mat4f m2);
 
 
 #ifdef PR_MATHY_IMPLEMENTATION
+
+double lerp(double a, double b, double f) {
+    return (a * (1.0 - f)) + (b * f);
+}
+
+float lerpf(float a, float b, float f) {
+    return (a * (1.f - f)) + (b * f);
+}
+
+vec2f vec2f_lerp(vec2f a, vec2f b, float f) {
+    vec2f result;
+    result.x = lerpf(a.x, b.x, f);
+    result.y = lerpf(a.y, b.y, f);
+    return result;
+}
 
 double radians(double x) {
     return x * PI / 180.0;
