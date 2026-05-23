@@ -10,10 +10,11 @@
 #include "pr_game.h"
 #include "pr_window.h"
 #include "pr_mathy.h"
+#include "pr_gl_debug.h"
 
 // Callbacks
 void callback_framebuffer_size(GLFWwindow *window, int32 width, int32 height);
-void callback_debug(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user);
+void callback_glfw_error(int error_code, const char *description);
 void callback_gamepad(int32 gamepad_id, int32 event);
 
 // Initializing global structure
@@ -39,12 +40,12 @@ int main(void) {
     glob->window.width = window_resolution_width(glob->window.windowed_resolution);
     glob->window.height = window_resolution_height(glob->window.windowed_resolution);
 
+    glfwSetErrorCallback(callback_glfw_error);
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
@@ -92,12 +93,11 @@ int main(void) {
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL_CHECK("initialize GL state");
     // Callbacks
     glfwSetFramebufferSizeCallback(glob->window.glfw_win,
                                    callback_framebuffer_size);
     glfwSetJoystickCallback(callback_gamepad);
-    glDebugMessageCallback(&callback_debug, NULL);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
     // Get the actual size of the window that got created
     glfwGetFramebufferSize(glob->window.glfw_win,
@@ -566,22 +566,9 @@ void callback_framebuffer_size(GLFWwindow *window,
     }
     glViewport(win->vertical_bar, win->horizontal_bar,
                win->width, win->height);
+    GL_CHECK("set viewport");
 }
 
-void callback_debug(GLenum source,
-                    GLenum type,
-                    GLuint id, GLenum severity,
-                    GLsizei length, const GLchar *message,
-                    const void *user) {
-    UNUSED(id);
-    UNUSED(severity);
-    UNUSED(length);
-    UNUSED(user);
-
-    printf("------------------------------"
-           "\nSource: %d"
-           "\nType: %d"
-           "\nMessage: %s"
-           "\n-----------------------------",
-           source, type, message);
+void callback_glfw_error(int error_code, const char *description) {
+    fprintf(stderr, "[GLFW ERROR] %d: %s\n", error_code, description);
 }

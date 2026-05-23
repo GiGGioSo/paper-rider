@@ -5,6 +5,7 @@
 
 #include "pr_globals.h"
 #include "pr_shaderer.h"
+#include "pr_gl_debug.h"
 
 #include <math.h>
 #include <string.h>
@@ -139,6 +140,7 @@ void renderer_init(PR_Renderer* renderer) {
 
     renderer->text_vertex_count = 0;
     renderer->text_bytes_offset = 0;
+    GL_CHECK("initialize renderer buffers");
 }
 
 // NON-textured quads
@@ -286,14 +288,19 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
     glGenTextures(1, &at->id);
     glBindTexture(GL_TEXTURE_2D_ARRAY, at->id);
 
-    glTexStorage3D(
+    glTexImage3D(
         GL_TEXTURE_2D_ARRAY, // GLenum target
-        1, // GLsizei levels
+        0, // GLint level
         GL_RGBA8, // GLenum internalformat
         max_width, // GLsizei width
         max_height, // GLsizei height
-        images.count // GLsizei depth
+        images.count, // GLsizei depth
+        0, // GLint border
+        GL_RGBA, // GLenum format
+        GL_UNSIGNED_BYTE, // GLenum type
+        NULL // const GLvoid * pixels
     );
+    GL_CHECK("allocate array texture");
 
     for(size_t image_index = 0;
         image_index < images.count;
@@ -326,6 +333,7 @@ void renderer_create_array_texture(PR_ArrayTexture *at) {
             GL_UNSIGNED_BYTE, // GLenum type
             image->data // const GLvoid * pixels
         );
+        GL_CHECK("upload array texture layer");
 
         // Don't need it anymore, because the data is inside the texture now
         stbi_image_free(image->data);
@@ -361,6 +369,7 @@ void renderer_create_texture(PR_Texture* t, const char* filepath) {
                      t->width, t->height,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
+        GL_CHECK("upload texture");
     } else {
         fprintf(stderr, "[ERROR] Failed to load texture: %s\n", filepath);
     }
@@ -583,6 +592,7 @@ int renderer_create_font_atlas(PR_Font* font) {
                      font->bitmap_width, font->bitmap_height,
                      0, GL_RED, GL_UNSIGNED_BYTE, bitmap_buffer);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        GL_CHECK("create font atlas");
     }
 
     defer:
@@ -782,4 +792,3 @@ void renderer_draw_text(PR_Font* font, PR_Shader s) {
     renderer->text_bytes_offset = 0;
     renderer->text_vertex_count = 0;
 }
-

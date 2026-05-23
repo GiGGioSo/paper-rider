@@ -1,5 +1,6 @@
 #include "pr_shaderer.h"
 #include "pr_common.h" // read_whole_file()
+#include "pr_gl_debug.h"
 
 #include "glad/glad.h"
 
@@ -25,7 +26,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
         if (fshader_code == NULL) {
             fprintf(stderr,
                     "ERROR::SHADER::FRAGMENT::CODE_LOADING_FAILED (%s)\n",
-                    vertex_path);
+                    fragment_path);
             return_defer(2);
         }
 
@@ -38,6 +39,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
         vertex = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertex, 1, (const char **) &vshader_code, NULL);
         glCompileShader(vertex);
+        GL_CHECK("compile vertex shader");
         // print compile errors if any
         glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
         if(!success) {
@@ -48,13 +50,14 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
                     "| %s\n"
                     "|------\n",
                     vertex_path, log);
-            return_defer(success);
+            return_defer(3);
         }
 
         // fragment shader
         fragment = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragment, 1, (const char **) &fshader_code, NULL);
         glCompileShader(fragment);
+        GL_CHECK("compile fragment shader");
         //print compile errors if any
         glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
         if(!success) {
@@ -65,7 +68,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
                     "| %s\n"
                     "|------\n",
                     fragment_path, log);
-            return_defer(success);
+            return_defer(4);
         }
 
         // program
@@ -73,6 +76,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
         glAttachShader(*s, vertex);
         glAttachShader(*s, fragment);
         glLinkProgram(*s);
+        GL_CHECK("link shader program");
         // print linking errors if any
         glGetProgramiv(*s, GL_LINK_STATUS, &success);
         if(!success) {
@@ -83,7 +87,7 @@ int32 shaderer_create_program(PR_Shader *s, const char* vertex_path, const char*
                     "| %s\n"
                     "|------\n",
                     log);
-            return_defer(success);
+            return_defer(5);
         }
 
     }
@@ -127,4 +131,3 @@ void shaderer_set_mat4(PR_Shader s, const char* name, mat4f value) {
     glUseProgram(s);
     glUniformMatrix4fv(glGetUniformLocation(s, name), 1, GL_TRUE, &value.e[0]);
 }
-
